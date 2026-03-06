@@ -1,5 +1,4 @@
 /**
-
  *
  * Conversation state machine for new-user onboarding.
  *
@@ -82,6 +81,148 @@ const STRATEGY_MAP: Record<string, Strategy> = {
 
 const GREETINGS = new Set(["hi", "hello", "hey", "start", "helo", "yo"]);
 
+/** Triggers that should show the help menu */
+const HELP_TRIGGERS = new Set(["help", "?", "what can you do", "commands", "menu"]);
+
+// ─── FAQ definitions ──────────────────────────────────────────────────────────
+
+interface FaqEntry {
+  patterns: RegExp[];
+  answer: string;
+}
+
+const FAQ: FaqEntry[] = [
+  {
+    patterns: [
+      /\bis\s+(my\s+)?money\s+safe\b/i,
+      /\bsafe\b.*\bfunds?\b/i,
+      /\bfunds?\b.*\bsafe\b/i,
+      /\bsecure\b/i,
+      /\bsecurity\b/i,
+      /\blose\s+my\s+(money|funds|usdc)\b/i,
+    ],
+    answer:
+      "🔒 *Is my money safe?*\n\n" +
+      "Your USDC is held in non-custodial Stellar smart contracts — " +
+      "NeuroWealth never holds your funds directly.\n\n" +
+      "• Your wallet keys are encrypted with AES-256-GCM\n" +
+      "• Funds can only move with on-chain authorization\n" +
+      "• No lock-ups — withdraw anytime\n\n" +
+      "As with all DeFi, smart-contract risk exists. We only deploy to " +
+      "audited protocols on Stellar.",
+  },
+  {
+    patterns: [
+      /\bhow\s+do\s+i\s+withdraw\b/i,
+      /\bwithdraw\b.*\bhow\b/i,
+      /\bget\s+my\s+(money|funds|usdc)\s+out\b/i,
+      /\bcash\s+out\b/i,
+      /\bpull\s+out\b/i,
+    ],
+    answer:
+      "💸 *How do I withdraw?*\n\n" +
+      "Reply *WITHDRAW [amount]* — for example:\n" +
+      "  _WITHDRAW 500_\n\n" +
+      "• Minimum withdrawal: 10 USDC\n" +
+      "• Funds arrive in your external wallet within minutes\n" +
+      "• No fees charged by NeuroWealth (Stellar network fee ~0.00001 XLM)\n\n" +
+      "No lock-ups — withdraw any time, any amount.",
+  },
+  {
+    patterns: [
+      /\bminimum\b.*\bdeposit\b/i,
+      /\bdeposit\b.*\bminimum\b/i,
+      /\bhow\s+much\s+(do\s+i\s+need|to\s+start|minimum)\b/i,
+      /\bminimum\s+investment\b/i,
+      /\bsmallest\s+deposit\b/i,
+    ],
+    answer:
+      "💵 *Minimum deposit*\n\n" +
+      "The minimum deposit is *10 USDC*.\n\n" +
+      "There's no maximum — deposit as much as you like.\n" +
+      "Reply *DEPOSIT* to get your wallet address.",
+  },
+  {
+    patterns: [
+      /\bfee[s]?\b/i,
+      /\bhow\s+much\s+do\s+you\s+charge\b/i,
+      /\bcharge[s]?\b/i,
+      /\bcost[s]?\b/i,
+      /\bcommission\b/i,
+    ],
+    answer:
+      "💰 *Fees*\n\n" +
+      "NeuroWealth charges a *10% performance fee* on yield earned — " +
+      "you only pay when you profit.\n\n" +
+      "• No deposit fees\n" +
+      "• No withdrawal fees\n" +
+      "• No monthly subscription\n" +
+      "• Tiny Stellar network fee (~0.00001 XLM) on transactions",
+  },
+  {
+    patterns: [
+      /\bwhat\s+is\s+(usdc|stablecoin)\b/i,
+      /\bwhat\s+network\b/i,
+      /\bstellar\b.*\bwhat\b/i,
+      /\bwhat\s+blockchain\b/i,
+      /\bwhy\s+stellar\b/i,
+    ],
+    answer:
+      "🌐 *About Stellar & USDC*\n\n" +
+      "*USDC* is a USD-pegged stablecoin — 1 USDC = $1.\n\n" +
+      "*Stellar* is a fast, low-cost blockchain used for payments and DeFi. " +
+      "Transactions settle in ~5 seconds with fees under a cent.\n\n" +
+      "⚠️ Only send *USDC on the Stellar network* to your NeuroWealth wallet. " +
+      "Sending other tokens or USDC on Ethereum will result in lost funds.",
+  },
+  {
+    patterns: [
+      /\bchange\s+(my\s+)?strategy\b/i,
+      /\bswitch\s+(my\s+)?strategy\b/i,
+      /\bupdate\s+(my\s+)?strategy\b/i,
+      /\bdifferent\s+strategy\b/i,
+    ],
+    answer:
+      "🔄 *Changing your strategy*\n\n" +
+      "Reply with the strategy name at any time:\n" +
+      "• *Conservative* — 3–6% APY, low risk\n" +
+      "• *Balanced* — 6–10% APY, medium risk\n" +
+      "• *Growth* — 10–15% APY, higher risk\n\n" +
+      "Your funds will be rebalanced automatically at the next rebalance window.",
+  },
+  {
+    patterns: [
+      /\bhow\s+(do\s+)?i\s+(deposit|send\s+usdc|fund)\b/i,
+      /\bdeposit\s+address\b/i,
+      /\bwhere\s+do\s+i\s+send\b/i,
+      /\bwallet\s+address\b/i,
+    ],
+    answer:
+      "📥 *How to deposit*\n\n" +
+      "Reply *DEPOSIT* to get your personal USDC wallet address.\n\n" +
+      "Then send USDC (Stellar network) to that address from any exchange " +
+      "or wallet (Coinbase, Lobstr, XUMM, etc.).\n\n" +
+      "Your funds are deployed automatically the moment they arrive. 🚀",
+  },
+  {
+    patterns: [
+      /\bwhen\s+(will\s+i\s+)?(get\s+)?paid\b/i,
+      /\bwhen\s+do\s+i\s+earn\b/i,
+      /\bhow\s+often\b.*\byield\b/i,
+      /\byield\b.*\bhow\s+often\b/i,
+      /\bcompound\b/i,
+      /\brebalance\b/i,
+    ],
+    answer:
+      "⏱ *When do I earn yield?*\n\n" +
+      "Yield accrues continuously and is compounded automatically.\n\n" +
+      "• Rebalance checks run *every hour*\n" +
+      "• Your portfolio value updates in real-time\n" +
+      "• Reply *BALANCE* anytime to see your current earnings\n\n" +
+      "Yield compounds into your position — no manual claiming needed.",
+  },
+];
+
 // ─── Message builders ─────────────────────────────────────────────────────────
 
 const WELCOME =
@@ -92,6 +233,19 @@ const WELCOME =
   "• *Balanced* (6–10% APY) — medium risk, lending + DEX\n" +
   "• *Growth* (10–15% APY) — higher risk, multi-protocol\n\n" +
   "Reply with *Conservative*, *Balanced*, or *Growth* to continue.";
+
+const HELP_MSG =
+  "🤖 NeuroWealth Commands\n" +
+  "━━━━━━━━━━━━━━━━━━━━\n\n" +
+  " BALANCE — Check your portfolio\n" +
+  " DEPOSIT — Get your deposit address\n" +
+  " WITHDRAW — Withdraw your funds\n" +
+  " STRATEGY — Change investment strategy\n" +
+  " HISTORY — View recent transactions\n" +
+  " HELP — Show this menu\n\n" +
+  "━━━━━━━━━━━━━━━━━━━━\n" +
+  "Questions? Just ask in plain English!\n\n" +
+  "Support: support@neurowealth.io";
 
 function strategyDetail(strategy: Strategy): string {
   const s = STRATEGIES[strategy];
@@ -117,6 +271,21 @@ function depositAddress(walletAddress: string, strategy: Strategy): string {
   );
 }
 
+/**
+ * Try to match the user's free-text input against the FAQ bank.
+ * Returns the FAQ answer string, or null if nothing matched.
+ */
+function matchFaq(input: string): string | null {
+  for (const entry of FAQ) {
+    for (const pattern of entry.patterns) {
+      if (pattern.test(input)) {
+        return entry.answer;
+      }
+    }
+  }
+  return null;
+}
+
 function fallback(step: OnboardingStep | string): string {
   switch (step) {
     case "awaiting_strategy":
@@ -124,32 +293,29 @@ function fallback(step: OnboardingStep | string): string {
         "I didn't catch that. 😊 Please choose a strategy:\n\n" +
         "• *Conservative* (3–6% APY)\n" +
         "• *Balanced* (6–10% APY)\n" +
-        "• *Growth* (10–15% APY)"
+        "• *Growth* (10–15% APY)\n\n" +
+        "Or reply *HELP* to see all available commands."
       );
     case "awaiting_confirmation":
       return (
         "Reply *YES* to confirm and get your deposit address.\n\n" +
         "Or choose a different strategy:\n" +
-        "• Conservative  • Balanced  • Growth"
+        "• Conservative  • Balanced  • Growth\n\n" +
+        "Or reply *HELP* to see all available commands."
       );
     default:
       return (
-        "Here's what you can do:\n\n" +
-        "• *balance* — view your portfolio\n" +
-        "• *deposit* — get your deposit address\n" +
-        "• *help* — show this message"
+        "🤔 I didn't understand that.\n\n" +
+        "Here's what you can do:\n" +
+        "• *BALANCE* — view your portfolio\n" +
+        "• *DEPOSIT* — get your deposit address\n" +
+        "• *WITHDRAW [amount]* — withdraw funds\n" +
+        "• *STRATEGY* — change your strategy\n" +
+        "• *HELP* — show all commands\n\n" +
+        "You can also ask me a question in plain English!"
       );
   }
 }
-
-const HELP_MSG =
-  "🆘 *NeuroWealth Help*\n\n" +
-  "• *balance* — view your portfolio\n" +
-  "• *deposit* — get your USDC deposit address\n" +
-  "• *withdraw [amount]* — withdraw funds\n" +
-  "• *strategy* — change your strategy\n" +
-  "• *help* — show this message\n\n" +
-  "Your funds are always yours — no lock-ups, withdraw anytime.";
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
@@ -174,7 +340,7 @@ export async function handleOnboarding(
   const requestedBalance = isBalanceIntent(lower);
 
   // ── HELP shortcut — works at any stage ───────────────────────────────────
-  if (lower === "help") return HELP_MSG;
+  if (HELP_TRIGGERS.has(lower)) return HELP_MSG;
 
   // ── Look up user ──────────────────────────────────────────────────────────
   let user = await findUserByPhone(from);
@@ -192,6 +358,10 @@ export async function handleOnboarding(
       );
     }
 
+    // Try FAQ even for brand-new users
+    const faqAnswer = matchFaq(input);
+    if (faqAnswer) return faqAnswer + "\n\n" + "Reply *HI* to get started!";
+
     return WELCOME;
   }
 
@@ -203,6 +373,10 @@ export async function handleOnboarding(
 
     return buildPortfolioBalanceReply(user);
   }
+
+  // ── FAQ — plain-English questions, works at any stage ────────────────────
+  const faqAnswer = matchFaq(input);
+  if (faqAnswer) return faqAnswer;
 
   // ── Route by step ─────────────────────────────────────────────────────────
   return handleStep(user, from, input, lower);
@@ -266,11 +440,56 @@ async function handleStep(
       return (
         `⏳ Your wallet is ready and waiting for a USDC deposit!\n\n` +
         `Deposit address:\n\`${user.walletAddress}\`\n\n` +
-        `Reply *deposit* to see this again, or *help* for assistance.`
+        `Reply *DEPOSIT* to see this again, or *HELP* for assistance.`
       );
     }
 
     case "active": {
+      // Named commands for active users
+      if (lower === "deposit" || lower === "address") {
+        if (user.walletAddress && user.strategy) {
+          return depositAddress(user.walletAddress, user.strategy);
+        }
+      }
+
+      if (lower === "strategy") {
+        return (
+          "🔄 *Change your strategy*\n\n" +
+          "Reply with:\n" +
+          "• *Conservative* — 3–6% APY, low risk\n" +
+          "• *Balanced* — 6–10% APY, medium risk\n" +
+          "• *Growth* — 10–15% APY, higher risk"
+        );
+      }
+
+      if (lower === "history") {
+        // Placeholder — wire up to real transaction log when available
+        return (
+          "📜 *Recent Transactions*\n\n" +
+          "Transaction history is coming soon.\n\n" +
+          "Reply *BALANCE* to see your current portfolio value."
+        );
+      }
+
+      if (lower === "withdraw" || lower.startsWith("withdraw ")) {
+        // Basic acknowledgement — wire up to real withdrawal flow
+        return (
+          "💸 *Withdraw funds*\n\n" +
+          "To withdraw, reply:\n" +
+          "  *WITHDRAW [amount]*\n\n" +
+          "Example: _WITHDRAW 500_\n\n" +
+          "Minimum: 10 USDC. Funds arrive within minutes.\n\n" +
+          "Reply *BALANCE* first to check your available balance."
+        );
+      }
+
+      // Check strategy switch for active users
+      const strategySwitch = STRATEGY_MAP[lower];
+      if (strategySwitch) {
+        await setUserStrategy(from, strategySwitch);
+        return strategyDetail(strategySwitch);
+      }
+
       return fallback("active");
     }
 

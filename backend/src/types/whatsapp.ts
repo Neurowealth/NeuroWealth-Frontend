@@ -1,5 +1,3 @@
-// src/types/whatsapp.ts
-
 export interface WhatsAppTextMessage {
   from: string;         // sender's phone number (E.164 format)
   message_id: string;   // unique message ID (wamid)
