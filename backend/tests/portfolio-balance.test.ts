@@ -30,6 +30,7 @@ function seedUser(partial: Partial<User> & Pick<User, "phone">): User {
     phone: partial.phone,
     step: partial.step || "active",
     strategy: partial.strategy ?? "balanced",
+    pendingStrategy: partial.pendingStrategy ?? null,
     walletAddress: partial.walletAddress ?? "GTESTWALLETADDRESS000000000000000000000000000000000000000001",
     encryptedPrivateKey: partial.encryptedPrivateKey ?? "enc:key",
     totalDeposited: partial.totalDeposited ?? 500,

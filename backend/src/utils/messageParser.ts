@@ -17,21 +17,23 @@ export function parseWebhookPayload(payload: WhatsAppWebhookPayload): ParsedMess
       const rawMessages = value.messages || [];
 
       for (const msg of rawMessages) {
-        // Only process text messages for now
-        if (msg.type !== 'text' || !msg.text?.body) continue;
-
         const contact = value.contacts?.find((c) => c.wa_id === msg.from);
-
-        messages.push({
+        const base = {
           from: msg.from,
           message_id: msg.id,
           timestamp: parseInt(msg.timestamp, 10),
-          text: { body: msg.text.body },
           type: msg.type,
           phone_number_id: value.metadata.phone_number_id,
           display_phone_number: value.metadata.display_phone_number,
           contact_name: contact?.profile.name,
-        });
+        };
+
+        if (msg.type === 'text' && msg.text?.body) {
+          messages.push({ ...base, text: { body: msg.text.body } });
+        } else if (msg.type === 'interactive' && msg.interactive?.button_reply) {
+          const { id, title } = msg.interactive.button_reply;
+          messages.push({ ...base, text: { body: title }, buttonId: id });
+        }
       }
     }
   }

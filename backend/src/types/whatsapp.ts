@@ -35,6 +35,11 @@ export interface RawWhatsAppMessage {
   image?: { id: string; mime_type: string; sha256: string; caption?: string };
   audio?: { id: string; mime_type: string };
   document?: { id: string; mime_type: string; filename?: string };
+  interactive?: {
+    type: 'button_reply' | 'list_reply';
+    button_reply?: { id: string; title: string };
+    list_reply?: { id: string; title: string; description?: string };
+  };
 }
 
 export interface WhatsAppStatus {
@@ -60,8 +65,24 @@ export interface ParsedMessage {
   message_id: string;
   timestamp: number;
   text: { body: string };
+  /** Set when message type is 'interactive' — contains the button/list reply ID */
+  buttonId?: string;
   type: string;
   phone_number_id: string;
   display_phone_number: string;
   contact_name?: string;
 }
+
+export interface ButtonSpec {
+  id: string;
+  title: string;
+}
+
+/**
+ * BotReply is what handlers return.
+ * - A plain string → sent as a WhatsApp text message.
+ * - An object with `buttons` → sent as a WhatsApp interactive button message.
+ */
+export type BotReply =
+  | string
+  | { body: string; buttons: ButtonSpec[] };

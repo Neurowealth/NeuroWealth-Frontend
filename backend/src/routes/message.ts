@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { logger } from "../utils/logger";
 
-const router = Router();
+const router: Router = Router();
 
 router.post("/send", async (req: Request, res: Response) => {
     try {
