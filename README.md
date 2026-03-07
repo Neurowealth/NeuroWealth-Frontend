@@ -131,3 +131,86 @@ User:    withdraw everything
 Agent:   Withdrawing 100.23 USDC... ✅ Done!
          Funds sent to your wallet. Arrived in 4 seconds.
 
+
+
+## Environment Variables
+
+### Required Environment Variables
+
+```bash
+# Meta WhatsApp Cloud API
+WHATSAPP_APP_SECRET=your_meta_app_secret_here
+WHATSAPP_VERIFY_TOKEN=your_custom_verify_token_here
+WHATSAPP_ACCESS_TOKEN=EAA...your_token_here
+WHATSAPP_PHONE_NUMBER_ID=1015554021640186
+WHATSAPP_WABA_ID=871074939257642
+
+# Server
+PORT=3000
+NODE_ENV=development
+LOG_LEVEL=info
+
+# PostgreSQL Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=neurowealth
+DB_USER=postgres
+DB_PASSWORD=your_database_password_here
+
+# Stellar Network
+STELLAR_NETWORK=testnet  # or 'mainnet'
+STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+
+# Wallet Encryption
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+WALLET_ENCRYPTION_KEY=your_64_character_hex_string_here
+```
+
+### Database Setup
+
+1. Install PostgreSQL (version 12 or higher)
+2. Create the database:
+   ```bash
+   createdb neurowealth
+   ```
+3. Run migrations:
+   ```bash
+   psql -d neurowealth -f backend/migrations/001_create_users_table.sql
+   psql -d neurowealth -f backend/migrations/002_create_deposits_table.sql
+   ```
+
+### Stellar Network Configuration
+
+- **Testnet**: Use `https://horizon-testnet.stellar.org` for development
+- **Mainnet**: Use `https://horizon.stellar.org` for production
+
+The deposit monitor will automatically connect to the configured Horizon endpoint and stream payment events for all registered user wallet addresses.
+
+## Deposit Detection System
+
+The deposit detection system monitors user Stellar wallet addresses for incoming USDC deposits in real-time using the Horizon streaming API.
+
+### How It Works
+
+1. **Monitoring**: When a user completes onboarding and receives a wallet address, the deposit monitor establishes a streaming connection to Horizon API
+2. **Detection**: USDC deposits are detected within 10 seconds of Stellar confirmation
+3. **Recording**: Deposits are recorded in PostgreSQL with idempotency (duplicate transactions are ignored)
+4. **Notification**: Users receive WhatsApp confirmation messages at two stages:
+   - "Deposit Received" - immediately after detection
+   - "Funds Deployed" - after AI agent deploys funds to yield strategy
+5. **Deployment**: The system emits deployment events for external AI agent handlers
+
+### Key Features
+
+- Real-time streaming with automatic reconnection
+- Exponential backoff for connection failures (1s to 60s max)
+- Transaction hash-based idempotency
+- Atomic database transactions for portfolio updates
+- Graceful error handling with user notifications
+
+### Services
+
+- **Deposit Monitor**: Streams payment events from Stellar Horizon
+- **Deposit Recorder**: Records deposits in database with idempotency
+- **Deployment Coordinator**: Emits deployment events and handles confirmations
+- **Deposit Messaging**: Sends WhatsApp notifications for deposit lifecycle events

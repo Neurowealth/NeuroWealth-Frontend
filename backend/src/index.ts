@@ -5,10 +5,44 @@ import { eventBus } from "./services/eventBus";
 import { ParsedMessage } from "./types/whatsapp";
 import { initSocket } from "./services/socket";
 import { handleOnboarding } from "./services/onboarding";
+import pool from "./db/pool";
+import { depositRecorder } from "./services/depositRecorder";
+import { deploymentCoordinator } from "./services/deploymentCoordinator";
+import { depositMessaging } from "./services/depositMessaging";
+import { depositMonitor } from "./services/depositMonitor";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
 const app = createApp();
+
+// ── Initialize database connection ──────────────────────────────────────────
+async function initializeDatabase(): Promise<void> {
+  try {
+    await pool.query('SELECT NOW()');
+    logger.info('Database connection established');
+  } catch (err) {
+    logger.error({ err }, 'Failed to connect to database');
+    throw err;
+  }
+}
+
+// ── Initialize deposit services ─────────────────────────────────────────────
+async function initializeDepositServices(): Promise<void> {
+  try {
+    logger.info('Initializing deposit services');
+
+    // Start services in correct order
+    depositRecorder.start();
+    deploymentCoordinator.start();
+    depositMessaging.start();
+    await depositMonitor.start();
+
+    logger.info('All deposit services initialized successfully');
+  } catch (err) {
+    logger.error({ err }, 'Failed to initialize deposit services');
+    throw err;
+  }
+}
 
 // ── WhatsApp message handler ────────────────────────────────────────────────
 eventBus.onMessage(async (message: ParsedMessage) => {
@@ -77,25 +111,50 @@ async function replyToUser(
 }
 
 // ── Start server ───────────────────────────────────────────────────────────
-const server = app.listen(PORT, () => {
-  logger.info(`NeuroWealth webhook server listening on port ${PORT}`);
-});
+async function startServer(): Promise<void> {
+  try {
+    // Initialize database
+    await initializeDatabase();
 
-// ── Initialize WebSocket ───────────────────────────────────────────────────
-initSocket(server);
+    // Initialize deposit services
+    await initializeDepositServices();
 
-// ── Graceful shutdown ──────────────────────────────────────────────────────
-const shutdown = (signal: string) => {
-  logger.info(`${signal} received — shutting down gracefully`);
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
-  });
-  setTimeout(() => {
-    logger.error("Force exit after timeout");
+    // Start HTTP server
+    const server = app.listen(PORT, () => {
+      logger.info(`NeuroWealth webhook server listening on port ${PORT}`);
+    });
+
+    // Initialize WebSocket
+    initSocket(server);
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      logger.info(`${signal} received — shutting down gracefully`);
+
+      // Stop deposit monitor
+      await depositMonitor.stop();
+
+      // Close database pool
+      await pool.end();
+
+      server.close(() => {
+        logger.info("Server closed");
+        process.exit(0);
+      });
+
+      setTimeout(() => {
+        logger.error("Force exit after timeout");
+        process.exit(1);
+      }, 10_000);
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+  } catch (err) {
+    logger.error({ err }, 'Failed to start server');
     process.exit(1);
-  }, 10_000);
-};
+  }
+}
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+// Start the server
+startServer();
