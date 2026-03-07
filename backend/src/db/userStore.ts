@@ -25,6 +25,8 @@ export interface User {
   phone: string;
   step: OnboardingStep;
   strategy: Strategy | null;
+  /** Strategy the user is about to switch to — set during the confirmation step */
+  pendingStrategy: Strategy | null;
   walletAddress: string | null;
   encryptedPrivateKey: string | null;
   totalDeposited: number;
@@ -49,6 +51,7 @@ export async function createUser(phone: string): Promise<User> {
     phone,
     step: "awaiting_strategy",
     strategy: null,
+    pendingStrategy: null,
     walletAddress: null,
     encryptedPrivateKey: null,
     totalDeposited: 0,
@@ -113,6 +116,31 @@ export async function setUserStep(
   const user = store.get(phone);
   if (!user) throw new Error(`User not found: ${phone}`);
   store.set(phone, { ...user, step, updatedAt: new Date() });
+}
+
+/** Store the strategy the user wants to switch to (pending confirmation). */
+export async function setPendingStrategy(
+  phone: string,
+  pendingStrategy: Strategy | null,
+): Promise<void> {
+  const user = store.get(phone);
+  if (!user) throw new Error(`User not found: ${phone}`);
+  store.set(phone, { ...user, pendingStrategy, updatedAt: new Date() });
+}
+
+/** Apply a confirmed strategy switch for an already-active user. */
+export async function updateUserStrategy(
+  phone: string,
+  strategy: Strategy,
+): Promise<void> {
+  const user = store.get(phone);
+  if (!user) throw new Error(`User not found: ${phone}`);
+  store.set(phone, {
+    ...user,
+    strategy,
+    pendingStrategy: null,
+    updatedAt: new Date(),
+  });
 }
 
 // ─── Test helpers (never call in production code) ─────────────────────────────

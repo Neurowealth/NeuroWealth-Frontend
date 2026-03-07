@@ -21,12 +21,13 @@ import {
   OnboardingStep,
   User,
 } from "../db/userStore";
-import { ParsedMessage } from "../types/whatsapp";
+import { ParsedMessage, BotReply } from "../types/whatsapp";
 import {
   buildPortfolioBalanceReply,
   formatMidOnboardingReply,
   isBalanceIntent,
 } from "./portfolio";
+import { handleStrategySwitch, isSwitchStrategyIntent } from "./strategy";
 
 // ─── Strategy metadata ────────────────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ const HELP_MSG =
  */
 export async function handleOnboarding(
   msg: ParsedMessage,
-): Promise<string | null> {
+): Promise<BotReply | null> {
   const { from, text } = msg;
   const input = text.body.trim();
   const lower = input.toLowerCase();
@@ -205,7 +206,7 @@ export async function handleOnboarding(
   }
 
   // ── Route by step ─────────────────────────────────────────────────────────
-  return handleStep(user, from, input, lower);
+  return handleStep(user, from, input, lower, msg);
 }
 
 async function handleStep(
@@ -213,7 +214,8 @@ async function handleStep(
   from: string,
   input: string,
   lower: string,
-): Promise<string> {
+  msg: ParsedMessage,
+): Promise<BotReply> {
   // If they send a greeting again at any point → re-send welcome
   if (GREETINGS.has(lower) && user.step === "awaiting_strategy") {
     return WELCOME;
@@ -271,6 +273,11 @@ async function handleStep(
     }
 
     case "active": {
+      // Strategy switch intent OR ongoing switch confirmation
+      if (isSwitchStrategyIntent(lower) || user.pendingStrategy || msg.buttonId) {
+        const reply = await handleStrategySwitch(msg, user);
+        if (reply !== null) return reply;
+      }
       return fallback("active");
     }
 

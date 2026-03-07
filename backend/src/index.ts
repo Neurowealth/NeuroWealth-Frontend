@@ -23,11 +23,19 @@ eventBus.onMessage(async (message: ParsedMessage) => {
   );
 
   try {
-    const replyText = await handleOnboarding(message);
-    if (!replyText) return;
+    const reply = await handleOnboarding(message);
+    if (!reply) return;
 
-    // Send reply via Meta Cloud API using your existing /api/message/send route
-    await replyToUser(message.from, message.phone_number_id, replyText);
+    if (typeof reply === "string") {
+      await replyToUser(message.from, message.phone_number_id, reply);
+    } else {
+      await replyWithButtons(
+        message.from,
+        message.phone_number_id,
+        reply.body,
+        reply.buttons,
+      );
+    }
   } catch (err) {
     logger.error({ err, from: message.from }, "Onboarding handler failed");
   }
@@ -73,6 +81,51 @@ async function replyToUser(
     );
   } else {
     logger.info({ to }, "WhatsApp reply sent successfully");
+  }
+}
+
+// ─── Helper: send interactive button reply via Meta Cloud API ────────────────
+async function replyWithButtons(
+  to: string,
+  phoneNumberId: string,
+  body: string,
+  buttons: Array<{ id: string; title: string }>,
+): Promise<void> {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!token || !phoneNumberId) {
+    logger.info({ to, body, buttons }, "📤 [DEV] Bot interactive reply (no credentials set)");
+    return;
+  }
+
+  const url = `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: body },
+        action: {
+          buttons: buttons.map((b) => ({
+            type: "reply",
+            reply: { id: b.id, title: b.title },
+          })),
+        },
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    logger.error({ to, status: res.status, err }, "Failed to send interactive reply");
+  } else {
+    logger.info({ to }, "WhatsApp interactive reply sent successfully");
   }
 }
 
