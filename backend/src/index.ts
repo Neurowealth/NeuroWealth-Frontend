@@ -5,8 +5,19 @@ import { eventBus } from "./services/eventBus";
 import { ParsedMessage } from "./types/whatsapp";
 import { initSocket } from "./services/socket";
 import { handleOnboarding } from "./services/onboarding";
+import stateMachine from "./services/stateMachine";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
+
+// Initialize state machine
+(async () => {
+  try {
+    await stateMachine.connect();
+    logger.info('State machine connected to Redis');
+  } catch (err) {
+    logger.error({ err }, 'Failed to connect state machine to Redis');
+  }
+})();
 
 const app = createApp();
 

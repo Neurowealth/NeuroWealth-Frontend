@@ -6,6 +6,8 @@ import { verifySignatureMiddleware } from './middleware/verifySignature';
 import { isValidWebhookPayload, parseWebhookPayload } from './utils/messageParser';
 import { eventBus } from './services/eventBus';
 import sendRouter from "./routes/message";
+import adminRouter from "./routes/admin";
+import { handleIncomingMessage } from './services/messageHandler';
 
 export function createApp(): Application {
   const app = express();
@@ -75,6 +77,33 @@ export function createApp(): Application {
 
           for (const message of messages) {
             eventBus.emitMessage(message);
+            
+            // Handle message through state machine
+            handleIncomingMessage({
+              from: message.from,
+              text: message.text.body,
+              timestamp: message.timestamp
+            }).then(response => {
+              // Send response back via WhatsApp API
+              const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+              const token = process.env.WHATSAPP_ACCESS_TOKEN;
+              
+              if (phoneNumberId && token) {
+                fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: message.from,
+                    type: 'text',
+                    text: { body: response },
+                  }),
+                }).catch(err => logger.error({ err }, 'Failed to send WhatsApp response'));
+              }
+            }).catch(err => logger.error({ err }, 'Message handler error'));
           }
         } catch (err) {
           eventBus.emitParseError(
@@ -88,6 +117,7 @@ export function createApp(): Application {
 
   // Routes 
   app.use("/api/message", sendRouter);
+  app.use("/api/admin", adminRouter);
 
   // ── Global error handler ───────────────────────────────────────────────────
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
