@@ -63,6 +63,61 @@ export function decryptSecretKey(stored: string): string {
 }
 
 /**
+ * Calls the Soroban vault contract's switchStrategy() entry point.
+ * In dev/mock mode (no CONTRACT_ID env var) it simulates a 30-second delay.
+ *
+ * Returns the new APY for the strategy after switching.
+ */
+export async function switchVaultStrategy(
+  walletAddress: string,
+  encryptedPrivateKey: string,
+  fromStrategy: string,
+  toStrategy: string,
+): Promise<void> {
+  const contractId = process.env.VAULT_CONTRACT_ID;
+
+  if (!contractId) {
+    // Dev/mock: simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return;
+  }
+
+  // Production: sign and submit switchStrategy() transaction
+  const secretKey = decryptSecretKey(encryptedPrivateKey);
+  const keypair = StellarSdk.Keypair.fromSecret(secretKey);
+  const server = new StellarSdk.rpc.Server(
+    process.env.SOROBAN_RPC_URL ?? "https://soroban-testnet.stellar.org",
+  );
+  const contract = new StellarSdk.Contract(contractId);
+
+  const account = await server.getAccount(walletAddress);
+  const tx = new StellarSdk.TransactionBuilder(account, {
+    fee: StellarSdk.BASE_FEE,
+    networkPassphrase:
+      process.env.STELLAR_NETWORK === "mainnet"
+        ? StellarSdk.Networks.PUBLIC
+        : StellarSdk.Networks.TESTNET,
+  })
+    .addOperation(
+      contract.call(
+        "switchStrategy",
+        StellarSdk.nativeToScVal(fromStrategy, { type: "symbol" }),
+        StellarSdk.nativeToScVal(toStrategy, { type: "symbol" }),
+      ),
+    )
+    .setTimeout(60)
+    .build();
+
+  const prepared = await server.prepareTransaction(tx);
+  prepared.sign(keypair);
+  const result = await server.sendTransaction(prepared);
+
+  if (result.status === "ERROR") {
+    throw new Error(`switchStrategy contract call failed: ${result.errorResult}`);
+  }
+}
+
+/**
  * Returns current portfolio share value for a wallet from the Soroban vault.
  * For local/dev usage, values can be injected with:
  * MOCK_VAULT_SHARE_VALUES='{"G...":523.4}'
