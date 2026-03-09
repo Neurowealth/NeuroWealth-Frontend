@@ -23,8 +23,8 @@ eventBus.onMessage(async (message: ParsedMessage) => {
   );
 
   try {
-    const reply = await handleOnboarding(message);
-    if (!reply) return;
+    const replyText = await handleOnboarding(message, replyToUser);
+    if (!replyText) return;
 
     if (typeof reply === "string") {
       await replyToUser(message.from, message.phone_number_id, reply);

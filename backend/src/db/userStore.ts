@@ -16,7 +16,10 @@ export type OnboardingStep =
   // wallet created, waiting for USDC to arrive
   | "awaiting_deposit"
   // fully onboarded
-  | "active";
+  | "active"
+  // withdrawal flow states
+  | "withdrawal_amount"
+  | "withdrawal_confirm";
 
 export type Strategy = "conservative" | "balanced" | "growth";
 
@@ -25,10 +28,10 @@ export interface User {
   phone: string;
   step: OnboardingStep;
   strategy: Strategy | null;
-  /** Strategy the user is about to switch to — set during the confirmation step */
-  pendingStrategy: Strategy | null;
   walletAddress: string | null;
   encryptedPrivateKey: string | null;
+  balance: number; // USDC balance
+  pendingWithdrawal?: number; // amount pending confirmation
   totalDeposited: number;
   depositedAt: Date | null;
   createdAt: Date;
@@ -51,9 +54,9 @@ export async function createUser(phone: string): Promise<User> {
     phone,
     step: "awaiting_strategy",
     strategy: null,
-    pendingStrategy: null,
     walletAddress: null,
     encryptedPrivateKey: null,
+    balance: 0,
     totalDeposited: 0,
     depositedAt: null,
     createdAt: new Date(),
@@ -118,29 +121,47 @@ export async function setUserStep(
   store.set(phone, { ...user, step, updatedAt: new Date() });
 }
 
-/** Store the strategy the user wants to switch to (pending confirmation). */
-export async function setPendingStrategy(
+export async function setPendingWithdrawal(
   phone: string,
-  pendingStrategy: Strategy | null,
-): Promise<void> {
-  const user = store.get(phone);
-  if (!user) throw new Error(`User not found: ${phone}`);
-  store.set(phone, { ...user, pendingStrategy, updatedAt: new Date() });
-}
-
-/** Apply a confirmed strategy switch for an already-active user. */
-export async function updateUserStrategy(
-  phone: string,
-  strategy: Strategy,
+  amount: number,
 ): Promise<void> {
   const user = store.get(phone);
   if (!user) throw new Error(`User not found: ${phone}`);
   store.set(phone, {
     ...user,
-    strategy,
-    pendingStrategy: null,
+    pendingWithdrawal: amount,
+    step: "withdrawal_confirm",
     updatedAt: new Date(),
   });
+}
+
+export async function executeWithdrawal(phone: string): Promise<void> {
+  const user = store.get(phone);
+  if (!user || !user.pendingWithdrawal) throw new Error(`No pending withdrawal for ${phone}`);
+  store.set(phone, {
+    ...user,
+    balance: user.balance - user.pendingWithdrawal,
+    pendingWithdrawal: undefined,
+    step: "active",
+    updatedAt: new Date(),
+  });
+}
+
+export async function cancelWithdrawal(phone: string): Promise<void> {
+  const user = store.get(phone);
+  if (!user) throw new Error(`User not found: ${phone}`);
+  store.set(phone, {
+    ...user,
+    pendingWithdrawal: undefined,
+    step: "active",
+    updatedAt: new Date(),
+  });
+}
+
+export async function updateBalance(phone: string, balance: number): Promise<void> {
+  const user = store.get(phone);
+  if (!user) throw new Error(`User not found: ${phone}`);
+  store.set(phone, { ...user, balance, updatedAt: new Date() });
 }
 
 // ─── Test helpers (never call in production code) ─────────────────────────────

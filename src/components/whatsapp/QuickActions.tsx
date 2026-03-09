@@ -1,14 +1,19 @@
 const QUICK_MESSAGES = [
-    "check balance",
-    "deposit 100 XLM",
-    "withdraw 50 XLM",
+    "hi",
+    "balanced",
+    "yes",
+    "withdraw",
+    "all",
+    "200",
+    "confirm",
+    "cancel",
     "help",
 ];
 
 const BOT_REPLIES = [
-    "Your balance: 250 XLM",
-    "✅ Deposit confirmed!",
-    "❌ Insufficient funds",
+    "✅ Withdrawal Complete! 200 USDC sent.",
+    "⏳ Processing withdrawal...",
+    "❌ Insufficient balance",
 ];
 
 interface QuickActionsProps {
