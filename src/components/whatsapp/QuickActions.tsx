@@ -2,6 +2,8 @@ const QUICK_MESSAGES = [
     "hi",
     "balanced",
     "yes",
+    "balance",
+    "history",
     "withdraw",
     "all",
     "200",
