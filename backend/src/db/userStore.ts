@@ -23,6 +23,24 @@ export type OnboardingStep =
 
 export type Strategy = "conservative" | "balanced" | "growth";
 
+export type TransactionType = "deposit" | "withdrawal" | "rebalance";
+
+export interface Transaction {
+  id: string;
+  phone: string;
+  type: TransactionType;
+  amount?: number;
+  strategy?: Strategy;
+  txHash?: string;
+  metadata?: {
+    fromAPY?: number;
+    toAPY?: number;
+    description?: string;
+    walletAddress?: string;
+  };
+  createdAt: Date;
+}
+
 export interface User {
   id: string;
   phone: string;
@@ -41,6 +59,7 @@ export interface User {
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
 const store = new Map<string, User>();
+const transactions = new Map<string, Transaction[]>();
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
@@ -164,9 +183,32 @@ export async function updateBalance(phone: string, balance: number): Promise<voi
   store.set(phone, { ...user, balance, updatedAt: new Date() });
 }
 
+// ─── Transaction History ──────────────────────────────────────────────────────
+
+export async function addTransaction(tx: Omit<Transaction, "id" | "createdAt">): Promise<void> {
+  const txId = randomUUID();
+  const transaction: Transaction = {
+    ...tx,
+    id: txId,
+    createdAt: new Date(),
+  };
+  
+  const userTxs = transactions.get(tx.phone) || [];
+  userTxs.unshift(transaction);
+  transactions.set(tx.phone, userTxs);
+}
+
+export async function getTransactionHistory(phone: string, limit: number = 5): Promise<Transaction[]> {
+  const userTxs = transactions.get(phone) || [];
+  return userTxs.slice(0, limit);
+}
+
 // ─── Test helpers (never call in production code) ─────────────────────────────
 export const _test = {
-  clear: () => store.clear(),
+  clear: () => {
+    store.clear();
+    transactions.clear();
+  },
   all: () => Array.from(store.values()),
   seed: (user: User) => store.set(user.phone, user),
 };

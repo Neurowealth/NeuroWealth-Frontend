@@ -19,6 +19,7 @@ import {
   setPendingWithdrawal,
   executeWithdrawal,
   cancelWithdrawal,
+  addTransaction,
   Strategy,
   OnboardingStep,
   User,
@@ -34,6 +35,10 @@ import {
   formatMidOnboardingReply,
   isBalanceIntent,
 } from "./portfolio";
+import {
+  buildHistoryReply,
+  isHistoryIntent,
+} from "./history";
 
 // ─── Strategy metadata ────────────────────────────────────────────────────────
 
@@ -216,6 +221,7 @@ const HELP_MSG =
   "• *balance* — view your portfolio\n" +
   "• *deposit* — get your USDC deposit address\n" +
   "• *withdraw [amount]* — withdraw funds\n" +
+  "• *history* — view recent transactions\n" +
   "• *strategy* — change your strategy\n" +
   "• *help* — show this message\n\n" +
   "Your funds are always yours — no lock-ups, withdraw anytime.";
@@ -242,6 +248,7 @@ export async function handleOnboarding(
   const input = text.body.trim();
   const lower = input.toLowerCase();
   const requestedBalance = isBalanceIntent(lower);
+  const requestedHistory = isHistoryIntent(lower);
 
   // ── HELP shortcut — works at any stage ───────────────────────────────────
   if (lower === "help") return HELP_MSG;
@@ -262,6 +269,15 @@ export async function handleOnboarding(
       );
     }
 
+    if (requestedHistory) {
+      return (
+        "📜 Transaction History\n" +
+        "━━━━━━━━━━━━━━━━━━━━\n\n" +
+        "No transactions yet.\n\n" +
+        "Reply *DEPOSIT* to get started!"
+      );
+    }
+
     return WELCOME;
   }
 
@@ -272,6 +288,11 @@ export async function handleOnboarding(
     }
 
     return buildPortfolioBalanceReply(user);
+  }
+
+  // ── Transaction history command ───────────────────────────────────────────
+  if (requestedHistory) {
+    return buildHistoryReply(user);
   }
 
   // ── Route by step ─────────────────────────────────────────────────────────
@@ -335,6 +356,7 @@ async function handleStep(
         { from, walletAddress: publicKey },
         "Stellar wallet created for user",
       );
+      
       return depositAddress(publicKey, user.strategy);
     }
 
@@ -405,6 +427,19 @@ async function handleStep(
 
           if (result.success && result.txHash) {
             await executeWithdrawal(from);
+            
+            // Log withdrawal transaction
+            await addTransaction({
+              phone: from,
+              type: "withdrawal",
+              amount: withdrawalAmount,
+              txHash: result.txHash,
+              strategy: user.strategy || undefined,
+              metadata: {
+                walletAddress: user.walletAddress!,
+              },
+            });
+            
             const successMsg = withdrawalComplete(withdrawalAmount, result.txHash);
             if (replyCallback) {
               await replyCallback(from, phoneNumberId, successMsg);
