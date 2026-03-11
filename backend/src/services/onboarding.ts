@@ -1,6 +1,7 @@
 /**
+
  *
- * Conversation state machine for new-user onboarding and withdrawal flow.
+ * Conversation state machine for new-user onboarding.
  *
  * Called from index.ts inside eventBus.onMessage().
  * Returns the text the bot should send back to the user.
@@ -25,15 +26,14 @@ import {
 } from "../db/userStore";
 import { ParsedMessage } from "../types/whatsapp";
 import {
-  executeVaultWithdrawal,
-  validateWithdrawalAmount,
-  getStellarExpertLink,
-} from "./withdrawal";
-import {
   buildPortfolioBalanceReply,
   formatMidOnboardingReply,
   isBalanceIntent,
 } from "./portfolio";
+import {
+  executeVaultWithdrawal,
+  validateWithdrawalAmount,
+} from "./withdrawal";
 
 // ─── Strategy metadata ────────────────────────────────────────────────────────
 
@@ -89,14 +89,14 @@ const STRATEGY_MAP: Record<string, Strategy> = {
 
 const GREETINGS = new Set(["hi", "hello", "hey", "start", "helo", "yo"]);
 
-const WITHDRAWAL_KEYWORDS = new Set([
+const WITHDRAW_INTENTS = new Set([
   "withdraw",
-  "withdrawal",
   "cash out",
   "cashout",
-  "take out",
+  "withdrawal",
+  "send out",
+  "withdraw funds",
   "take out my money",
-  "send me my money",
 ]);
 
 // ─── Message builders ─────────────────────────────────────────────────────────
@@ -134,57 +134,6 @@ function depositAddress(walletAddress: string, strategy: Strategy): string {
   );
 }
 
-function withdrawalPrompt(balance: number): string {
-  return (
-    `💸 *Withdrawal Request*\n\n` +
-    `Your current balance: *${balance.toFixed(2)} USDC*\n\n` +
-    `How much would you like to withdraw?\n\n` +
-    `Reply:\n` +
-    `• *ALL* — withdraw everything\n` +
-    `• Type an amount (e.g., "200")\n` +
-    `• *CANCEL* — cancel withdrawal`
-  );
-}
-
-function withdrawalConfirm(amount: number, walletAddress: string): string {
-  return (
-    `Confirm withdrawal of *${amount.toFixed(2)} USDC*?\n\n` +
-    `Funds will arrive at:\n` +
-    `\`${walletAddress}\`\n\n` +
-    `⏱ Takes ~10 seconds on Stellar\n\n` +
-    `Reply:\n` +
-    `• *CONFIRM* or *YES* ✅\n` +
-    `• *CANCEL* or *NO* ❌`
-  );
-}
-
-function withdrawalProcessing(): string {
-  return `⏳ Processing withdrawal...\n\nThis will take about 10 seconds.`;
-}
-
-function withdrawalComplete(amount: number, txHash: string): string {
-  return (
-    `✅ *Withdrawal Complete!*\n\n` +
-    `${amount.toFixed(2)} USDC sent to your wallet.\n\n` +
-    `Transaction: ${txHash}\n` +
-    `View on Stellar Expert: ${getStellarExpertLink(txHash)}\n\n` +
-    `Thanks for using NeuroWealth! 💚\n` +
-    `Reply *DEPOSIT* anytime to start again.`
-  );
-}
-
-function withdrawalFailed(error: string): string {
-  return (
-    `❌ *Withdrawal Failed*\n\n` +
-    `Error: ${error}\n\n` +
-    `Your funds are safe. Reply *WITHDRAW* to try again or *HELP* for assistance.`
-  );
-}
-
-function withdrawalCancelled(): string {
-  return `Withdrawal cancelled. Your funds remain in your account.\n\nReply *HELP* to see what you can do.`;
-}
-
 function fallback(step: OnboardingStep | string): string {
   switch (step) {
     case "awaiting_strategy":
@@ -205,7 +154,6 @@ function fallback(step: OnboardingStep | string): string {
         "Here's what you can do:\n\n" +
         "• *balance* — view your portfolio\n" +
         "• *deposit* — get your deposit address\n" +
-        "• *withdraw* — withdraw funds\n" +
         "• *help* — show this message"
       );
   }
@@ -230,18 +178,18 @@ const HELP_MSG =
  *
  * Plugs into index.ts:
  *   eventBus.onMessage(async (msg) => {
- *     const reply = await handleOnboarding(msg, replyCallback);
+ *     const reply = await handleOnboarding(msg);
  *     if (reply) await replyToUser(msg.from, msg.phone_number_id, reply);
  *   });
  */
 export async function handleOnboarding(
   msg: ParsedMessage,
-  replyCallback?: (to: string, phoneNumberId: string, text: string) => Promise<void>,
 ): Promise<string | null> {
-  const { from, text, phone_number_id } = msg;
+  const { from, text } = msg;
   const input = text.body.trim();
   const lower = input.toLowerCase();
   const requestedBalance = isBalanceIntent(lower);
+  const requestedWithdrawal = WITHDRAW_INTENTS.has(lower);
 
   // ── HELP shortcut — works at any stage ───────────────────────────────────
   if (lower === "help") return HELP_MSG;
@@ -254,7 +202,7 @@ export async function handleOnboarding(
     logger.info({ from }, "New user — starting onboarding");
     await createUser(from);
 
-    if (requestedBalance) {
+    if (requestedBalance || requestedWithdrawal) {
       return (
         formatMidOnboardingReply("awaiting_strategy") +
         "\n\n" +
@@ -267,15 +215,38 @@ export async function handleOnboarding(
 
   // ── Portfolio balance command ─────────────────────────────────────────────
   if (requestedBalance) {
-    if (user.step !== "active") {
+    if (user.step !== "active" && user.step !== "withdrawal_amount" && user.step !== "withdrawal_confirm") {
       return formatMidOnboardingReply(user.step);
     }
 
     return buildPortfolioBalanceReply(user);
   }
 
+  // ── Initiate Withdrawal ───────────────────────────────────────────────────
+  if (requestedWithdrawal) {
+    if (user.step !== "active") {
+      return formatMidOnboardingReply(user.step);
+    }
+
+    if (user.balance <= 0) {
+      return (
+        "📊 You don't have any funds to withdraw yet. Your balance is 0 USDC.\n\n" +
+        "Reply *deposit* to get your address, or *help* for more."
+      );
+    }
+
+    await setUserStep(from, "withdrawal_amount");
+    return (
+      `💸 *Withdraw Funds*\n\n` +
+      `Your current balance is *${user.balance.toFixed(2)} USDC*.\n\n` +
+      `How much would you like to withdraw?\n` +
+      `Reply with an amount (e.g. *25*) or *ALL* to withdraw everything.\n\n` +
+      `Reply *CANCEL* to stop.`
+    );
+  }
+
   // ── Route by step ─────────────────────────────────────────────────────────
-  return handleStep(user, from, input, lower, phone_number_id, replyCallback);
+  return handleStep(user, from, input, lower);
 }
 
 async function handleStep(
@@ -283,21 +254,10 @@ async function handleStep(
   from: string,
   input: string,
   lower: string,
-  phoneNumberId: string,
-  replyCallback?: (to: string, phoneNumberId: string, text: string) => Promise<void>,
 ): Promise<string> {
   // If they send a greeting again at any point → re-send welcome
   if (GREETINGS.has(lower) && user.step === "awaiting_strategy") {
     return WELCOME;
-  }
-
-  // ── Withdrawal intent detection (only for active users) ──────────────────
-  if (user.step === "active" && isWithdrawalIntent(lower)) {
-    if (user.balance <= 0) {
-      return `You don't have any funds to withdraw. Your balance is 0 USDC.\n\nReply *DEPOSIT* to add funds.`;
-    }
-    await setUserStep(from, "withdrawal_amount");
-    return withdrawalPrompt(user.balance);
   }
 
   switch (user.step) {
@@ -351,106 +311,73 @@ async function handleStep(
       );
     }
 
+    case "active": {
+      return fallback("active");
+    }
+
     case "withdrawal_amount": {
       if (lower === "cancel") {
-        await setUserStep(from, "active");
-        return withdrawalCancelled();
+        await cancelWithdrawal(from);
+        return "Withdrawal cancelled. Your funds remain in your portfolio.";
       }
 
       let amount: number;
-
       if (lower === "all") {
         amount = user.balance;
       } else {
         amount = parseFloat(input);
-        const validationError = validateWithdrawalAmount(amount, user.balance);
-        if (validationError) {
-          return validationError + `\n\nAvailable: ${user.balance.toFixed(2)} USDC`;
-        }
       }
 
+      const error = validateWithdrawalAmount(amount, user.balance);
+      if (error) return `❌ ${error}\n\nReply with a different amount or *CANCEL*.`;
+
       await setPendingWithdrawal(from, amount);
-      return withdrawalConfirm(amount, user.walletAddress!);
+      return (
+        `⚠️ *Confirm withdrawal of ${amount.toFixed(2)} USDC*\n\n` +
+        `This will take ~10 seconds to process on the blockchain.\n\n` +
+        `Reply *CONFIRM* to proceed or *CANCEL* to stop.`
+      );
     }
 
     case "withdrawal_confirm": {
-      if (lower === "cancel" || lower === "no") {
+      if (lower === "cancel") {
         await cancelWithdrawal(from);
-        return withdrawalCancelled();
+        return "Withdrawal cancelled. Your funds remain in your portfolio.";
       }
 
-      if (lower !== "confirm" && lower !== "yes" && lower !== "y") {
-        return (
-          `Please reply:\n` +
-          `• *CONFIRM* or *YES* to proceed\n` +
-          `• *CANCEL* or *NO* to cancel`
-        );
+      if (lower !== "confirm") {
+        return "Please reply *CONFIRM* to proceed with your withdrawal, or *CANCEL* to stop.";
       }
 
-      if (!user.pendingWithdrawal || !user.walletAddress || !user.encryptedPrivateKey) {
-        await setUserStep(from, "active");
-        return "Something went wrong. Please try again with *WITHDRAW*.";
+      if (!user.pendingWithdrawal || !user.encryptedPrivateKey || !user.walletAddress) {
+        await cancelWithdrawal(from);
+        return "Something went wrong with your withdrawal request. Please try again.";
       }
 
-      const withdrawalAmount = user.pendingWithdrawal;
+      // Execute on background — but return immediate pending message
+      const amount = user.pendingWithdrawal;
+      const encrypted = user.encryptedPrivateKey;
+      const wallet = user.walletAddress;
 
-      // Execute withdrawal in background
-      setImmediate(async () => {
-        try {
-          const result = await executeVaultWithdrawal(
-            user.encryptedPrivateKey!,
-            user.walletAddress!,
-            withdrawalAmount,
-          );
-
-          if (result.success && result.txHash) {
-            await executeWithdrawal(from);
-            const successMsg = withdrawalComplete(withdrawalAmount, result.txHash);
-            if (replyCallback) {
-              await replyCallback(from, phoneNumberId, successMsg);
-            }
-            logger.info(
-              { from, amount: withdrawalAmount, txHash: result.txHash },
-              "Withdrawal completed successfully",
-            );
-          } else {
-            await cancelWithdrawal(from);
-            const errorMsg = withdrawalFailed(result.error || "Unknown error");
-            if (replyCallback) {
-              await replyCallback(from, phoneNumberId, errorMsg);
-            }
-            logger.error({ from, error: result.error }, "Withdrawal failed");
-          }
-        } catch (error: any) {
+      // Start the withdrawal process (don't await so we can reply immediately)
+      executeVaultWithdrawal(encrypted, wallet, amount).then(async (result) => {
+        if (result.success) {
+          await executeWithdrawal(from);
+          logger.info({ from, txHash: result.txHash }, "Withdrawal completed successfully");
+        } else {
           await cancelWithdrawal(from);
-          const errorMsg = withdrawalFailed(error.message);
-          if (replyCallback) {
-            await replyCallback(from, phoneNumberId, errorMsg);
-          }
-          logger.error({ from, error: error.message }, "Withdrawal exception");
+          logger.error({ from, error: result.error }, "Withdrawal execution failed");
         }
       });
 
-      return withdrawalProcessing();
-    }
-
-    case "active": {
-      return fallback("active");
+      return (
+        `⏳ Processing withdrawal...\n\n` +
+        `We've initiated the withdrawal of *${amount.toFixed(2)} USDC*.\n\n` +
+        `You'll receive a notification here once it's confirmed on the Stellar network (usually < 10s).`
+      );
     }
 
     default:
       return fallback("unknown");
   }
-}
-
-function isWithdrawalIntent(lower: string): boolean {
-  // Check exact matches
-  if (WITHDRAWAL_KEYWORDS.has(lower)) return true;
-
-  // Check if message contains withdrawal keywords
-  for (const keyword of WITHDRAWAL_KEYWORDS) {
-    if (lower.includes(keyword)) return true;
-  }
-
-  return false;
 }

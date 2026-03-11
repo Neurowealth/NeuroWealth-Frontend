@@ -38,8 +38,10 @@ export async function executeVaultWithdrawal(
     // transaction.sign(StellarSdk.Keypair.fromSecret(secretKey));
     // const result = await server.submitTransaction(transaction);
 
-    // Simulate blockchain delay
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    // Simulate blockchain delay (skip in tests for faster verification and stability)
+    if (process.env.NODE_ENV !== "test") {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
 
     const mockTxHash = `TX${Date.now()}${Math.random().toString(36).substring(7).toUpperCase()}`;
 

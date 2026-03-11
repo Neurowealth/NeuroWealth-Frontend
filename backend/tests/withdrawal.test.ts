@@ -32,7 +32,7 @@ describe("Withdrawal Flow", () => {
     await updateBalance("1234567890", 523.40);
 
     const msg = createMockMessage("withdraw");
-    const reply = await handleOnboarding(msg, mockReplyCallback);
+    const reply = await handleOnboarding(msg);
 
     expect(reply).toContain("💸");
     expect(reply).toContain("523.40 USDC");
@@ -49,10 +49,10 @@ describe("Withdrawal Flow", () => {
     await updateBalance("1234567890", 523.40);
 
     // Start withdrawal
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
     
     // Request all
-    const reply = await handleOnboarding(createMockMessage("all"), mockReplyCallback);
+    const reply = await handleOnboarding(createMockMessage("all"));
 
     expect(reply).toContain("Confirm withdrawal of");
     expect(reply).toContain("523.40 USDC");
@@ -68,8 +68,8 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 523.40);
 
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
-    const reply = await handleOnboarding(createMockMessage("200"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
+    const reply = await handleOnboarding(createMockMessage("200"));
 
     expect(reply).toContain("Confirm withdrawal of");
     expect(reply).toContain("200");
@@ -84,8 +84,8 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 523.40);
 
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
-    const reply = await handleOnboarding(createMockMessage("5"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
+    const reply = await handleOnboarding(createMockMessage("5"));
 
     expect(reply).toContain("Minimum withdrawal is 10 USDC");
   });
@@ -99,8 +99,8 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 100);
 
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
-    const reply = await handleOnboarding(createMockMessage("200"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
+    const reply = await handleOnboarding(createMockMessage("200"));
 
     expect(reply).toContain("Insufficient balance");
   });
@@ -114,8 +114,8 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 523.40);
 
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
-    const reply = await handleOnboarding(createMockMessage("cancel"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
+    const reply = await handleOnboarding(createMockMessage("cancel"));
 
     expect(reply).toContain("Withdrawal cancelled");
   });
@@ -129,10 +129,10 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 523.40);
 
-    await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
-    await handleOnboarding(createMockMessage("200"), mockReplyCallback);
+    await handleOnboarding(createMockMessage("withdraw"));
+    await handleOnboarding(createMockMessage("200"));
     
-    const reply = await handleOnboarding(createMockMessage("confirm"), mockReplyCallback);
+    const reply = await handleOnboarding(createMockMessage("confirm"));
 
     expect(reply).toContain("⏳ Processing withdrawal");
   });
@@ -150,7 +150,7 @@ describe("Withdrawal Flow", () => {
 
     for (const intent of intents) {
       await setUserStep("1234567890", "active");
-      const reply = await handleOnboarding(createMockMessage(intent), mockReplyCallback);
+      const reply = await handleOnboarding(createMockMessage(intent));
       expect(reply).toContain("💸");
     }
   });
@@ -164,7 +164,7 @@ describe("Withdrawal Flow", () => {
     await setUserStep("1234567890", "active");
     await updateBalance("1234567890", 0);
 
-    const reply = await handleOnboarding(createMockMessage("withdraw"), mockReplyCallback);
+    const reply = await handleOnboarding(createMockMessage("withdraw"));
 
     expect(reply).toContain("don't have any funds to withdraw");
     expect(reply).toContain("balance is 0 USDC");

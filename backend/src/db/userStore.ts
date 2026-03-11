@@ -153,7 +153,27 @@ export const cancelWithdrawal = IS_TEST ? mem_cancelWithdrawal : notImplemented;
 export const updateBalance = IS_TEST ? mem_updateBalance : notImplemented;
 
 export const _test = {
-  clear: () => store.clear(),
-  all: () => Array.from(store.values()),
-  seed: (user: User) => store.set(user.phone, user),
+  clear: () => {
+    if (IS_TEST) {
+      store.clear();
+    } else {
+      console.warn('_test.clear() is not supported with PostgreSQL');
+    }
+  },
+  all: () => {
+    if (IS_TEST) {
+      return Array.from(store.values());
+    } else {
+      console.warn('_test.all() is not supported with PostgreSQL');
+      return [];
+    }
+  },
+  seed: (user: User) => {
+    if (IS_TEST) {
+      store.set(user.phone, user);
+    } else {
+      console.warn('_test.seed() is not supported with PostgreSQL');
+    }
+  },
 };
+
