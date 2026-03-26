@@ -29,7 +29,7 @@ export default defineConfig({
     ],
 
     webServer: {
-        command: 'yarn dev',
+        command: process.env.CI ? 'yarn start' : 'yarn dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
     },
