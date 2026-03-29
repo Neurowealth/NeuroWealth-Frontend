@@ -1,3 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-900: #020617;
+  --color-dark-800: #0f172a;
+  --color-dark-700: #1e293b;
+  --color-brand-400: #38bdf8;
+  --shadow-card: 0 8px 30px rgba(2, 6, 23, 0.35);
+}
+
 :root {
   --font-sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -9,6 +19,11 @@
   --chart-warning: #f59e0b;
   --chart-neutral-strong: #64748b;
   --chart-neutral-soft: #94a3b8;
+  /* Skeleton animation tokens */
+  --skeleton-duration: 1.4s;
+  --skeleton-base: rgba(148, 163, 184, 0.10);
+  --skeleton-shine: rgba(148, 163, 184, 0.24);
+  --skeleton-radius-default: 6px;
 }
 
 * {
@@ -41,4 +56,14 @@ textarea {
 
 ::selection {
   background: rgba(56, 189, 248, 0.24);
+}
+
+/* Skeleton shimmer animation */
+@keyframes skeletonShimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }

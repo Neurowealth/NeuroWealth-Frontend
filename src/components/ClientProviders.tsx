@@ -1,14 +1,19 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { ReactNode } from "react";
+import { AuthProvider } from "@/contexts";
+import { WalletProvider } from "@/contexts";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { ToastProvider } from "@/components/notifications/ToastProvider";
 
-// Prevent WalletProvider (and its wallet-kit dep) from running on the server.
-// wallet-kit accesses `window` at import time → crashes SSR prerender.
-const WalletProvider = dynamic(
-  () => import("@/contexts").then((m) => m.WalletProvider),
-  { ssr: false },
-);
-
-export function ClientProviders({ children }: { children: React.ReactNode }) {
-  return <WalletProvider>{children}</WalletProvider>;
+export function ClientProviders({ children }: { children: ReactNode }) {
+  return (
+    <I18nProvider>
+      <AuthProvider>
+        <WalletProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </WalletProvider>
+      </AuthProvider>
+    </I18nProvider>
+  );
 }

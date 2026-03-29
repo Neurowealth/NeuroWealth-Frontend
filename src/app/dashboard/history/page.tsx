@@ -3,9 +3,22 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 export default function HistoryPage() {
   const [showEmpty, setShowEmpty] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="px-6 pt-8">
+        <div className="flex items-center justify-between pb-4">
+          <h1 className="text-2xl font-bold text-slate-100">History</h1>
+        </div>
+        <TableSkeleton rows={6} cols={5} />
+      </div>
+    );
+  }
 
   if (showEmpty) {
     return (
@@ -13,7 +26,10 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between px-6 pt-8 pb-4">
           <h1 className="text-2xl font-bold text-slate-100">History</h1>
           <button
-            onClick={() => setShowEmpty(false)}
+            onClick={() => {
+              setLoading(true);
+              setTimeout(() => { setLoading(false); setShowEmpty(false); }, 1000);
+            }}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
           >
             Mock: show data

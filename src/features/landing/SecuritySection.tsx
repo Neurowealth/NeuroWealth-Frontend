@@ -1,12 +1,11 @@
+"use client";
+
 import { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
+import { useI18n } from "@/contexts";
 
 interface SecurityFeature {
   icon: ReactNode;
-  title: string;
-  stat: string;
-  statLabel: string;
-  desc: string;
 }
 
 const features: SecurityFeature[] = [
@@ -28,10 +27,6 @@ const features: SecurityFeature[] = [
         <polyline points="9 12 11 14 15 10" />
       </svg>
     ),
-    title: "Non-Custodial",
-    stat: "100%",
-    statLabel: "Your keys, your coins",
-    desc: "Your USDC stays in audited Soroban smart contracts that only you can authorize. We never hold or access your private keys.",
   },
   {
     icon: (
@@ -52,10 +47,6 @@ const features: SecurityFeature[] = [
         <polyline points="9 15 11 17 15 13" />
       </svg>
     ),
-    title: "Audited Contracts",
-    stat: "0",
-    statLabel: "Security incidents",
-    desc: "All smart contracts undergo rigorous third-party security audits before mainnet deployment. Source code is publicly verifiable on-chain.",
   },
   {
     icon: (
@@ -75,10 +66,6 @@ const features: SecurityFeature[] = [
         <polyline points="8 6 2 12 8 18" />
       </svg>
     ),
-    title: "Open Source",
-    stat: "100%",
-    statLabel: "Transparent code",
-    desc: "Every line of code is open source and community-reviewed. No black boxes — verify exactly what the protocol does with your funds.",
   },
   {
     icon: (
@@ -99,32 +86,33 @@ const features: SecurityFeature[] = [
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
       </svg>
     ),
-    title: "Stellar Network",
-    stat: "10+",
-    statLabel: "Years of proven uptime",
-    desc: "Built on Stellar's battle-tested blockchain with a decade of proven reliability, instant finality (~5s), and sub-cent transaction fees.",
   },
 ];
 
 export function SecuritySection() {
+  const { messages } = useI18n();
+
   return (
     <section id="security" className="mx-auto max-w-6xl px-6 py-24">
       {/* Header */}
       <div className="mb-14 text-center">
         <span className="inline-block rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-400">
-          Security
+          {messages.security.badge}
         </span>
         <h2 className="mt-4 text-3xl font-bold text-slate-50">
-          Built to be trusted
+          {messages.security.title}
         </h2>
         <p className="mt-3 text-base text-slate-400">
-          Security is not an afterthought — it is the foundation.
+          {messages.security.description}
         </p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {features.map((f) => (
-          <Card key={f.title} className="flex gap-5">
+        {features.map((f, index) => {
+          const text = messages.security.items[index];
+
+          return (
+            <Card key={text.title} className="flex gap-5">
             {/* Icon */}
             <div className="shrink-0 flex h-12 w-12 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400">
               {f.icon}
@@ -132,15 +120,16 @@ export function SecuritySection() {
 
             <div className="flex flex-col gap-1.5">
               <div className="flex items-baseline gap-3">
-                <h3 className="font-semibold text-slate-50">{f.title}</h3>
+                <h3 className="font-semibold text-slate-50">{text.title}</h3>
                 <span className="font-mono text-xs text-emerald-400">
-                  {f.stat} &middot; {f.statLabel}
+                  {text.stat} &middot; {text.statLabel}
                 </span>
               </div>
-              <p className="text-sm leading-relaxed text-slate-400">{f.desc}</p>
+              <p className="text-sm leading-relaxed text-slate-400">{text.desc}</p>
             </div>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { HowItWorksSection } from "@/features/landing/HowItWorksSection";
 import { StrategiesSection } from "@/features/landing/StrategiesSection";
 import { SecuritySection } from "@/features/landing/SecuritySection";
 import { CtaSection } from "@/features/landing/CtaSection";
+import { HomeFooter } from "@/features/landing/HomeFooter";
 
 export default function Home() {
   return (
@@ -31,9 +32,7 @@ export default function Home() {
         <CtaSection />
       </main>
 
-      <footer className="border-t border-gray-800 py-8 text-center text-sm text-slate-600">
-        &copy; {new Date().getFullYear()} NeuroWealth &middot; Built on Stellar
-      </footer>
+      <HomeFooter />
     </>
   );
 }

@@ -1,8 +1,13 @@
 // Spec palette: Primary #0EA5E9 (sky-500), Accent #10B981 (emerald-500)
 // Page bg #0B1220, Text #F8FAFC, Muted #94A3B8
+"use client";
+
 import { HeroActions } from "./HeroActions";
+import { useI18n } from "@/contexts";
 
 export function HeroSection() {
+  const { messages } = useI18n();
+
   return (
     <section
       id="overview"
@@ -17,20 +22,19 @@ export function HeroSection() {
       <div className="relative max-w-3xl">
         {/* Badge */}
         <span className="mb-6 inline-block rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-xs font-medium tracking-wide text-sky-400">
-          Powered by Stellar &middot; Built with AI
+          {messages.hero.badge}
         </span>
 
         {/* Headline — spec: 36px / line-height 1.4–1.6 */}
         <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-slate-50 sm:text-5xl md:text-6xl">
-          Your money, working{" "}
-          <span className="text-sky-400">24/7</span> on autopilot
+          {messages.hero.titleBeforeAccent}{" "}
+          <span className="text-sky-400">{messages.hero.titleAccent}</span>{" "}
+          {messages.hero.titleAfterAccent}
         </h1>
 
         {/* Sub — spec: 16px, muted #94A3B8 */}
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
-          NeuroWealth is an autonomous AI agent that finds and deploys your USDC
-          into the highest-yielding opportunities on Stellar DeFi &mdash;
-          automatically, every hour.
+          {messages.hero.description}
         </p>
 
         {/* CTAs: Connect Wallet | Open Dashboard | Learn More */}
@@ -40,11 +44,7 @@ export function HeroSection() {
 
         {/* Stats row — spec: font-mono for numeric text, emerald-500 accent */}
         <div className="mt-16 grid grid-cols-3 gap-6 border-t border-gray-800 pt-10">
-          {[
-            { label: "Avg. APY", value: "8.4%" },
-            { label: "Finality", value: "~5s" },
-            { label: "Tx Fee", value: "<$0.01" },
-          ].map((s) => (
+          {messages.hero.stats.map((s) => (
             <div key={s.label}>
               {/* Spec: Roboto Mono for numeric displays */}
               <p className="font-mono text-2xl font-bold text-emerald-400">

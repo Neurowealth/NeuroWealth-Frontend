@@ -1,88 +1,191 @@
 "use client";
 
-import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/Button";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { mockAudit } from "@/lib/mock-audit";
+import { Button, Card, FieldError, FormErrorSummary } from "@/components/ui";
+import {
+  emailFormat,
+  getErrorList,
+  joinDescribedBy,
+  minLength,
+  required,
+  type ValidationErrors,
+} from "@/lib/form-validation";
+
+type SignInField = "email" | "password" | "form";
+type SignInState = "idle" | "loading" | "success";
 
 export default function SignInPage() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [state, setState] = useState<SignInState>("idle");
+  const [errors, setErrors] = useState<ValidationErrors<SignInField>>({});
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const validate = () => {
+    const nextErrors: ValidationErrors<SignInField> = {
+      email:
+        required(email, "Email address is required") ||
+        emailFormat(email, "Enter a valid email address"),
+      password:
+        required(password, "Password is required") ||
+        minLength(password, 8, "Password must be at least 8 characters"),
+    };
+
+    setErrors(nextErrors);
+    return getErrorList(nextErrors).length === 0;
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitted(true);
+    setErrors({});
+
+    if (!validate()) {
+      return;
+    }
+
+    setState("loading");
+
     try {
       await signIn(email, password);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in");
-    } finally {
-      setLoading(false);
+      setState("success");
+      mockAudit.logEvent("login", { email, timestamp: new Date().toISOString() });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Invalid email or password";
+      const nextErrors: ValidationErrors<SignInField> = {
+        form: message,
+        password: "Check your password and try the mock credentials again.",
+      };
+      setErrors(nextErrors);
+      setState("idle");
+      mockAudit.logEvent("login", { email, status: "failed", reason: message });
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900">
-      <div className="w-full max-w-[420px] bg-dark-800/50 p-8 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-300">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-slate-400">Sign in to manage your AI-powered yield</p>
-        </div>
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setErrors((current) => ({ ...current, email: undefined, form: undefined }));
+  };
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Email Address</label>
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setErrors((current) => ({ ...current, password: undefined, form: undefined }));
+  };
+
+  const isLoading = state === "loading";
+  const isSuccess = state === "success";
+  const summaryErrors = submitted ? getErrorList(errors) : [];
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#020617_0%,#0f172a_100%)] px-4 py-10">
+      <Card className="w-full max-w-md space-y-6 border-slate-700/50 bg-dark-800/80 p-8">
+        <header className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold text-slate-50">Welcome Back</h1>
+          <p className="text-sm text-slate-400">
+            Sign in to manage your AI-powered yield strategy.
+          </p>
+        </header>
+
+        <FormErrorSummary
+          title="Please fix the sign-in errors below."
+          errors={summaryErrors}
+        />
+
+        {isSuccess ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-200"
+          >
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+            <span className="text-sm">Sign in successful. Redirecting...</span>
+          </div>
+        ) : null}
+
+        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300"
+            >
+              Email Address
+            </label>
             <input
+              id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => handleEmailChange(event.target.value)}
               placeholder="name@example.com"
-              className="w-full bg-dark-900 border border-white/10 rounded-xl px-4 min-h-[44px] text-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-all placeholder:text-slate-600"
-              required
+              disabled={isLoading || isSuccess}
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={joinDescribedBy("signin-email-hint", errors.email ? "signin-email-error" : undefined)}
+              className={`w-full rounded-xl border bg-slate-950/40 px-4 py-3 text-sm text-slate-100 outline-none transition ${
+                errors.email
+                  ? "border-red-500/60 focus:border-red-500 focus:ring-2 focus:ring-red-500/15"
+                  : "border-slate-700/60 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15"
+              }`}
             />
+            <p id="signin-email-hint" className="mt-2 text-sm text-slate-500">
+              Use the email tied to your NeuroWealth account.
+            </p>
+            <FieldError id="signin-email-error" message={errors.email} />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Password</label>
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300"
+            >
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-dark-900 border border-white/10 rounded-xl px-4 min-h-[44px] text-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-all placeholder:text-slate-600"
-              required
+              onChange={(event) => handlePasswordChange(event.target.value)}
+              placeholder="password123"
+              disabled={isLoading || isSuccess}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={joinDescribedBy(
+                "signin-password-hint",
+                errors.password ? "signin-password-error" : undefined,
+              )}
+              className={`w-full rounded-xl border bg-slate-950/40 px-4 py-3 text-sm text-slate-100 outline-none transition ${
+                errors.password
+                  ? "border-red-500/60 focus:border-red-500 focus:ring-2 focus:ring-red-500/15"
+                  : "border-slate-700/60 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/15"
+              }`}
             />
-            <p className="text-[10px] text-slate-500 italic px-1">Hint: Use &quot;password123&quot; for mock login</p>
+            <p id="signin-password-hint" className="mt-2 text-sm text-slate-500">
+              Mock login password: <span className="font-mono text-slate-300">password123</span>
+            </p>
+            <FieldError id="signin-password-error" message={errors.password} />
           </div>
-
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-lg text-[14px] animate-in slide-in-from-top-2 duration-200">
-              {error}
-            </div>
-          )}
 
           <Button
             type="submit"
-            className="w-full h-12 text-sm font-bold bg-brand-400 hover:bg-brand-300 text-dark-900 transition-all shadow-lg shadow-brand-400/20"
-            disabled={loading}
+            size="lg"
+            disabled={isLoading || isSuccess}
+            aria-busy={isLoading}
+            className="w-full justify-center"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Signing in..." : isSuccess ? "Redirecting..." : "Sign In"}
           </Button>
         </form>
 
-        <div className="mt-8 pt-8 border-t border-white/5 text-center">
-          <p className="text-slate-500 text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-brand-400 hover:text-brand-300 font-bold transition-colors">
-              Sign Up
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+        <footer className="border-t border-slate-700/50 pt-5 text-center text-sm text-slate-400">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="font-semibold text-sky-300 hover:text-sky-200">
+            Sign Up
+          </Link>
+        </footer>
+      </Card>
+    </main>
   );
 }

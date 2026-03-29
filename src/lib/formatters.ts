@@ -1,35 +1,38 @@
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+import { getActiveIntlLocale } from "@/lib/i18n/locale-state";
+import { dictionaries } from "@/lib/i18n/messages";
+import { getActiveLocale } from "@/lib/i18n/locale-state";
 
-const percentFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
+function getCurrencyFormatter() {
+  return new Intl.NumberFormat(getActiveIntlLocale(), {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
-const timestampFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+function getPercentFormatter() {
+  return new Intl.NumberFormat(getActiveIntlLocale(), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
 
-const syncFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+function getTimestampFormatter() {
+  return new Intl.DateTimeFormat(getActiveIntlLocale(), {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
+  return getCurrencyFormatter().format(value);
 }
 
 export function formatSignedCurrency(value: number): string {
-  const absoluteValue = currencyFormatter.format(Math.abs(value));
+  const absoluteValue = getCurrencyFormatter().format(Math.abs(value));
 
   if (value > 0) {
     return `+${absoluteValue}`;
@@ -43,11 +46,11 @@ export function formatSignedCurrency(value: number): string {
 }
 
 export function formatPercent(value: number): string {
-  return `${percentFormatter.format(value)}%`;
+  return `${getPercentFormatter().format(value)}%`;
 }
 
 export function formatSignedPercent(value: number): string {
-  const absoluteValue = `${percentFormatter.format(Math.abs(value))}%`;
+  const absoluteValue = `${getPercentFormatter().format(Math.abs(value))}%`;
 
   if (value > 0) {
     return `+${absoluteValue}`;
@@ -61,9 +64,10 @@ export function formatSignedPercent(value: number): string {
 }
 
 export function formatTimestamp(value: string): string {
-  return timestampFormatter.format(new Date(value));
+  return getTimestampFormatter().format(new Date(value));
 }
 
 export function formatSyncLabel(value: string): string {
-  return `Updated ${syncFormatter.format(new Date(value))}`;
+  const prefix = dictionaries[getActiveLocale()].formatters.updatedPrefix;
+  return `${prefix} ${getTimestampFormatter().format(new Date(value))}`;
 }

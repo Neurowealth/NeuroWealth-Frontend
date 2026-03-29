@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/contexts";
 import { ClientProviders } from "@/components/ClientProviders";
 
 export const metadata: Metadata = {
@@ -21,11 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="antialiased">
-        {/* WalletProvider is loaded client-side only (ssr:false) to prevent
-            @creit.tech/stellar-wallets-kit from accessing `window` at SSR time */}
-        <ClientProviders>
-          <AuthProvider>{children}</AuthProvider>
-        </ClientProviders>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

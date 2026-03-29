@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Pencil,
 } from "lucide-react";
+import { ProfileFormSkeleton } from "@/components/ui/Skeleton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -190,12 +191,18 @@ export default function ProfilePage() {
     "idle",
   );
   const [saveError, setSaveError] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Load from localStorage on mount
   useEffect(() => {
-    const loaded = mockLoadProfile();
-    setSaved(loaded);
-    setDraft(loaded);
+    // Simulate async profile load
+    const timer = setTimeout(() => {
+      const loaded = mockLoadProfile();
+      setSaved(loaded);
+      setDraft(loaded);
+      setProfileLoading(false);
+    }, 700);
+    return () => clearTimeout(timer);
   }, []);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
@@ -252,6 +259,17 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
+
+  if (profileLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="profile-page">
+          <ProfileFormSkeleton />
+        </div>
+      </>
+    );
+  }
 
   const initials = saved.displayName
     ? saved.displayName

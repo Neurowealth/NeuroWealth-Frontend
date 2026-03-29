@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/contexts";
 
 export function HeroActions() {
+  const { messages } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -16,13 +18,13 @@ export function HeroActions() {
       const freighter = await import("@stellar/freighter-api");
       const isConnected = await freighter.isConnected();
       if (!isConnected) {
-        setError("Freighter wallet not found. Please install it.");
+        setError(messages.heroActions.errorNoWallet);
         return;
       }
       await freighter.getAddress();
       setConnected(true);
     } catch {
-      setError("Failed to connect. Please try again.");
+      setError(messages.heroActions.errorFailedConnect);
     } finally {
       setLoading(false);
     }
@@ -33,25 +35,25 @@ export function HeroActions() {
       <div className="flex flex-wrap justify-center gap-3">
         {connected ? (
           <Link href="/dashboard">
-            <Button size="lg">Open Dashboard &rarr;</Button>
+            <Button size="lg">{messages.heroActions.openDashboardArrow}</Button>
           </Link>
         ) : (
           <Button size="lg" onClick={connectWallet} disabled={loading}>
-            {loading ? "Connecting..." : "Connect Wallet"}
+            {loading ? messages.heroActions.connecting : messages.heroActions.connectWallet}
           </Button>
         )}
 
         {!connected && (
           <Link href="/dashboard">
             <Button variant="secondary" size="lg">
-              Open Dashboard
+              {messages.heroActions.openDashboard}
             </Button>
           </Link>
         )}
 
         <Link href="#features">
           <Button variant="ghost" size="lg">
-            Learn More ↓
+            {messages.heroActions.learnMore}
           </Button>
         </Link>
       </div>
