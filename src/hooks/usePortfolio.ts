@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { env } from "@/lib/env";
 
 export interface Portfolio {
@@ -16,11 +16,14 @@ export function usePortfolio(address: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!address || !env.apiUrl) return;
+    if (!address || !env.apiUrl) {
+      return;
+    }
 
-    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+    setLoading(true);
+
     fetch(`${env.apiUrl}/portfolio/${address}`)
-      .then((r) => r.json())
+      .then((response) => response.json())
       .then((data) => setPortfolio(data))
       .catch(() => setError("Failed to load portfolio"))
       .finally(() => setLoading(false));

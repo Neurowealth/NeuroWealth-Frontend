@@ -1,72 +1,100 @@
-import { LucideIcon } from "lucide-react";
+import { createElement, isValidElement, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Button } from "./Button";
 
-interface EmptyStateProps {
+type EmptyStateIcon = LucideIcon | ReactNode;
+
+interface EmptyStateActions {
+  ctaLabel?: string;
+  ctaHref?: string;
+  onAction?: () => void;
+}
+
+interface LegacyEmptyStateProps extends EmptyStateActions {
   icon: LucideIcon;
   title: string;
   description?: string;
+  heading?: never;
+  body?: never;
 }
 
-export default function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="w-12 h-12 rounded-full bg-surface-elevated flex items-center justify-center mb-3">
-        <Icon className="w-5 h-5 text-text-muted" aria-hidden="true" />
-      </div>
-      <p className="text-sm font-medium text-text-secondary">{title}</p>
-      {description && (
-        <p className="mt-1 text-xs text-text-muted max-w-xs">{description}</p>
-"use client";
-
-import { ReactNode } from "react";
-import { Button } from "./Button";
-
-interface EmptyStateProps {
+interface ModernEmptyStateProps extends EmptyStateActions {
   icon: ReactNode;
   heading: string;
   body: string;
-  ctaLabel?: string;
-  onAction?: () => void;
-  ctaHref?: string;
+  title?: never;
+  description?: never;
 }
 
-/**
- * Reusable empty-state pattern for pages with no data.
- *
- * Spec: icon 24–48px, heading + body + CTA hierarchy, body max-width 420px.
- */
-export function EmptyState({
-  icon,
-  heading,
-  body,
-  ctaLabel,
-  onAction,
-  ctaHref,
-}: EmptyStateProps) {
+export type EmptyStateProps =
+  | LegacyEmptyStateProps
+  | ModernEmptyStateProps;
+
+function renderIcon(icon: EmptyStateIcon) {
+  if (isValidElement(icon)) {
+    return icon;
+  }
+
+  return createElement(icon as LucideIcon, {
+    className: "h-5 w-5 text-text-muted",
+    "aria-hidden": "true",
+  });
+}
+
+export function EmptyState(props: EmptyStateProps) {
+  const heading = "heading" in props ? props.heading : props.title;
+  const body = "body" in props ? props.body : props.description;
+  const isLegacyIcon = !isValidElement(props.icon);
+
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 mb-6">
-        {icon}
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div
+        className={
+          isLegacyIcon
+            ? "mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated"
+            : "mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400"
+        }
+      >
+        {renderIcon(props.icon)}
       </div>
 
-      <h2 className="text-xl font-semibold text-slate-100 mb-2">{heading}</h2>
+      <h2
+        className={
+          isLegacyIcon
+            ? "text-sm font-medium text-text-secondary"
+            : "mb-2 text-xl font-semibold text-slate-100"
+        }
+      >
+        {heading}
+      </h2>
 
-      <p className="text-sm text-slate-400 max-w-[420px] leading-relaxed mb-6">
-        {body}
-      </p>
+      {body ? (
+        <p
+          className={
+            isLegacyIcon
+              ? "mt-1 max-w-xs text-xs text-text-muted"
+              : "mb-6 max-w-[420px] text-sm leading-relaxed text-slate-400"
+          }
+        >
+          {body}
+        </p>
+      ) : null}
 
-      {ctaLabel && ctaHref && (
-        <a href={ctaHref}>
+      {props.ctaLabel && props.ctaHref ? (
+        <a href={props.ctaHref}>
           <Button variant="primary" size="md">
-            {ctaLabel}
+            {props.ctaLabel}
           </Button>
         </a>
-      )}
+      ) : null}
 
-      {ctaLabel && onAction && !ctaHref && (
-        <Button variant="primary" size="md" onClick={onAction}>
-          {ctaLabel}
+      {props.ctaLabel && props.onAction && !props.ctaHref ? (
+        <Button variant="primary" size="md" onClick={props.onAction}>
+          {props.ctaLabel}
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
+
+export default EmptyState;

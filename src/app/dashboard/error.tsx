@@ -12,7 +12,10 @@ interface DashboardErrorProps {
  * Error boundary for all /dashboard/* routes.
  * Next.js App Router renders this component when a route segment throws.
  */
-export default function DashboardError({ error, reset }: DashboardErrorProps) {
+export default function DashboardError({
+  error,
+  reset,
+}: DashboardErrorProps) {
   useEffect(() => {
     // In production, report to your error-monitoring service here.
     console.error("[DashboardError]", error);
@@ -22,19 +25,19 @@ export default function DashboardError({ error, reset }: DashboardErrorProps) {
     <div
       role="alert"
       aria-live="assertive"
-      className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4"
+      className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center"
     >
-      <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center mb-4">
-        <AlertTriangle className="w-7 h-7 text-error" aria-hidden="true" />
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-error/10">
+        <AlertTriangle className="h-7 w-7 text-error" aria-hidden="true" />
       </div>
 
-      <h2 className="text-lg font-semibold text-text-primary mb-2">
+      <h2 className="mb-2 text-lg font-semibold text-text-primary">
         Something went wrong
       </h2>
-      <p className="text-sm text-text-secondary max-w-sm mb-6">
+      <p className="mb-6 max-w-sm text-sm text-text-secondary">
         {error.message || "An unexpected error occurred in the dashboard."}
         {error.digest && (
-          <span className="block mt-1 text-xs text-text-muted font-mono">
+          <span className="mt-1 block font-mono text-xs text-text-muted">
             ID: {error.digest}
           </span>
         )}
@@ -45,28 +48,9 @@ export default function DashboardError({ error, reset }: DashboardErrorProps) {
         className="btn-primary flex items-center gap-2 text-sm"
         aria-label="Try again"
       >
-        <RefreshCw className="w-4 h-4" aria-hidden="true" />
+        <RefreshCw className="h-4 w-4" aria-hidden="true" />
         Try again
       </button>
     </div>
-import { AlertTriangle } from "lucide-react";
-import { ErrorPage } from "@/components/ui/ErrorPage";
-
-export default function DashboardError({
-  error: _error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  return (
-    <ErrorPage
-      statusCode={500}
-      title="Dashboard error"
-      description="Something went wrong loading the dashboard. Your funds are safe. Try refreshing or come back in a moment."
-      icon={<AlertTriangle size={32} />}
-      primaryAction={{ label: "Try again", href: "#" }}
-      secondaryAction={{ label: "Back to home", href: "/", onClick: reset }}
-    />
   );
 }
