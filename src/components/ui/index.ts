@@ -2,11 +2,13 @@
  * UI component barrel exports
  */
 export * from "./Badge";
+export * from "./AdvancedTable";
 export * from "./Button";
 export * from "./Card";
 export * from "./EmptyState";
 export * from "./ErrorBlock";
 export * from "./ErrorPage";
+export * from "./FormattedValue";
 export * from "./FormErrors";
 export * from "./Input";
 export * from "./InlineBanner";

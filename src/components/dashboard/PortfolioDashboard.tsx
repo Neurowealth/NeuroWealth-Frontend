@@ -1,8 +1,9 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./portfolio-dashboard.module.css";
+import { FormattedValue } from "@/components/ui";
 import {
   ActivityItem,
   AllocationItem,
@@ -36,7 +37,7 @@ interface EmptyStateProps {
 
 interface MetricCardProps {
   label: string;
-  value: string;
+  value: ReactNode;
   helper: string;
   tone: "default" | "positive" | "negative" | "neutral";
   mono?: boolean;
@@ -257,21 +258,40 @@ export function PortfolioDashboard() {
     ? [
         {
           label: "Total balance",
-          value: formatCurrency(portfolio.summary.totalBalance),
+          value: (
+            <FormattedValue
+              kind="currency"
+              label="Total balance"
+              value={portfolio.summary.totalBalance}
+            />
+          ),
           helper: "Across active positions and protected reserve holdings.",
           tone: "default" as const,
           mono: true,
         },
         {
           label: "Total yield",
-          value: formatSignedCurrency(portfolio.summary.totalYield),
+          value: (
+            <FormattedValue
+              kind="currency"
+              label="Total yield"
+              signed
+              value={portfolio.summary.totalYield}
+            />
+          ),
           helper: "Net earnings since your first deployed deposit.",
           tone: getValueTone(portfolio.summary.totalYield),
           mono: true,
         },
         {
           label: "APY",
-          value: formatPercent(portfolio.summary.apy),
+          value: (
+            <FormattedValue
+              kind="percent"
+              label="Portfolio APY"
+              value={portfolio.summary.apy}
+            />
+          ),
           helper: "Weighted live rate across the current strategy mix.",
           tone: getValueTone(portfolio.summary.apy),
           mono: true,
