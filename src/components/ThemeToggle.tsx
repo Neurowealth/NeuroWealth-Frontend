@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "@/contexts/ThemeProvider";
 
 export function ThemeToggle() {
@@ -22,6 +23,7 @@ export function ThemeToggle() {
       // If system, toggle to opposite of current resolved theme
       setTheme(resolvedTheme === "light" ? "dark" : "light");
     }
+    setIsDark((current) => !current);
   }
 
   return (

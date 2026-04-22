@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart2,
+  ClipboardCheck,
   History,
   LayoutDashboard,
   LogOut,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/portfolio", label: "Portfolio", icon: BarChart2, exact: false },
   { href: "/dashboard/activity", label: "Activity", icon: History, exact: false },
   { href: "/dashboard/strategy", label: "Strategy", icon: TrendingUp, exact: false },
+  { href: "/dashboard/release-readiness", label: "Release", icon: ClipboardCheck, exact: false },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 

@@ -1,26 +1,14 @@
-import { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Button } from "./Button";
 
-interface EmptyStateProps {
+interface CompactEmptyStateProps {
   icon: LucideIcon;
   title: string;
   description?: string;
 }
 
-export default function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="w-12 h-12 rounded-full bg-surface-elevated flex items-center justify-center mb-3">
-        <Icon className="w-5 h-5 text-text-muted" aria-hidden="true" />
-      </div>
-      <p className="text-sm font-medium text-text-secondary">{title}</p>
-      {description && (
-        <p className="mt-1 text-xs text-text-muted max-w-xs">{description}</p>
-"use client";
-
-import { ReactNode } from "react";
-import { Button } from "./Button";
-
-interface EmptyStateProps {
+interface RichEmptyStateProps {
   icon: ReactNode;
   heading: string;
   body: string;
@@ -29,11 +17,24 @@ interface EmptyStateProps {
   ctaHref?: string;
 }
 
-/**
- * Reusable empty-state pattern for pages with no data.
- *
- * Spec: icon 24–48px, heading + body + CTA hierarchy, body max-width 420px.
- */
+export default function CompactEmptyState({
+  icon: Icon,
+  title,
+  description,
+}: CompactEmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated">
+        <Icon className="h-5 w-5 text-text-muted" aria-hidden="true" />
+      </div>
+      <p className="text-sm font-medium text-text-secondary">{title}</p>
+      {description && (
+        <p className="mt-1 max-w-xs text-xs text-text-muted">{description}</p>
+      )}
+    </div>
+  );
+}
+
 export function EmptyState({
   icon,
   heading,
@@ -41,16 +42,16 @@ export function EmptyState({
   ctaLabel,
   onAction,
   ctaHref,
-}: EmptyStateProps) {
+}: RichEmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 mb-6">
+    <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400">
         {icon}
       </div>
 
-      <h2 className="text-xl font-semibold text-slate-100 mb-2">{heading}</h2>
+      <h2 className="mb-2 text-xl font-semibold text-slate-100">{heading}</h2>
 
-      <p className="text-sm text-slate-400 max-w-[420px] leading-relaxed mb-6">
+      <p className="mb-6 max-w-[420px] text-sm leading-relaxed text-slate-400">
         {body}
       </p>
 
