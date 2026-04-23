@@ -3,14 +3,6 @@
 import { useTheme } from "@/contexts/ThemeProvider";
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("nw-theme") !== "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
   const { theme, resolvedTheme, setTheme } = useTheme();
 
   function toggle() {

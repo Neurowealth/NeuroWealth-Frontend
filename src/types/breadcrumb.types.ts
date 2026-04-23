@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   isCurrentPage?: boolean;
 }
 
@@ -14,6 +16,6 @@ export interface BreadcrumbProps {
 
 export interface RouteMetadata {
   label: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   href: string;
 }

@@ -30,5 +30,11 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/hooks/useSimulation.ts",
+    "vite.config.ts"
+  ]
 }

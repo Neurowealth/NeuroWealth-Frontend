@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { RouteMetadata } from "./breadcrumb.types";
+import type { BreadcrumbItem, RouteMetadata } from "@/types/breadcrumb.types";
 
 // Mock icons as simple SVG components
 export const HomeIcon = () => (
@@ -66,9 +65,9 @@ export const routeMetadata: Record<string, RouteMetadata> = {
 };
 
 // Helper: build breadcrumb items from a pathname string
-export function buildBreadcrumbsFromPath(pathname: string): import("./breadcrumb.types").BreadcrumbItem[] {
+export function buildBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split("/").filter(Boolean);
-  const items: import("./breadcrumb.types").BreadcrumbItem[] = [
+  const items: BreadcrumbItem[] = [
     { label: "Home", href: "/", icon: <HomeIcon /> },
   ];
 

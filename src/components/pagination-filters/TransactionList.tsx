@@ -1,9 +1,13 @@
 "use client";
 
-import React from "react";
 import FilterChips from "./FilterChips";
 import Pagination from "./Pagination";
-import { useTransactionList, buildFilterOptions, MOCK_TRANSACTIONS } from "./useTransactionList";
+import {
+  useTransactionList,
+  buildFilterOptions,
+  MOCK_TRANSACTIONS,
+  type Transaction,
+} from "@/hooks/useTransactionList";
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   completed: { bg: "rgba(16,185,129,0.12)", color: "#10b981" },
@@ -46,7 +50,7 @@ export default function TransactionList() {
             </tr>
           </thead>
           <tbody>
-            {items.map((tx) => (
+            {items.map((tx: Transaction) => (
               <tr key={tx.id} style={{ borderBottom: "0.5px solid #161b22" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
