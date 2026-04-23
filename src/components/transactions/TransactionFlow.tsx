@@ -22,6 +22,7 @@ import {
   TransactionReceipt,
   validateTransactionValues,
 } from "@/lib/transactions";
+import { useSandbox } from "@/contexts/SandboxContext";
 
 type ThemeMode = "light" | "dark";
 
@@ -64,6 +65,7 @@ function sanitizeAmount(value: string): string {
 export function TransactionFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { getCurrentScenario, isSandboxMode } = useSandbox();
   const timeoutRef = useRef<number | null>(null);
 
   const [theme, setTheme] = useState<ThemeMode>(() => getTheme(searchParams));
@@ -88,6 +90,7 @@ export function TransactionFlow() {
 
   const context = getTransactionContext(kind);
   const statusChips = buildStatusChips(kind, formValues);
+  const scenario = getCurrentScenario("transactions");
 
   useEffect(() => {
     if (timeoutRef.current) {
@@ -118,6 +121,40 @@ export function TransactionFlow() {
     setRequestMessage(null);
     setIsSubmitting(false);
   }, [kind, preview]);
+
+  // Handle sandbox scenarios
+  useEffect(() => {
+    if (isSandboxMode && scenario !== "success") {
+      if (scenario === "loading") {
+        setIsSubmitting(true);
+        setRequestMessage("Loading transaction data...");
+        const timer = setTimeout(() => {
+          setIsSubmitting(false);
+          setRequestMessage(null);
+        }, 3000);
+        return () => clearTimeout(timer);
+      } else if (scenario === "timeout") {
+        setIsSubmitting(true);
+        setRequestMessage("Request timed out. Please try again.");
+        const timer = setTimeout(() => {
+          setIsSubmitting(false);
+          setRequestMessage("Connection timeout. Please check your network and retry.");
+        }, 5000);
+        return () => clearTimeout(timer);
+      } else if (scenario === "partial-failure") {
+        setRequestMessage("Partial service degradation. Some features may be unavailable.");
+        setStage("form");
+      } else if (scenario === "empty") {
+        setStage("form");
+        setFormValues(getDefaultTransactionValues(kind));
+        setFieldErrors({});
+        setQuote(null);
+        setPending(null);
+        setReceipt(null);
+        setRequestMessage("No transaction data available.");
+      }
+    }
+  }, [scenario, isSandboxMode, kind]);
 
   useEffect(() => {
     return () => {
@@ -355,6 +392,13 @@ export function TransactionFlow() {
                 references, then review pending, success, and failure states
                 from one mobile-friendly surface.
               </p>
+              {isSandboxMode && (
+                <div className="mt-2">
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                    Sandbox: {scenario}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className={styles.topControls}>

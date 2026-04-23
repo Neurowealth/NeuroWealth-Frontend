@@ -1,4 +1,4 @@
-export type PortfolioScenario = "live" | "empty";
+export type PortfolioScenario = "live" | "empty" | "loading" | "partial-failure" | "timeout";
 export type PortfolioSource = "api" | "demo" | "fallback";
 export type ChartTone = "primary" | "accent" | "warning" | "neutral-strong" | "neutral-soft";
 export type ActivityKind = "deposit" | "yield" | "rebalance" | "withdrawal";
@@ -165,7 +165,11 @@ function normalizeActivityItem(item: unknown, index: number): ActivityItem {
 }
 
 export function parseScenario(value: string | null): PortfolioScenario {
-  return value === "empty" ? "empty" : "live";
+  if (value === "empty") return "empty";
+  if (value === "loading") return "loading";
+  if (value === "partial-failure") return "partial-failure";
+  if (value === "timeout") return "timeout";
+  return "live";
 }
 
 export function buildScenarioPayload(
@@ -190,6 +194,99 @@ export function buildScenarioPayload(
     };
   }
 
+  if (scenario === "loading") {
+    return {
+      summary: {
+        totalBalance: 0,
+        totalYield: 0,
+        apy: 0,
+        strategy: "loading",
+        strategyLabel: "Loading...",
+        strategyDescription: "Fetching your portfolio data.",
+      },
+      allocation: [],
+      activity: [],
+      updatedAt: new Date().toISOString(),
+      source: overrides.source ?? "demo",
+      notice: overrides.notice ?? "Loading portfolio data...",
+    };
+  }
+
+  if (scenario === "partial-failure") {
+    return {
+      summary: {
+        totalBalance: 25150.32,
+        totalYield: 847.21,
+        apy: 5.2,
+        strategy: "balanced",
+        strategyLabel: "Balanced (Degraded)",
+        strategyDescription: "Partial data available - some services may be unavailable.",
+      },
+      allocation: [
+        {
+          id: "alloc-usdc-lend",
+          label: "Blend USDC lending",
+          symbol: "USDC",
+          amount: 15120.45,
+          share: 60.1,
+          change: 1.2,
+          tone: "primary",
+        },
+        {
+          id: "alloc-error",
+          label: "Data unavailable",
+          symbol: "—",
+          amount: 0,
+          share: 39.9,
+          change: 0,
+          tone: "neutral-soft",
+        },
+      ],
+      activity: [
+        {
+          id: "event-yield",
+          kind: "yield",
+          title: "Yield settled",
+          detail: "Daily earnings swept into your core balance.",
+          occurredAt: "2026-03-24T07:42:00.000Z",
+          amount: 142.38,
+          status: "completed",
+        },
+        {
+          id: "event-error",
+          kind: "rebalance",
+          title: "Rebalance failed",
+          detail: "Unable to connect to rebalancing service.",
+          occurredAt: "2026-03-24T05:16:00.000Z",
+          amount: null,
+          status: "pending",
+        },
+      ],
+      updatedAt: new Date("2026-03-24T08:42:00.000Z").toISOString(),
+      source: overrides.source ?? "fallback",
+      notice: overrides.notice ?? "Partial service degradation - some features may be unavailable.",
+    };
+  }
+
+  if (scenario === "timeout") {
+    return {
+      summary: {
+        totalBalance: 0,
+        totalYield: 0,
+        apy: 0,
+        strategy: "error",
+        strategyLabel: "Connection Timeout",
+        strategyDescription: "Unable to reach portfolio service.",
+      },
+      allocation: [],
+      activity: [],
+      updatedAt: new Date().toISOString(),
+      source: overrides.source ?? "fallback",
+      notice: overrides.notice ?? "Request timed out. Please check your connection and try again.",
+    };
+  }
+
+  // Default to live/success scenario
   return {
     summary: {
       totalBalance: 46320.82,

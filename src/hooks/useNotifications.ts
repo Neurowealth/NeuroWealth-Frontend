@@ -1,21 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Notification, MOCK_NOTIFICATIONS } from "@/lib/mock-notifications";
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Load from local storage or use mock data
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    if (typeof window === "undefined") return MOCK_NOTIFICATIONS;
     const stored = localStorage.getItem("nw-notifications");
-    if (stored) {
-      setNotifications(JSON.parse(stored));
-    } else {
-      setNotifications(MOCK_NOTIFICATIONS);
-      localStorage.setItem("nw-notifications", JSON.stringify(MOCK_NOTIFICATIONS));
-    }
-    setLoading(false);
-  }, []);
+    if (stored) return JSON.parse(stored);
+    localStorage.setItem("nw-notifications", JSON.stringify(MOCK_NOTIFICATIONS));
+    return MOCK_NOTIFICATIONS;
+  });
+  const [loading] = useState(false);
 
   const markAsRead = (id: string) => {
     const updated = notifications.map((n) =>

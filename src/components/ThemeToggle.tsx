@@ -1,32 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeProvider";
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("nw-theme") !== "light";
+  });
 
   useEffect(() => {
-    const stored = localStorage.getItem("nw-theme");
-    const dark = stored !== "light";
-    setIsDark(dark);
-    document.documentElement.classList.toggle("dark", dark);
-  }, []);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, [isDark]);
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   function toggle() {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("nw-theme", next ? "dark" : "light");
+    if (theme === "light") {
+      setTheme("dark");
+    } else if (theme === "dark") {
+      setTheme("light");
+    } else {
+      // If system, toggle to opposite of current resolved theme
+      setTheme(resolvedTheme === "light" ? "dark" : "light");
+    }
   }
 
   return (
     <button
       onClick={toggle}
       className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Light mode" : "Dark mode"}
+      aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
     >
-      {isDark ? (
+      {resolvedTheme === "dark" ? (
         /* sun icon */
         <svg
           xmlns="http://www.w3.org/2000/svg"

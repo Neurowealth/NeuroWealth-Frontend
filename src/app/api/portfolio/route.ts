@@ -24,8 +24,9 @@ export async function GET(request: NextRequest) {
   const portfolioPath =
     process.env.NEUROWEALTH_PORTFOLIO_PATH ?? "/portfolio/overview";
 
-  if (scenario === "empty") {
-    return NextResponse.json(buildScenarioPayload("empty"), {
+  // Handle all sandbox scenarios
+  if (scenario !== "live") {
+    return NextResponse.json(buildScenarioPayload(scenario), {
       headers: {
         "Cache-Control": "no-store",
         "x-neurowealth-source": "demo",

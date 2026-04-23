@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Globe, Clock, DollarSign, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Globe, Clock, DollarSign, Save, X, AlertCircle, CheckCircle2, Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { mockAudit } from "@/lib/mock-audit";
 import { SettingsSectionSkeleton } from "@/components/ui/Skeleton";
+import { useTheme, ThemeMode } from "@/contexts/ThemeProvider";
 
 interface PreferencesData {
   locale: string;
   timezone: string;
   currencyFormat: string;
+  theme: ThemeMode;
 }
 
 const LOCALES = [
@@ -46,6 +48,7 @@ const DEFAULT: PreferencesData = {
   locale: "en-US",
   timezone: "UTC",
   currencyFormat: "USD",
+  theme: "system",
 };
 
 export default function PreferencesPage() {
@@ -156,6 +159,60 @@ export default function PreferencesPage() {
             ) : (
               <p className="settings-value">
                 {LOCALES.find((l) => l.value === saved.locale)?.label || saved.locale}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div className="settings-card-icon">
+            <Monitor size={18} />
+          </div>
+          <div>
+            <h2 className="settings-card-title">Appearance</h2>
+            <p className="settings-card-desc">Theme and visual display preferences</p>
+          </div>
+        </div>
+
+        <div className="settings-card-body">
+          <div className="settings-field">
+            <label className="settings-label">
+              Theme
+            </label>
+            {editing ? (
+              <div className="theme-options">
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, theme: "light" })}
+                  className={`theme-option ${draft.theme === "light" ? "active" : ""}`}
+                >
+                  <Sun size={16} />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, theme: "dark" })}
+                  className={`theme-option ${draft.theme === "dark" ? "active" : ""}`}
+                >
+                  <Moon size={16} />
+                  <span>Dark</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, theme: "system" })}
+                  className={`theme-option ${draft.theme === "system" ? "active" : ""}`}
+                >
+                  <Monitor size={16} />
+                  <span>System</span>
+                </button>
+              </div>
+            ) : (
+              <p className="settings-value">
+                {saved.theme === "light" && "Light"}
+                {saved.theme === "dark" && "Dark"}
+                {saved.theme === "system" && "System"}
               </p>
             )}
           </div>

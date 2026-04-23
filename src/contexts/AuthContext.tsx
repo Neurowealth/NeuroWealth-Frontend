@@ -15,17 +15,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === "undefined") return null;
     const session = mockAuth.getSession();
-    if (session) {
-      setUser(session.user);
-    }
-    setLoading(false);
-  }, []);
+    return session ? session.user : null;
+  });
+  const [loading] = useState(false);
+  const router = useRouter();
 
   const signIn = async (email: string, password: string) => {
     const session = await mockAuth.signIn(email, password);

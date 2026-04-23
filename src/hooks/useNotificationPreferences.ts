@@ -1,17 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { NotificationPreferences, DEFAULT_PREFERENCES } from "@/lib/mock-preferences";
 
 export function useNotificationPreferences() {
-  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
+  const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
+    if (typeof window === "undefined") return DEFAULT_PREFERENCES;
     const stored = localStorage.getItem("nw-notification-preferences");
-    if (stored) {
-      setPreferences(JSON.parse(stored));
-    }
-    setLoading(false);
-  }, []);
+    return stored ? JSON.parse(stored) : DEFAULT_PREFERENCES;
+  });
+  const [loading] = useState(false);
 
   const updatePreference = (
     section: "categories" | "channels",

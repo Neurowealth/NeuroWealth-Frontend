@@ -5,6 +5,7 @@ export * from "./Badge";
 export * from "./Button";
 export * from "./Card";
 export * from "./EmptyState";
+export * from "./ErrorBlock";
 export * from "./ErrorPage";
 export * from "./FormErrors";
 export * from "./Input";

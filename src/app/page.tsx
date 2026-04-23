@@ -1,34 +1,43 @@
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/features/landing/HeroSection";
-import { FeaturesSection } from "@/features/landing/FeaturesSection";
-import { HowItWorksSection } from "@/features/landing/HowItWorksSection";
-import { StrategiesSection } from "@/features/landing/StrategiesSection";
-import { SecuritySection } from "@/features/landing/SecuritySection";
-import { CtaSection } from "@/features/landing/CtaSection";
 import { HomeFooter } from "@/features/landing/HomeFooter";
+
+const FeaturesSection = dynamic(
+  () => import("@/features/landing/FeaturesSection").then((m) => m.FeaturesSection),
+  { ssr: true }
+);
+const HowItWorksSection = dynamic(
+  () => import("@/features/landing/HowItWorksSection").then((m) => m.HowItWorksSection),
+  { ssr: true }
+);
+const StrategiesSection = dynamic(
+  () => import("@/features/landing/StrategiesSection").then((m) => m.StrategiesSection),
+  { ssr: true }
+);
+const SecuritySection = dynamic(
+  () => import("@/features/landing/SecuritySection").then((m) => m.SecuritySection),
+  { ssr: true }
+);
+const CtaSection = dynamic(
+  () => import("@/features/landing/CtaSection").then((m) => m.CtaSection),
+  { ssr: true }
+);
 
 export default function Home() {
   return (
     <>
       <Navbar />
 
-      <main>
-        {/* Overview */}
+      <main id="main-content">
+        {/* Overview — eagerly loaded (above the fold) */}
         <HeroSection />
 
-        {/* Features */}
+        {/* Below-fold sections — dynamically split for faster initial load */}
         <FeaturesSection />
-
-        {/* How It Works */}
         <HowItWorksSection />
-
-        {/* Strategies */}
         <StrategiesSection />
-
-        {/* Security */}
         <SecuritySection />
-
-        {/* Final CTA */}
         <CtaSection />
       </main>
 

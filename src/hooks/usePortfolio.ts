@@ -18,7 +18,7 @@ export function usePortfolio(address: string | null) {
   useEffect(() => {
     if (!address || !env.apiUrl) return;
 
-    setLoading(true);
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
     fetch(`${env.apiUrl}/portfolio/${address}`)
       .then((r) => r.json())
       .then((data) => setPortfolio(data))

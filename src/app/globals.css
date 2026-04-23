@@ -19,11 +19,22 @@
   --chart-warning: #f59e0b;
   --chart-neutral-strong: #64748b;
   --chart-neutral-soft: #94a3b8;
-  /* Skeleton animation tokens */
-  --skeleton-duration: 1.4s;
-  --skeleton-base: rgba(148, 163, 184, 0.10);
-  --skeleton-shine: rgba(148, 163, 184, 0.24);
-  --skeleton-radius-default: 6px;
+  /* Motion tokens */
+  --motion-duration-120: 120ms;
+  --motion-duration-180: 180ms;
+  --motion-duration-240: 240ms;
+  --motion-easing-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* Reduced motion preference */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {
