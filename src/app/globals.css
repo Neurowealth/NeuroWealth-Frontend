@@ -1,80 +1,64 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens (CSS-first, Tailwind v4 @theme) ──────────────────────────
+   SINGLE SOURCE OF TRUTH for all design tokens.
+   tailwind.config.ts: content paths + animations only.
+   tailwind.config.js: shadcn HSL vars only.
+────────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-dark-900: #020617;
-  --color-dark-800: #0f172a;
-  --color-dark-700: #1e293b;
-  --color-brand-400: #38bdf8;
-  --shadow-card: 0 8px 30px rgba(2, 6, 23, 0.35);
+  --color-app-bg:           #030712;
+  --color-surface:          #111827;
+  --color-surface-border:   #1F2937;
+  --color-surface-elevated: #1F2937;
+  --color-dark-900:         #020617;
+  --color-dark-800:         #0f172a;
+  --color-dark-700:         #1e293b;
+  --color-brand-400:        #38bdf8;
+  --color-primary:          #0EA5E9;
+  --color-primary-hover:    #0284C7;
+  --color-text-primary:     #F9FAFB;
+  --color-text-dow-card:            0 8px 30px rgba(2, 6, 23, 0.35);
+  --font-sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
-  --font-sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --positive: #10b981;
-  --negative: #ef4444;
-  --neutral: #94a3b8;
-  --chart-primary: #0f766e;
-  --chart-accent: #38bdf8;
-  --chart-warning: #f59e0b;
+  --positive:             #10b981;
+  --negative:             #ef4444;
+  --neutral:              #94a3b8;
+  --chart-primary:        #0f766e;
+  --chart-accent:         #38bdf8;
+  --chart-warning:        #f59e0b;
   --chart-neutral-strong: #64748b;
-  --chart-neutral-soft: #94a3b8;
-  /* Motion tokens */
-  --motion-duration-120: 120ms;
-  --motion-duration-180: 180ms;
-  --motion-duration-240: 240ms;
+  --chart-neutral-soft:   #94a3b8;
+  --motion-duration-120:  120ms;
+  --motion-duration-180:  180ms;
+  --motion-duration-240:  240ms;
   --motion-easing-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* Reduced motion preference */
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  min-height: 100%;
-}
-
+* { box-sizing: border-box; }
+html { min-height: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
-  background: #020617;
+  background: var(--color-dark-900);
   color: #e2e8f0;
   font-family: var(--font-sans);
 }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+::selection { background: rgba(56, 189, 248, 0.24); }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-::selection {
-  background: rgba(56, 189, 248, 0.24);
-}
-
-/* Skeleton shimmer animation */
 @keyframes skeletonShimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
 }
