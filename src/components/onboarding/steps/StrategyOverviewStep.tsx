@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface StrategyOverviewStepProps {
   onNext: () => void;
@@ -57,7 +58,7 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Save to localStorage for persistence
-      localStorage.setItem('user-strategy', selectedStrategy);
+      localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, selectedStrategy);
       
       onNext();
     } catch (error) {
