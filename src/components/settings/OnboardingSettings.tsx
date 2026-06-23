@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/notifications/ToastProvider';
 import { clearOnboardingState, loadOnboardingState as getOnboardingState } from '@/lib/onboarding-state';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface OnboardingState {
   completed: boolean;
@@ -40,8 +41,8 @@ export default function OnboardingSettings() {
     try {
       // Clear onboarding state
       clearOnboardingState();
-      localStorage.removeItem('user-strategy');
-      localStorage.removeItem('first-deposit');
+      localStorage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
+      localStorage.removeItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT);
       
       // Reset state
       setOnboardingState(null);
