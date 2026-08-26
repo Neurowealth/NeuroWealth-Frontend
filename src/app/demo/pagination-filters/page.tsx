@@ -12,12 +12,12 @@ export default function PaginationFiltersDemo() {
   >("transactions");
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 py-12 px-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 py-12 px-6">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold">Pagination & Filter Chips</h1>
-          <p className="text-gray-400">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Pagination & Filter Chips</h1>
+          <p className="text-gray-500 dark:text-gray-400">
             Accessible pagination controls and reusable filter chips with count
             badges
           </p>
@@ -27,7 +27,7 @@ export default function PaginationFiltersDemo() {
         <div
           role="tablist"
           aria-label="Pagination and filters demo sections"
-          className="flex gap-3 border-b border-gray-700"
+          className="flex gap-3 border-b border-gray-200 dark:border-gray-700"
         >
           <button
             role="tab"
@@ -37,8 +37,8 @@ export default function PaginationFiltersDemo() {
             onClick={() => setActiveView("transactions")}
             className={`px-4 py-2 font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/70 ${
               activeView === "transactions"
-                ? "border-blue-500 text-blue-400"
-                : "border-transparent text-gray-400 hover:text-gray-300"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
             Transaction List
@@ -51,8 +51,8 @@ export default function PaginationFiltersDemo() {
             onClick={() => setActiveView("strategies")}
             className={`px-4 py-2 font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/70 ${
               activeView === "strategies"
-                ? "border-blue-500 text-blue-400"
-                : "border-transparent text-gray-400 hover:text-gray-300"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
             Strategy Cards
@@ -65,8 +65,8 @@ export default function PaginationFiltersDemo() {
             onClick={() => setActiveView("showcase")}
             className={`px-4 py-2 font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/70 ${
               activeView === "showcase"
-                ? "border-blue-500 text-blue-400"
-                : "border-transparent text-gray-400 hover:text-gray-300"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
             Component Showcase
@@ -120,18 +120,18 @@ function ComponentShowcase() {
   return (
     <div className="space-y-12">
       {/* Filter Chips Showcase */}
-      <section className="bg-gray-800 rounded-lg p-8 space-y-6">
+      <section className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent rounded-lg p-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Filter Chips</h2>
-          <p className="text-sm text-gray-400">
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">Filter Chips</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Clickable filter chips with count badges and clear-all control
           </p>
         </div>
 
-        <div className="bg-gray-900 rounded p-6 space-y-6">
+        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-transparent rounded p-6 space-y-6">
           {/* State 1: No filters */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-400">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
               No Filters Active
             </h3>
             <FilterChips
@@ -143,7 +143,7 @@ function ComponentShowcase() {
 
           {/* State 2: With filters */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-400">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
               Multiple Filters Active
             </h3>
             <FilterChips
@@ -154,7 +154,7 @@ function ComponentShowcase() {
           </div>
 
           {/* Design notes */}
-          <div className="pt-4 border-t border-gray-700 space-y-2 text-sm text-gray-300">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2 text-sm text-gray-600 dark:text-gray-300">
             <p>✓ Min height 36px (pointer) / 44px effective (touch)</p>
             <p>✓ Count badges: 12–14px, high contrast (AA)</p>
             <p>✓ Clear-all button always visible when filters active</p>
@@ -165,18 +165,18 @@ function ComponentShowcase() {
       </section>
 
       {/* Pagination Showcase */}
-      <section className="bg-gray-800 rounded-lg p-8 space-y-6">
+      <section className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent rounded-lg p-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Pagination</h2>
-          <p className="text-sm text-gray-400">
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">Pagination</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Navigation controls with prev/next, jump, and page numbers
           </p>
         </div>
 
-        <div className="bg-gray-900 rounded p-6 space-y-6">
+        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-transparent rounded p-6 space-y-6">
           {/* Pagination 1: Many pages */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-400">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
               Large Dataset (523 items)
             </h3>
             <Pagination
@@ -189,8 +189,8 @@ function ComponentShowcase() {
           </div>
 
           {/* Pagination 2: Few pages */}
-          <div className="space-y-3 pt-4 border-t border-gray-700">
-            <h3 className="text-sm font-medium text-gray-400">
+          <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
               Small Dataset (25 items)
             </h3>
             <Pagination
@@ -203,7 +203,7 @@ function ComponentShowcase() {
           </div>
 
           {/* Design notes */}
-          <div className="pt-4 border-t border-gray-700 space-y-2 text-sm text-gray-300">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2 text-sm text-gray-600 dark:text-gray-300">
             <p>✓ All controls min 36px (pointer) / 44px (touch)</p>
             <p>✓ Page numbers show ellipsis for large ranges</p>
             <p>✓ Jump input appears when &gt;5 pages</p>
@@ -215,12 +215,12 @@ function ComponentShowcase() {
       </section>
 
       {/* Accessibility Features */}
-      <section className="bg-gray-800 rounded-lg p-8 space-y-4">
-        <h2 className="text-2xl font-semibold mb-4">Accessibility</h2>
+      <section className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent rounded-lg p-8 space-y-4">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Accessibility</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-semibold text-green-400 mb-2">Filter Chips</h3>
-            <ul className="space-y-1 text-sm text-gray-300">
+            <h3 className="font-semibold text-green-700 dark:text-green-400 mb-2">Filter Chips</h3>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <li>✓ role=&quot;group&quot; for container</li>
               <li>✓ role=&quot;checkbox&quot; for each chip</li>
               <li>✓ aria-checked reflects active state</li>
@@ -230,8 +230,8 @@ function ComponentShowcase() {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold text-green-400 mb-2">Pagination</h3>
-            <ul className="space-y-1 text-sm text-gray-300">
+            <h3 className="font-semibold text-green-700 dark:text-green-400 mb-2">Pagination</h3>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <li>✓ nav with aria-label=&quot;Pagination&quot;</li>
               <li>✓ aria-current=&quot;page&quot; on active page</li>
               <li>✓ aria-label on prev/next buttons</li>
@@ -244,9 +244,9 @@ function ComponentShowcase() {
       </section>
 
       {/* Mobile Responsiveness */}
-      <section className="bg-gray-800 rounded-lg p-8 space-y-4">
-        <h2 className="text-2xl font-semibold mb-4">Mobile & Touch</h2>
-        <div className="bg-gray-900 rounded p-4 space-y-2 text-sm text-gray-300">
+      <section className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent rounded-lg p-8 space-y-4">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Mobile & Touch</h2>
+        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-transparent rounded p-4 space-y-2 text-sm text-gray-700 dark:text-gray-300">
           <p>✓ All interactive targets: 44px minimum (WCAG 2.1 AAA)</p>
           <p>✓ Filter chips wrap on narrow screens</p>
           <p>✓ Pagination reduces to prev/next on mobile (&lt;640px)</p>
@@ -256,9 +256,9 @@ function ComponentShowcase() {
       </section>
 
       {/* Integration Notes */}
-      <section className="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-8 space-y-3">
-        <h3 className="font-semibold text-blue-400 mb-2">Integration</h3>
-        <ul className="space-y-2 text-sm text-blue-100">
+      <section className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-500 rounded-lg p-8 space-y-3">
+        <h3 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Integration</h3>
+        <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-100">
           <li>
             ✓ <strong>TransactionList</strong> - Table view with filters and
             pagination
