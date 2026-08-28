@@ -22,6 +22,18 @@ test("scrubPII redacts sensitive keys", () => {
   assert.equal((result.nested as Record<string, unknown>).count, 1);
 });
 
+test("scrubPII redacts error and stack fields regardless of content", () => {
+  const result = scrubPII({
+    error: "Cannot read properties of undefined (reading 'foo')",
+    stack: "Error: boom\n    at /Users/dev/app/src/lib/thing.ts:42:7",
+    code: "UNKNOWN_ERROR",
+  }) as Record<string, unknown>;
+
+  assert.equal(result.error, "***REDACTED***");
+  assert.equal(result.stack, "***REDACTED***");
+  assert.equal(result.code, "UNKNOWN_ERROR");
+});
+
 test("scrubPII redacts email patterns in string values", () => {
   const result = scrubPII("Contact user@example.com for help");
   assert.equal(result, "Contact ***REDACTED*** for help");

@@ -13,10 +13,10 @@ export function DiagnosticsPanel() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(
-      process.env.NODE_ENV !== "production" ||
-      window.location.search.includes("debug=true")
-    );
+    // Gated on the build's NODE_ENV only — this must never be reachable via a
+    // client-controlled signal like a query param, since the panel streams
+    // live logger output (including error/stack details) with no auth check.
+    setIsVisible(process.env.NODE_ENV !== "production");
   }, []);
 
   if (!isVisible) {

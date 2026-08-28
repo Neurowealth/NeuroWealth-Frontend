@@ -12,7 +12,7 @@
  */
 
 export type CvdMode = "protanopia" | "deuteranopia" | "tritanopia";
-export type ChartPatternKey = "solid" | "dash" | "dot" | "longDash";
+type ChartPatternKey = "solid" | "dash" | "dot" | "longDash";
 
 export const CVD_PALETTES = {
     // Primary palette: Sky/Orange/Magenta/Neutral.
@@ -71,7 +71,7 @@ function hexToRgb(hex: string): [number, number, number] {
  * Verify color contrast ratio (WCAG)
  * Returns true if contrast >= 4.5:1 (AA standard for text)
  */
-export function getContrastRatio(color1: string, color2: string): number {
+function getContrastRatio(color1: string, color2: string): number {
     const getLuminance = (hex: string): number => {
         const [r, g, b] = hexToRgb(hex);
         const [rs, gs, bs] = [r, g, b].map((c) => {

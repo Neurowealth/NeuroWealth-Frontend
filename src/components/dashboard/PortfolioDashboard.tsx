@@ -175,6 +175,7 @@ export function PortfolioDashboard() {
           loadError instanceof ApiRequestError || loadError instanceof Error
             ? loadError.message
             : "Unable to load portfolio widgets.";
+        logger.error("portfolio_fetch_failed", loadError);
         setError(message);
         setPortfolio(null);
       } finally {

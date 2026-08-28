@@ -71,6 +71,8 @@ const SENSITIVE_KEY_FRAGMENTS = [
   "mnemonic",
   "seed",
   "private",
+  "error",
+  "stack",
 ] as const;
 
 const SENSITIVE_VALUE_PATTERN =

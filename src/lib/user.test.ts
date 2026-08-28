@@ -86,6 +86,27 @@ describe("user module", () => {
       });
       assert.equal(user.displayName, "usr-123");
     });
+
+    it("defaults role to user", () => {
+      const user = adaptMockAuthUser({
+        id: "1",
+        email: "test@example.com",
+        name: "Test",
+        createdAt: "2023-01-01",
+      });
+      assert.equal(user.role, "user");
+    });
+
+    it("passes through explicit role", () => {
+      const user = adaptMockAuthUser({
+        id: "1",
+        email: "test@example.com",
+        name: "Test",
+        createdAt: "2023-01-01",
+        role: "admin",
+      });
+      assert.equal(user.role, "admin");
+    });
   });
 
   describe("adaptApiUser", () => {
@@ -123,6 +144,21 @@ describe("user module", () => {
         email: null,
       });
       assert.equal(user.displayName, "User");
+    });
+
+    it("defaults role to user", () => {
+      const user = adaptApiUser({
+        id: "1",
+      });
+      assert.equal(user.role, "user");
+    });
+
+    it("passes through explicit role", () => {
+      const user = adaptApiUser({
+        id: "1",
+        role: "admin",
+      });
+      assert.equal(user.role, "admin");
     });
   });
 });

@@ -38,7 +38,7 @@ const MOCK_USERS: Record<string, { password: string; user: MockAuthUserRecord }>
  * Uses crypto.randomUUID (Web Crypto API) to ensure unpredictability,
  * independent of NEXT_PUBLIC_DEMO_SEED or any seeded RNG.
  */
-export function generateToken(): string {
+function generateToken(): string {
   // Use crypto API for secure randomness
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return `mock_token_${crypto.randomUUID()}`;
@@ -61,7 +61,7 @@ function isLegacyMockAuthUserRecord(value: unknown): value is MockAuthUserRecord
   );
 }
 
-export function normalizeSession(value: unknown): AuthSession | null {
+function normalizeSession(value: unknown): AuthSession | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -93,6 +93,17 @@ export function normalizeSession(value: unknown): AuthSession | null {
   };
 }
 
+/**
+ * Rate limiting caveat (mock auth only).
+ *
+ * checkRateLimit() is backed by an in-memory Map scoped to this JS heap (see
+ * rate-limit.ts). There is no server-side /api/login route, so a hard refresh
+ * or a fresh tab resets the attempt counter — this guard is a UX deterrent
+ * against casual retries, not a real brute-force protection. Once auth moves
+ * off this mock layer onto a real backend, sign-in (and sign-up) rate limiting
+ * must be enforced server-side, matching how the cookie-signature gap is
+ * documented in api-auth.ts.
+ */
 export const mockAuth: AuthAdapter = {
   /** Read the current session from localStorage (client-only). */
   getSession(): AuthSession | null {
@@ -152,6 +163,16 @@ export const mockAuth: AuthAdapter = {
     name: string,
     password: string,
   ): Promise<AuthSession> {
+    const limit = checkRateLimit(`signUp:${email.toLowerCase()}`, {
+      maxRequests: 5,
+      windowMs: 60_000,
+    });
+    if (!limit.allowed) {
+      throw new Error(
+        "Too many sign-up attempts. Please try again later.",
+      );
+    }
+
     await new Promise((r) => setTimeout(r, 400));
     if (MOCK_USERS[email.toLowerCase()]) {
       // Use a generic message to avoid confirming whether an account exists.

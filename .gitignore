@@ -63,3 +63,7 @@ install.log
 # issue templates
 issue.md
 pr.md
+
+# mimo / mimocode
+.mimocode/
+.mimo/

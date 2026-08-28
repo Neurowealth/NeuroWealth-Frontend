@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import FilterChips from "./FilterChips";
 import Pagination from "./Pagination";
 import { useTransactionList, buildFilterOptions, MOCK_TRANSACTIONS, type Transaction } from "../../hooks/useTransactionList";
@@ -60,7 +60,7 @@ export default function TransactionList() {
   const { items, totalItems, page, setPage, selectedFilters, setSelectedFilters, itemsPerPage } =
     useTransactionList(8);
 
-  const filterOptions = buildFilterOptions(MOCK_TRANSACTIONS);
+  const filterOptions = useMemo(() => buildFilterOptions(MOCK_TRANSACTIONS), []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

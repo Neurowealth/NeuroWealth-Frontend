@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDiagnostics } from "@/hooks/useDiagnostics";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { LogViewer } from "./LogViewer";
 import { EventMonitor } from "./EventMonitor";
 
@@ -12,6 +13,8 @@ export interface DiagnosticsPanelContentProps {
 export function DiagnosticsPanelContent({ onClose }: DiagnosticsPanelContentProps) {
   const [activeTab, setActiveTab] = useState<"logs" | "events" | "env">("logs");
   const { logs, events, clearLogs, clearEvents, env } = useDiagnostics();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, true);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -26,6 +29,7 @@ export function DiagnosticsPanelContent({ onClose }: DiagnosticsPanelContentProp
   return (
     <div className="fixed bottom-4 right-4 z-dev-tool">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="diagnostics-panel-title"

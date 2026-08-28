@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { renderHook } from "@/test-utils/render-hook";
+import { renderHook, act } from "@/test-utils/render-hook";
 import { useNotificationPreferences } from "./useNotificationPreferences";
 import { DEFAULT_PREFERENCES } from "@/lib/mock-preferences";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
@@ -55,5 +55,27 @@ describe("useNotificationPreferences", () => {
     const { result } = renderHook(() => useNotificationPreferences());
 
     assert.deepEqual(result.current.preferences, DEFAULT_PREFERENCES);
+  });
+
+  it("updates categories, channels, and emailDigest without clobbering other sections", () => {
+    const { result } = renderHook(() => useNotificationPreferences());
+
+    act(() => {
+      result.current.updatePreference("categories", "promotions", true);
+      result.current.updatePreference("channels", "email", false);
+      result.current.updatePreference("emailDigest", "weeklyDigest", false);
+    });
+
+    const expected = {
+      ...DEFAULT_PREFERENCES,
+      categories: { ...DEFAULT_PREFERENCES.categories, promotions: true },
+      channels: { ...DEFAULT_PREFERENCES.channels, email: false },
+      emailDigest: { ...DEFAULT_PREFERENCES.emailDigest, weeklyDigest: false },
+    };
+    assert.deepEqual(result.current.preferences, expected);
+    assert.deepEqual(
+      JSON.parse(localStorage.getItem(NOTIFICATION_PREFERENCES_STORAGE_KEY)!),
+      expected,
+    );
   });
 });
