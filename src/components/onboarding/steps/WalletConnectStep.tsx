@@ -82,12 +82,20 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
             key={wallet.id}
             className={`
               relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-200
-              ${selectedWallet === wallet.id 
-                ? 'border-green-500 bg-green-500/10' 
+              ${selectedWallet === wallet.id
+                ? 'border-green-500 bg-green-500/10'
                 : 'border-white/10 bg-white/5 hover:bg-white/10'
               }
             `}
             onClick={() => !isConnecting && setSelectedWallet(wallet.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !isConnecting) {
+                e.preventDefault();
+                setSelectedWallet(wallet.id);
+              }
+            }}
           >
             {wallet.recommended && (
               <div className="absolute top-2 right-2">
