@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import dynamic from "next/dynamic";
 import { ClientProviders } from "@/components/ClientProviders";
@@ -18,9 +17,12 @@ const inter = Inter({ subsets: ["latin"] });
 
 /**
  * Theme boot script: runs before page paint to prevent theme flash.
- * Uses strategy="beforeInteractive" to block rendering until script runs.
+ * Rendered as a raw inline <script> in <head> — deliberately NOT next/script.
+ * Even strategy="beforeInteractive" only guarantees execution before Next's own
+ * hydration code, not before first paint, which is what flash prevention needs.
  * See docs/third-party-scripts.md for guidance on adding more scripts.
- * Any analytics/wallet SDKs should use strategy="afterInteractive" or "lazyOnload".
+ * Any analytics/wallet SDKs should use next/script with strategy
+ * "afterInteractive" or "lazyOnload".
  *
  * Must mirror ThemeProvider resolution (see theme-persistence.ts).
  */

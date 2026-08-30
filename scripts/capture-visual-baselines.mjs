@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium, devices } from "playwright";
+import { chromium, devices } from "@playwright/test";
 
 const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
 const DATE_STAMP = process.env.VISUAL_BASELINE_DATE ?? "2026-03-28";

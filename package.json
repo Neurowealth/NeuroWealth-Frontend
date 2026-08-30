@@ -19,12 +19,11 @@
     "validate:env:server": "tsx scripts/validate-env.ts",
     "validate:env:frontend": "tsx scripts/validate-frontend-env.ts",
     "analyze": "ANALYZE=true next build",
-    "validate:config": "node -e \"['package.json','tsconfig.json'].forEach(f=>{try{const d=JSON.parse(require('fs').readFileSync(f,'utf8'));console.log('✓',f,'is valid JSON');}catch(e){console.error('✗',f,'validation failed:',e.message);process.exit(1);}})\"",
+    "validate:config": "node -e \"const c={'package.json':['name','packageManager'],'tsconfig.json':['compilerOptions','include']};for(const [f,keys] of Object.entries(c)){try{const d=JSON.parse(require('fs').readFileSync(f,'utf8'));console.log('✓',f,'is valid JSON');for(const k of keys){if(!d[k])throw new Error('Missing required field: '+k);}console.log('✓',f,'has required fields');}catch(e){console.error('✗',f,'validation failed:',e.message);process.exit(1);}}\"",
     "prepare": "husky"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.9.5",
-    "@reduxjs/toolkit": "^2.8.0",
     "@stellar/freighter-api": "^6.0.1",
     "@stellar/stellar-sdk": "^14.4.3",
     "clsx": "^2.1.0",
@@ -61,7 +60,6 @@
     "husky": "^9",
     "jsdom": "^29.1.1",
     "lint-staged": "^15",
-    "playwright": "^1.58.2",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.20.6",
