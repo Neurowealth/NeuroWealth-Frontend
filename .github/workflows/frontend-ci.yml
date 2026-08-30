@@ -25,37 +25,10 @@ jobs:
           node-version: "20"
           cache: "yarn"
 
-      - name: Validate package.json
-        run: |
-          node -e "
-          const fs = require('fs');
-          try {
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            console.log('✓ package.json is valid JSON');
-            if (!pkg.name) throw new Error('Missing required field: name');
-            if (!pkg.packageManager) throw new Error('Missing required field: packageManager');
-            console.log('✓ package.json has required fields');
-          } catch (e) {
-            console.error('✗ package.json validation failed:', e.message);
-            process.exit(1);
-          }
-          "
-
-      - name: Validate tsconfig.json
-        run: |
-          node -e "
-          const fs = require('fs');
-          try {
-            const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
-            console.log('✓ tsconfig.json is valid JSON');
-            if (!tsconfig.compilerOptions) throw new Error('Missing required field: compilerOptions');
-            if (!tsconfig.include) throw new Error('Missing required field: include');
-            console.log('✓ tsconfig.json has required fields');
-          } catch (e) {
-            console.error('✗ tsconfig.json validation failed:', e.message);
-            process.exit(1);
-          }
-          "
+      # Single source of truth for JSON config validation; see the
+      # validate:config script in package.json.
+      - name: Validate JSON config files
+        run: yarn validate:config
 
       - name: Install dependencies
         run: yarn install
