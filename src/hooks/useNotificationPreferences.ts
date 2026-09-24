@@ -55,19 +55,6 @@ export function useNotificationPreferences() {
 
   useStorageSync(NOTIFICATION_PREFERENCES_STORAGE_KEY, syncPreferences);
 
-  useEffect(() => {
-    const handleSync = () => {
-      setPreferences(readNotificationPreferences());
-    };
-
-    window.addEventListener("storage", handleSync);
-    window.addEventListener("notification-preferences-updated", handleSync);
-    return () => {
-      window.removeEventListener("storage", handleSync);
-      window.removeEventListener("notification-preferences-updated", handleSync);
-    };
-  }, []);
-
   const updatePreference = (
     section: "categories" | "channels" | "emailDigest",
     key: string,

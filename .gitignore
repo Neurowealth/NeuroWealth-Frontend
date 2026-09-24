@@ -8,6 +8,7 @@
 
 # testing
 /coverage
+.nyc_output/
 **/__snapshots__
 **/*.snap
 /test-results/

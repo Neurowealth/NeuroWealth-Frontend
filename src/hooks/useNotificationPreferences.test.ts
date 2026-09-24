@@ -80,6 +80,14 @@ describe("useNotificationPreferences", () => {
     );
   });
 
+  // Regression test for Issue #849: dead useEffect block referenced undefined useEffect and
+  // readNotificationPreferences(), causing a ReferenceError on every render.
+  it("mounts without throwing (regression for #849 dead useEffect block)", () => {
+    assert.doesNotThrow(() => {
+      renderHook(() => useNotificationPreferences());
+    });
+  });
+
   it("syncs when another tab updates the same storage key", () => {
     const { result } = renderHook(() => useNotificationPreferences());
 
