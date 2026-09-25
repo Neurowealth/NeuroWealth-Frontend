@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   mapErrorCodeToErrorMode,
   getTransactionRecoveryUI,
+  parseAmount,
   type ErrorMode,
   type TransactionRecoveryUI,
 } from "@/lib/transactions";
@@ -193,4 +194,37 @@ test("getTransactionRecoveryUI secondary and tertiary actions are optional or va
       );
     }
   });
+});
+
+// ── parseAmount ──────────────────────────────────────────────────────────────
+
+test("parseAmount accepts plain decimal amounts", () => {
+  assert.equal(parseAmount("123"), 123);
+  assert.equal(parseAmount("123.45"), 123.45);
+  assert.equal(parseAmount(".5"), 0.5);
+  assert.equal(parseAmount("-10.5"), -10.5);
+  assert.equal(parseAmount("1,234.56"), 1234.56);
+  assert.equal(parseAmount("  42  "), 42);
+});
+
+test("parseAmount rejects hexadecimal input", () => {
+  assert.ok(Number.isNaN(parseAmount("0x10")));
+  assert.ok(Number.isNaN(parseAmount("0X1A")));
+  assert.ok(Number.isNaN(parseAmount("-0x1")));
+  assert.ok(Number.isNaN(parseAmount("0xFF")));
+});
+
+test("parseAmount rejects scientific-notation input", () => {
+  assert.ok(Number.isNaN(parseAmount("1e10")));
+  assert.ok(Number.isNaN(parseAmount("1E10")));
+  assert.ok(Number.isNaN(parseAmount("1e-5")));
+  assert.ok(Number.isNaN(parseAmount("1.5e3")));
+});
+
+test("parseAmount rejects other non-numeric or malformed input", () => {
+  assert.ok(Number.isNaN(parseAmount("abc")));
+  assert.ok(Number.isNaN(parseAmount("")));
+  assert.ok(Number.isNaN(parseAmount("5abc")));
+  assert.ok(Number.isNaN(parseAmount("Infinity")));
+  assert.ok(Number.isNaN(parseAmount("NaN")));
 });
