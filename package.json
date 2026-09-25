@@ -19,7 +19,7 @@
     "validate:env:server": "tsx scripts/validate-env.ts",
     "validate:env:frontend": "tsx scripts/validate-frontend-env.ts",
     "analyze": "ANALYZE=true next build",
-    "validate:config": "node -e \"const c={'package.json':['name','packageManager'],'tsconfig.json':['compilerOptions','include']};for(const [f,keys] of Object.entries(c)){try{const d=JSON.parse(require('fs').readFileSync(f,'utf8'));console.log('✓',f,'is valid JSON');for(const k of keys){if(!d[k])throw new Error('Missing required field: '+k);}console.log('✓',f,'has required fields');}catch(e){console.error('✗',f,'validation failed:',e.message);process.exit(1);}}\"",
+    "validate:config": "node scripts/validate-config.js",
     "prepare": "husky"
   },
   "dependencies": {
