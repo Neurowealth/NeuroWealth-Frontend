@@ -54,6 +54,43 @@ export default function ImageCrop({
     onCropChange?.({ ...c });
   }, [onCropChange]);
 
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, type: Handle | "move") => {
+    const step = e.shiftKey ? 0.05 : 0.01;
+    if (type === "move") {
+      const offsets: Record<string, [number, number]> = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      };
+      const offset = offsets[e.key];
+      if (!offset) return;
+      e.preventDefault();
+      e.stopPropagation();
+      updateCrop({ ...crop, x: crop.x + offset[0], y: crop.y + offset[1] });
+      return;
+    }
+
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const expands = e.key === "ArrowLeft" ? type.includes("w")
+      : e.key === "ArrowRight" ? type.includes("e")
+        : e.key === "ArrowUp" ? type.includes("n")
+          : type.includes("s");
+    const maxSize = Math.min(
+      type.includes("w") ? crop.x + crop.size : 1 - crop.x,
+      type.includes("n") ? crop.y + crop.size : 1 - crop.y,
+    );
+    const nextSize = clamp(crop.size + (expands ? step : -step), 0.1, maxSize);
+    updateCrop({
+      x: type.includes("w") ? crop.x + crop.size - nextSize : crop.x,
+      y: type.includes("n") ? crop.y + crop.size - nextSize : crop.y,
+      size: nextSize,
+    });
+  };
+
   const getRelative = useCallback((e: MouseEvent | TouchEvent) => {
     const rect = containerRef.current!.getBoundingClientRect();
     const pt = "touches" in e ? e.touches[0] : e as MouseEvent;
@@ -177,8 +214,13 @@ export default function ImageCrop({
                 cursor: dragging === "move" ? "grabbing" : "grab",
                 outline: "1.5px solid rgba(255,255,255,0.7)",
               }}
+              role="group"
+              tabIndex={0}
+              aria-label="Move crop area"
+              aria-description="Use the arrow keys to move the crop area. Hold Shift to move farther."
               onMouseDown={(e) => onMouseDown(e, "move")}
               onTouchStart={(e) => onMouseDown(e, "move")}
+              onKeyDown={(e) => onKeyDown(e, "move")}
             >
               {/* Grid lines */}
               {[33, 66].map((p) => (
@@ -192,9 +234,20 @@ export default function ImageCrop({
               {(["nw", "ne", "sw", "se"] as Handle[]).map((h) => (
                 <div
                   key={h}
+                  role="slider"
+                  tabIndex={0}
+                  aria-valuemin={10}
+                  aria-valuemax={Math.round(Math.min(
+                    h.includes("w") ? crop.x + crop.size : 1 - crop.x,
+                    h.includes("n") ? crop.y + crop.size : 1 - crop.y,
+                  ) * 100)}
+                  aria-valuenow={Math.round(crop.size * 100)}
+                  aria-valuetext={`${Math.round(crop.size * 100)}% crop size`}
+                  aria-orientation="horizontal"
                   onMouseDown={(e) => onMouseDown(e, h)}
                   onTouchStart={(e) => onMouseDown(e, h)}
                   aria-label={`${h} resize handle`}
+                  onKeyDown={(e) => onKeyDown(e, h)}
                   style={{
                     position: "absolute",
                     width: HANDLE_HIT * 2,

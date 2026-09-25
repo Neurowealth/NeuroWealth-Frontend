@@ -57,12 +57,13 @@ export function formatCurrency(value: number): string {
 
 export function formatSignedCurrency(value: number): string {
   const absoluteValue = getCurrencyFormatter().format(Math.abs(value));
+  const roundedValue = Number(value.toFixed(2));
 
-  if (value > 0) {
+  if (roundedValue > 0) {
     return `+${absoluteValue}`;
   }
 
-  if (value < 0) {
+  if (roundedValue < 0) {
     return `-${absoluteValue}`;
   }
 
@@ -75,12 +76,13 @@ export function formatPercent(value: number): string {
 
 export function formatSignedPercent(value: number): string {
   const absoluteValue = `${getPercentFormatter().format(Math.abs(value))}%`;
+  const roundedValue = Number(value.toFixed(1));
 
-  if (value > 0) {
+  if (roundedValue > 0) {
     return `+${absoluteValue}`;
   }
 
-  if (value < 0) {
+  if (roundedValue < 0) {
     return `-${absoluteValue}`;
   }
 

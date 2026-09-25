@@ -41,13 +41,13 @@ export function WalletStatusBadge({
   if (compact) {
     return (
       <div
-        className={`inline-flex items-center gap-2 rounded-full bg-green-50 border border-green-200 ${sizeClasses[size]}`}
+        className={`inline-flex items-center gap-2 rounded-full bg-success/10 border border-success/30 ${sizeClasses[size]}`}
         data-qa="wallet-status-badge"
       >
         <CheckCircleIcon
-          className={`${iconSizeClasses[size]} text-green-600`}
+          className={`${iconSizeClasses[size]} text-success`}
         />
-        <span className="font-medium text-green-900">{truncatedAddress}</span>
+        <span className="font-medium text-success">{truncatedAddress}</span>
       </div>
     );
   }
