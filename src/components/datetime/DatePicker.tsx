@@ -108,8 +108,9 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         <div
           role="dialog"
           aria-label="Date picker"
+          className="z-dropdown"
           style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+            position: "absolute", top: "calc(100% + 6px)", left: 0,
             background: "#111827", border: "0.5px solid #374151",
             borderRadius: 10, padding: 12, width: 252,
             boxShadow: "0 4px 24px rgba(0,0,0,0.4)",

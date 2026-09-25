@@ -172,8 +172,9 @@ export default function DateRangePicker({ value, onChange, minDate, maxDate, pla
         <div
           role="dialog"
           aria-label="Date range picker"
+          className="z-dropdown"
           style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+            position: "absolute", top: "calc(100% + 6px)", left: 0,
             background: "#111827", border: "0.5px solid #374151",
             borderRadius: 12, padding: 16,
             boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
