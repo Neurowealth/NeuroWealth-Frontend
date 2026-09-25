@@ -5,6 +5,7 @@ import {
   StrategyUpdatePayload,
 } from "@/lib/strategies";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 const STRATEGY_COOKIE_KEY = STORAGE_KEYS.STRATEGY_PREFERENCE;
 
@@ -47,6 +48,29 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const clientKey = getRateLimitKey(request);
+  const rateLimitResult = checkRateLimit(`strategy:${clientKey}`, {
+    maxRequests: 30,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { message: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": Math.ceil(
+            (rateLimitResult.resetTime - Date.now()) / 1000,
+          ).toString(),
+          "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+          "X-RateLimit-Reset": rateLimitResult.resetTime.toString(),
+        },
+      },
+    );
+  }
+
   const apiBaseUrl = process.env.NEUROWEALTH_API_BASE_URL;
   const strategyPath =
     process.env.NEUROWEALTH_STRATEGY_PATH ?? "/strategy/preference";

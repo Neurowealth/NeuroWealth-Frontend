@@ -97,7 +97,13 @@ export default function NotificationsSettingsPage() {
   }
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
-  const enabledCount = Object.values(draft).filter(Boolean).length;
+  const enabledCount = [
+    draft.emailNotifications,
+    draft.emailNotifications && draft.transactionAlerts,
+    draft.emailNotifications && draft.weeklyDigest,
+    draft.emailNotifications && draft.marketingEmails,
+    draft.securityAlerts,
+  ].filter(Boolean).length;
 
   const togglePreference = (key: keyof NotificationPreferences) => {
     setDraft((current) => ({ ...current, [key]: !current[key] }));
