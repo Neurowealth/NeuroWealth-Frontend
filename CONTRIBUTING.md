@@ -32,7 +32,7 @@ The app runs in demo/mock mode with no backend required by default.
 | `yarn test` | Node test runner — `src/**/*.test.ts` |
 | `yarn validate:config` | Validate JSON config files (package.json, tsconfig.json) |
 | `yarn test:e2e` | Run Playwright end-to-end tests (CI gate) |
-| `yarn validate:env` | Validate env vars against Zod schemas |
+| `yarn validate:env` | Validate env vars using hand-rolled checks (no Zod — Zod is used only for API request-body validation) |
 | `yarn analyze` | Bundle analysis (writes to `.next/analyze/`) |
 
 ## CI gates

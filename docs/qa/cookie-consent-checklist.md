@@ -1,8 +1,10 @@
-# Cookie Consent Integration Checklist (Issue #131)
+# Cookie Consent QA Checklist (Issue #131)
+
+> **Canonical doc** — `cookie-consent-integration-checklist.md` has been merged into this file and deleted (reconciled in #928).
 
 ## Overview
 
-This document provides QA steps to verify cookie consent functionality across all paths: accept, reject, and revoke.
+This document provides QA steps to verify cookie consent functionality across all paths: accept, reject, custom, and revoke. It covers banner behaviour, localStorage state, Settings page labels, and cross-session persistence.
 
 **Storage Key:** `nw_cookie_consent` (centralized in `src/lib/storage-keys.ts`)
 
@@ -25,7 +27,7 @@ This document provides QA steps to verify cookie consent functionality across al
 
 ### Storage Key Registry
 
-All localStorage keys are now centralized in `src/lib/storage-keys.ts`:
+All localStorage keys are centralized in `src/lib/storage-keys.ts`:
 
 ```typescript
 STORAGE_KEYS = {
@@ -50,21 +52,25 @@ STORAGE_KEYS = {
 };
 ```
 
+---
+
 ## QA Test Cases
 
 ### 1. Initial State (No Consent)
 
+**Pre-requisites:** Open DevTools → Application → Local Storage.
+
 **Steps:**
 
-1. Clear localStorage: `localStorage.clear()`
-2. Reload page
-3. Verify banner appears
+1. Run `localStorage.clear()` in the console.
+2. Reload the page.
+3. Verify the banner appears.
 
 **Expected:**
 
-- Cookie banner visible at bottom
-- Status: "pending"
-- Storage: empty
+- Cookie banner visible at bottom of screen.
+- Status: `"pending"`.
+- Storage: key absent.
 
 **Verification:**
 
@@ -78,23 +84,24 @@ localStorage.getItem("nw_cookie_consent"); // null
 
 **Steps:**
 
-1. Click "Accept all" button in banner
-2. Verify banner disappears
-3. Check storage
+1. Click **"Accept all"** in the banner.
+2. Verify the banner disappears.
+3. Check storage.
+4. Navigate to **Settings > Cookie & Privacy Preferences**.
 
 **Expected:**
 
-- Banner hidden
-- Status: "accepted"
-- All preferences: true
-- lastUpdated: current timestamp
+- Banner hidden.
+- Status: `"accepted"`, all preferences `true`, `lastUpdated` set to current timestamp.
+- Settings status label reads: **"All cookies accepted"** (green accent).
+- All toggle indicators read **"On"**.
 
 **Verification:**
 
 ```javascript
 const consent = JSON.parse(localStorage.getItem("nw_cookie_consent"));
-console.log(consent.status); // "accepted"
-console.log(consent.preferences); // { necessary: true, analytics: true, marketing: true, personalization: true }
+console.log(consent.status);       // "accepted"
+console.log(consent.preferences);  // { necessary: true, analytics: true, marketing: true, personalization: true }
 ```
 
 ---
@@ -103,25 +110,25 @@ console.log(consent.preferences); // { necessary: true, analytics: true, marketi
 
 **Steps:**
 
-1. Clear localStorage
-2. Reload page
-3. Click "Reject" button in banner
-4. Verify banner disappears
-5. Check storage
+1. Clear the `nw_cookie_consent` key from Local Storage and reload the page.
+2. Click **"Reject"** in the banner.
+3. Verify the banner disappears.
+4. Check storage.
+5. Navigate to **Settings > Cookie & Privacy Preferences**.
 
 **Expected:**
 
-- Banner hidden
-- Status: "rejected"
-- Only necessary: true, others: false
-- lastUpdated: current timestamp
+- Banner hidden.
+- Status: `"rejected"`, only `necessary: true`, others `false`, `lastUpdated` set.
+- Settings status label reads: **"Non-essential cookies rejected"** (red accent).
+- Only "Strictly Necessary" reads **"On"**; all others read **"Off"**.
 
 **Verification:**
 
 ```javascript
 const consent = JSON.parse(localStorage.getItem("nw_cookie_consent"));
-console.log(consent.status); // "rejected"
-console.log(consent.preferences); // { necessary: true, analytics: false, marketing: false, personalization: false }
+console.log(consent.status);       // "rejected"
+console.log(consent.preferences);  // { necessary: true, analytics: false, marketing: false, personalization: false }
 ```
 
 ---
@@ -130,28 +137,27 @@ console.log(consent.preferences); // { necessary: true, analytics: false, market
 
 **Steps:**
 
-1. Clear localStorage
-2. Reload page
-3. Click "Options" button in banner
-4. Toggle analytics ON, marketing OFF, personalization ON
-5. Click "Save preferences"
-6. Verify banner disappears
-7. Check storage
+1. Clear the `nw_cookie_consent` key from Local Storage and reload the page.
+2. Click **"Manage preferences"** (from the banner or Settings).
+3. In the Privacy Modal toggle **Analytics** ON, **Marketing** OFF, **Personalization** ON.
+4. Click **"Save preferences"**.
+5. Verify the banner disappears.
+6. Check storage.
+7. Navigate to **Settings > Cookie & Privacy Preferences**.
 
 **Expected:**
 
-- Banner hidden
-- Status: "custom"
-- Preferences: { necessary: true, analytics: true, marketing: false, personalization: true }
-- lastUpdated: current timestamp
+- Banner hidden.
+- Status: `"custom"`, preferences: `{ necessary: true, analytics: true, marketing: false, personalization: true }`, `lastUpdated` set.
+- Settings status label reads: **"Custom preferences saved"** (amber accent).
 
 **Verification:**
 
 ```javascript
 const consent = JSON.parse(localStorage.getItem("nw_cookie_consent"));
-console.log(consent.status); // "custom"
-console.log(consent.preferences.analytics); // true
-console.log(consent.preferences.marketing); // false
+console.log(consent.status);                    // "custom"
+console.log(consent.preferences.analytics);    // true
+console.log(consent.preferences.marketing);    // false
 ```
 
 ---
@@ -160,17 +166,18 @@ console.log(consent.preferences.marketing); // false
 
 **Steps:**
 
-1. Accept all cookies (from step 2)
-2. Navigate to Settings → Privacy Preferences
-3. Click "Reset" button
-4. Verify banner reappears
-5. Check storage
+1. Accept all cookies (test case 2).
+2. Navigate to **Settings > Cookie & Privacy Preferences**.
+3. Click the **"Reset"** button.
+4. Verify the banner reappears immediately at the bottom of the screen.
+5. Check storage.
 
 **Expected:**
 
-- Banner visible again
-- Storage cleared
-- Status: "pending"
+- Banner visible again.
+- `nw_cookie_consent` key no longer exists in Local Storage.
+- Settings status label reads: **"No preference set"**.
+- All toggles except "Strictly Necessary" read **"Off"**.
 
 **Verification:**
 
@@ -184,20 +191,19 @@ localStorage.getItem("nw_cookie_consent"); // null
 
 **Steps:**
 
-1. Accept all cookies
-2. Navigate to Settings → Privacy Preferences
-3. Verify current status displayed
-4. Verify preferences shown correctly
-5. Click "Manage preferences" → modify → save
-6. Return to settings page
-7. Verify updated preferences displayed
+1. Accept all cookies.
+2. Navigate to **Settings > Cookie & Privacy Preferences**.
+3. Verify the current status label and preference toggles.
+4. Click **"Manage preferences"**, modify a preference, click **"Save preferences"**.
+5. Return to the Settings page.
+6. Verify the updated preferences are displayed.
 
 **Expected:**
 
-- Status label matches storage
-- Preferences match storage
-- Changes persist across page reloads
-- lastUpdated timestamp displayed
+- Status label matches storage state.
+- Preferences match storage on every visit.
+- Changes persist across page reloads.
+- `lastUpdated` timestamp visible.
 
 **Verification:**
 
@@ -213,19 +219,19 @@ console.log(consent.lastUpdated); // recent timestamp
 
 **Steps:**
 
-1. Accept all cookies
-2. Open banner → click "Options"
-3. Verify modal shows current preferences
-4. Modify one preference
-5. Close modal without saving
-6. Reopen modal
-7. Verify preferences reverted to saved state
+1. Accept all cookies.
+2. Open the banner → click **"Options"** (or "Manage preferences").
+3. Verify the modal reflects current preferences.
+4. Modify one preference.
+5. Close the modal **without** saving.
+6. Reopen the modal.
+7. Verify preferences reverted to the saved state.
 
 **Expected:**
 
-- Modal reflects current storage state
-- Unsaved changes don't persist
-- Closing modal doesn't modify storage
+- Modal reflects current storage state on open.
+- Unsaved changes don't persist.
+- Closing the modal doesn't modify storage.
 
 ---
 
@@ -233,17 +239,17 @@ console.log(consent.lastUpdated); // recent timestamp
 
 **Steps:**
 
-1. Accept all cookies
-2. Close browser tab
-3. Reopen site
-4. Verify banner NOT visible
-5. Verify storage intact
+1. Accept all cookies.
+2. Close the browser tab.
+3. Reopen the site.
+4. Verify the banner is **not** visible.
+5. Verify storage is intact.
 
 **Expected:**
 
-- Banner hidden (consent remembered)
-- Storage unchanged
-- Status: "accepted"
+- Banner hidden (consent remembered via localStorage).
+- Storage unchanged.
+- Status: `"accepted"`.
 
 **Verification:**
 
@@ -257,15 +263,15 @@ localStorage.getItem("nw_cookie_consent"); // contains previous consent
 
 **Steps:**
 
-1. Search codebase for localStorage references
-2. Verify all use `STORAGE_KEYS.COOKIE_CONSENT`
-3. Verify no hardcoded "nw_cookie_consent" strings
+1. Search the codebase for raw `localStorage` references to cookie consent.
+2. Verify all use `STORAGE_KEYS.COOKIE_CONSENT`.
+3. Verify no hardcoded `"nw_cookie_consent"` strings outside of `storage-keys.ts`.
 
 **Expected:**
 
-- All references use centralized constant
-- No duplicate storage keys
-- Single source of truth
+- All references use the centralized constant.
+- No duplicate storage keys.
+- Single source of truth.
 
 **Files to Check:**
 
@@ -280,18 +286,18 @@ localStorage.getItem("nw_cookie_consent"); // contains previous consent
 
 ### Chrome DevTools
 
-1. Open DevTools (F12)
-2. Go to Application → Local Storage
-3. Verify `nw_cookie_consent` key exists
-4. Inspect JSON structure
-5. Verify no other cookie-related keys
+1. Open DevTools (F12).
+2. Go to **Application → Local Storage**.
+3. Verify `nw_cookie_consent` key exists.
+4. Inspect the JSON structure matches the storage contract above.
+5. Verify no other cookie-related keys are present.
 
 ### Firefox Developer Tools
 
-1. Open DevTools (F12)
-2. Go to Storage → Local Storage
-3. Verify `nw_cookie_consent` key exists
-4. Inspect JSON structure
+1. Open DevTools (F12).
+2. Go to **Storage → Local Storage**.
+3. Verify `nw_cookie_consent` key exists.
+4. Inspect the JSON structure.
 
 ---
 
@@ -323,5 +329,6 @@ test("Cookie consent: accept all", () => {
 ## Related Issues
 
 - #131: Align cookie consent storage keys and settings page labels
+- #928: Reconcile the two overlapping, unlinked cookie-consent QA checklist docs
 - #422: Data viz: verify chart colors against design tokens and contrast for CVD
 - #167: Document NEUROWEALTH_API contract (paths, auth, error JSON) for integration
