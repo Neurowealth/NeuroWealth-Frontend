@@ -3,17 +3,20 @@
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import {
+  faqCategoryByItemId,
+  type FaqCategoryId,
+  type FaqItemId,
+} from '@/lib/i18n/messages';
 
 interface FAQItem {
-  id: string;
+  id: FaqItemId;
   question: string;
   answer: string;
-  category: string;
+  category: FaqCategoryId;
 }
 
-const faqCategoryIds = ['gettingStarted', 'gettingStarted', 'security', 'security', 'transactions', 'transactions', 'transactions', 'assets', 'assets', 'staking', 'staking', 'support'];
-
-const categories = ['all', 'gettingStarted', 'security', 'transactions', 'assets', 'staking', 'support'] as const;
+const categories: readonly ('all' | FaqCategoryId)[] = ['all', 'gettingStarted', 'security', 'transactions', 'assets', 'staking', 'support'];
 
 export default function FAQSection() {
   const { messages } = useI18n();
@@ -24,11 +27,11 @@ export default function FAQSection() {
 
   const faqData: FAQItem[] = useMemo(
     () =>
-      t.items.map((item, index) => ({
-        id: String(index + 1),
+      t.items.map(item => ({
+        id: item.id,
         question: item.q,
         answer: item.a,
-        category: faqCategoryIds[index],
+        category: faqCategoryByItemId[item.id],
       })),
     [t.items],
   );
@@ -133,7 +136,7 @@ export default function FAQSection() {
                   <div className="flex-1 pr-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-                        {t.categories[faq.category as keyof typeof t.categories]}
+                        {t.categories[faq.category]}
                       </span>
                     </div>
                     <h3 className="text-lg font-semibold text-white">

@@ -4,20 +4,23 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
+import {
+  guidanceIssueSeverityById,
+  type GuidanceIssueId,
+  type GuidanceIssueSeverity,
+} from '@/lib/i18n/messages';
 
 interface Issue {
-  id: string;
+  id: GuidanceIssueId;
   title: string;
   description: string;
   symptoms: string[];
   solutions: string[];
   preventive: string[];
-  severity: 'low' | 'medium' | 'high';
+  severity: GuidanceIssueSeverity;
 }
 
-const issueSeverities: Issue['severity'][] = ['medium', 'high', 'high', 'medium', 'medium', 'low'];
-
-const severityColors = {
+const severityColors: Record<GuidanceIssueSeverity, string> = {
   low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   high: 'bg-red-500/20 text-red-400 border-red-500/30'
@@ -26,14 +29,14 @@ const severityColors = {
 export default function TransactionGuidance() {
   const { messages } = useI18n();
   const t = messages.help.guidance;
-  const transactionIssues: Issue[] = t.issues.map((issue, index) => ({
-    id: String(index + 1),
+  const transactionIssues: Issue[] = t.issues.map(issue => ({
+    id: issue.id,
     title: issue.title,
     description: issue.description,
     symptoms: issue.symptoms,
     solutions: issue.solutions,
     preventive: issue.preventive,
-    severity: issueSeverities[index],
+    severity: guidanceIssueSeverityById[issue.id],
   }));
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<'symptoms' | 'solutions' | 'preventive' | null>(null);
