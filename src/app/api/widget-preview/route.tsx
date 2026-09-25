@@ -1,3 +1,4 @@
+import React from "react";
 import {
   formatCurrency,
   formatPercent,
@@ -5,9 +6,10 @@ import {
   formatSignedPercent,
 } from "@/lib/formatters";
 import { buildScenarioPayload } from "@/lib/portfolio";
+import { parseWidgetPreviewSearchParams } from "@/lib/preview-route-query";
 import { ImageResponse } from "next/og";
+import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
-export const dynamic = "force-dynamic";
 
 type ThemeMode = "light" | "dark";
 
@@ -55,15 +57,27 @@ function chartColor(index: number) {
 }
 
 export async function GET(request: Request) {
+  const ip = getRateLimitKey(request);
+  const limit = checkRateLimit(`GET:/api/widget-preview:${ip}`, {
+    maxRequests: 30,
+    windowMs: 60_000,
+  });
+  if (!limit.allowed) {
+    return new Response("Too many requests. Please try again later.", {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+    });
+  }
+
   const { searchParams } = new URL(request.url);
-  const theme = searchParams.get("theme") === "dark" ? "dark" : "light";
+  const { theme } = parseWidgetPreviewSearchParams(searchParams);
   const palette = getThemePalette(theme);
   const portfolio = buildScenarioPayload("live", {
     source: "demo",
     notice: null,
   });
 
-  return new ImageResponse(
+  const imageResponse = new ImageResponse(
     <div
       style={{
         width: "100%",
@@ -532,4 +546,12 @@ export async function GET(request: Request) {
       height: 1080,
     },
   );
+
+  // Add cache headers to match transaction-preview (1-day CDN / 1-hour browser)
+  imageResponse.headers.set(
+    "Cache-Control",
+    "public, s-maxage=86400, max-age=3600"
+  );
+
+  return imageResponse;
 }

@@ -9,6 +9,7 @@ interface ThemeContextType {
   theme: ThemeMode;
   resolvedTheme: "light" | "dark";
   setTheme: (theme: ThemeMode) => void;
+  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -43,25 +44,41 @@ function applyTheme(resolvedTheme: "light" | "dark") {
   root.classList.add(resolvedTheme);
 }
 
+function addTransitionClass() {
+  if (typeof globalThis.window === "undefined") return;
+  const root = globalThis.window.document.documentElement;
+  root.classList.add("theme-transitioning");
+  setTimeout(() => root.classList.remove("theme-transitioning"), 200);
+}
+
 interface ThemeProviderProps {
   readonly children: ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
-    resolveTheme(getStoredTheme()),
-  );
+  const [theme, setThemeState] = useState<ThemeMode>("system");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const stored = getStoredTheme();
+    setThemeState(stored);
+    setResolvedTheme(resolveTheme(stored));
+    setMounted(true);
+  }, []);
 
   const setTheme = useCallback((newTheme: ThemeMode) => {
     setThemeState(newTheme);
     globalThis.window?.localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     const resolved = resolveTheme(newTheme);
     setResolvedTheme(resolved);
+    addTransitionClass();
     applyTheme(resolved);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     // Apply initial theme immediately to prevent flash
     applyTheme(resolvedTheme);
 
@@ -78,13 +95,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }
-  }, [theme, resolvedTheme]);
+  }, [theme, resolvedTheme, mounted]);
 
   const contextValue = useMemo(() => ({
     theme,
     resolvedTheme,
     setTheme,
-  }), [theme, resolvedTheme, setTheme]);
+    mounted,
+  }), [theme, resolvedTheme, setTheme, mounted]);
 
   return (
     <ThemeContext.Provider value={contextValue}>

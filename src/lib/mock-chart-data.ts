@@ -1,70 +1,102 @@
-// Mock data for chart examples
-export interface ChartDataPoint {
+/**
+ * @module mock-chart-data
+ *
+ * Chart seed data for docs pages and demo screens.
+ *
+ * Every generator reads from the shared PRNG in seeded-rng.ts.
+ * Call reseed(DEFAULT_SEED) before invoking these functions to get
+ * deterministic output for screenshots and visual regression tests.
+ *
+ * Usage
+ * ─────
+ *   import { portfolioValueData, assetAllocationData } from "@/lib/mock-chart-data";
+ *   // or call the functions for fresh data after a reseed():
+ *   import { generatePortfolioValueData } from "@/lib/mock-chart-data";
+ */
+
+import { randomInt } from "./seeded-rng";
+import type { ChartTone } from "./portfolio";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Base datum for single-series charts: a label and a numeric value. */
+export interface ChartDatum {
   name: string;
   value: number;
-  [key: string]: any;
 }
 
-// Line/Area chart data: Portfolio value over time
-export const portfolioValueData: ChartDataPoint[] = [
-  { name: "Jan", value: 10000, yield: 120 },
-  { name: "Feb", value: 10500, yield: 150 },
-  { name: "Mar", value: 10200, yield: 80 },
-  { name: "Apr", value: 10800, yield: 200 },
-  { name: "May", value: 11500, yield: 300 },
-  { name: "Jun", value: 12000, yield: 250 },
-  { name: "Jul", value: 12500, yield: 400 },
-  { name: "Aug", value: 13000, yield: 350 },
-  { name: "Sep", value: 13500, yield: 300 },
-  { name: "Oct", value: 14200, yield: 450 },
-  { name: "Nov", value: 14800, yield: 380 },
-  { name: "Dec", value: 15200, yield: 320 },
-];
+/** Portfolio value at a point in time, plus the yield earned that period. */
+export interface PortfolioValuePoint extends ChartDatum {
+  /** Yield earned during the period, in the portfolio's base currency. */
+  yield: number;
+}
 
-// Bar chart data: Monthly yield
-export const monthlyYieldData: ChartDataPoint[] = [
-  { name: "Jan", value: 120 },
-  { name: "Feb", value: 150 },
-  { name: "Mar", value: 80 },
-  { name: "Apr", value: 200 },
-  { name: "May", value: 300 },
-  { name: "Jun", value: 250 },
-  { name: "Jul", value: 400 },
-  { name: "Aug", value: 350 },
-  { name: "Sep", value: 300 },
-  { name: "Oct", value: 450 },
-  { name: "Nov", value: 380 },
-  { name: "Dec", value: 320 },
-];
+/** A slice of the asset-allocation donut, themed by tone. */
+export interface AssetAllocationSlice extends ChartDatum {
+  tone?: ChartTone;
+}
 
-// Donut chart data: Asset allocation
-export const assetAllocationData: ChartDataPoint[] = [
-  { name: "USDC", value: 40, tone: "primary" },
-  { name: "USDT", value: 25, tone: "accent" },
-  { name: "XLM", value: 20, tone: "warning" },
-  { name: "Other", value: 15, tone: "neutral-strong" },
-];
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// Time series data for multiple lines
-export const multiLineData = [
-  { name: "Jan", portfolio: 10000, benchmark: 9800 },
-  { name: "Feb", portfolio: 10500, benchmark: 10100 },
-  { name: "Mar", portfolio: 10200, benchmark: 9900 },
-  { name: "Apr", portfolio: 10800, benchmark: 10300 },
-  { name: "May", portfolio: 11500, benchmark: 10800 },
-  { name: "Jun", portfolio: 12000, benchmark: 11200 },
-  { name: "Jul", portfolio: 12500, benchmark: 11800 },
-  { name: "Aug", portfolio: 13000, benchmark: 12300 },
-  { name: "Sep", portfolio: 13500, benchmark: 12800 },
-  { name: "Oct", portfolio: 14200, benchmark: 13500 },
-  { name: "Nov", portfolio: 14800, benchmark: 14100 },
-  { name: "Dec", portfolio: 15200, benchmark: 14600 },
-];
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// Categorical bar data
-export const categoricalBarData: ChartDataPoint[] = [
-  { name: "Deposits", value: 15000 },
-  { name: "Withdrawals", value: 3000 },
-  { name: "Yield", value: 2800 },
-  { name: "Fees", value: 200 },
-];
+// ─── Generators ───────────────────────────────────────────────────────────────
+// Each function reads from the shared PRNG so calling reseed() before
+// invocation produces deterministic output.
+
+/** Generate portfolio-value-over-time data (line / area chart). */
+export function generatePortfolioValueData(): PortfolioValuePoint[] {
+  return months.map((month, i) => {
+    const baseValue = 10000 + (i * 450);
+    const noise = randomInt(-300, 300);
+    return {
+      name: month,
+      value: baseValue + noise,
+      yield: randomInt(80, 450),
+    };
+  });
+}
+
+/** Generate monthly-yield data (bar chart). */
+export function generateMonthlyYieldData(): ChartDatum[] {
+  return generatePortfolioValueData().map((p) => ({
+    name: p.name,
+    value: p.yield,
+  }));
+}
+
+/** Generate asset-allocation slices (donut chart). */
+export function generateAssetAllocationData(): AssetAllocationSlice[] {
+  const raw = [
+    { name: "USDC", value: randomInt(35, 50), tone: "primary" as ChartTone },
+    { name: "USDT", value: randomInt(20, 30), tone: "accent" as ChartTone },
+    { name: "XLM", value: randomInt(15, 25), tone: "warning" as ChartTone },
+    { name: "Other", value: randomInt(5, 15), tone: "neutral-strong" as ChartTone },
+  ];
+  const total = raw.reduce((s, d) => s + d.value, 0);
+  const normal = raw.map((d) => ({ ...d, value: Math.round((d.value * 100) / total) }));
+  const last = normal.length - 1;
+  const normTotal = normal.reduce((s, d) => s + d.value, 0);
+  normal[last] = { ...normal[last], value: normal[last].value + (100 - normTotal) };
+  return normal;
+}
+
+/** Generate categorical bar data (transaction breakdown). */
+export function generateCategoricalBarData(): ChartDatum[] {
+  return [
+    { name: "Deposits", value: randomInt(12000, 18000) },
+    { name: "Withdrawals", value: randomInt(2000, 5000) },
+    { name: "Yield", value: randomInt(2000, 3500) },
+    { name: "Fees", value: randomInt(100, 300) },
+  ];
+}
+
+// ─── Default instances ────────────────────────────────────────────────────────
+// Generated once at import time using the current seed. For screenshots
+// or tests that need fresh data, call the generator functions directly
+// after reseed().
+
+export const portfolioValueData: PortfolioValuePoint[] = generatePortfolioValueData();
+export const monthlyYieldData: ChartDatum[] = generateMonthlyYieldData();
+export const assetAllocationData: AssetAllocationSlice[] = generateAssetAllocationData();
+export const categoricalBarData: ChartDatum[] = generateCategoricalBarData();

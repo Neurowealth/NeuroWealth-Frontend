@@ -1,53 +1,115 @@
-import { NextRequest } from "next/server";
+/**
+ * Simple in-memory sliding-window rate limiter.
+ *
+ * Designed for mock / single-instance deployments. A real backend should
+ * replace this with a Redis- or database-backed implementation that shares
+ * state across instances.
+ */
 
-interface RateLimitOptions {
-  windowMs?: number;
-  maxRequests?: number;
-}
-
-interface RateLimitRecord {
-  count: number;
-  resetTime: number;
-}
-
-interface RateLimitResult {
-  success: boolean;
-  limit: number;
+export interface RateLimitResult {
+  allowed: boolean;
   remaining: number;
-  resetTime: number;
+  retryAfterMs: number;
 }
 
-const rateLimitStore = new Map<string, RateLimitRecord>();
+interface RateLimitEntry {
+  timestamps: number[];
+}
+
+export interface RateLimiterOptions {
+  /** Number of requests allowed in the window. */
+  maxRequests: number;
+  /** Window duration in milliseconds. */
+  windowMs: number;
+}
+
+const store = new Map<string, RateLimitEntry>();
 const MAX_MAP_SIZE = 1000;
 let lastSweepTime = Date.now();
 const SWEEP_INTERVAL_MS = 30_000;
 
 /**
- * Sweep stale/expired entries from the rate limit store to prevent memory leaks.
+ * Sweep stale/expired entries from the rate limit store to prevent memory exhaustion.
  */
-function sweepStaleEntries(force = false) {
+function sweepStaleEntries(windowMs: number = 60_000, force = false): void {
   const now = Date.now();
-  if (!force && now - lastSweepTime < SWEEP_INTERVAL_MS && rateLimitStore.size < MAX_MAP_SIZE) {
+  if (!force && now - lastSweepTime < SWEEP_INTERVAL_MS && store.size < MAX_MAP_SIZE) {
     return;
   }
 
   lastSweepTime = now;
-  for (const [key, record] of rateLimitStore.entries()) {
-    if (now > record.resetTime) {
-      rateLimitStore.delete(key);
+  for (const [key, entry] of store.entries()) {
+    entry.timestamps = entry.timestamps.filter((t) => t > now - windowMs);
+    if (entry.timestamps.length === 0) {
+      store.delete(key);
     }
   }
 
-  // If still oversized after sweeping expired entries, trim the oldest entries
-  if (rateLimitStore.size > MAX_MAP_SIZE) {
-    const keysToDelete = Array.from(rateLimitStore.keys()).slice(
-      0,
-      rateLimitStore.size - MAX_MAP_SIZE,
-    );
+  // If still oversized after removing expired timestamps, prune oldest keys
+  if (store.size > MAX_MAP_SIZE) {
+    const keysToDelete = Array.from(store.keys()).slice(0, store.size - MAX_MAP_SIZE);
     for (const key of keysToDelete) {
-      rateLimitStore.delete(key);
+      store.delete(key);
     }
   }
+}
+
+/**
+ * Check whether `key` is within the rate limit. Returns immediately — does
+ * not block or sleep.
+ */
+export function checkRateLimit(
+  key: string,
+  options: RateLimiterOptions,
+): RateLimitResult {
+  const now = Date.now();
+  const windowStart = now - options.windowMs;
+
+  sweepStaleEntries(options.windowMs);
+
+  let entry = store.get(key);
+  if (!entry) {
+    entry = { timestamps: [] };
+    store.set(key, entry);
+  }
+
+  // Prune timestamps outside the current window.
+  entry.timestamps = entry.timestamps.filter((t) => t > windowStart);
+
+  if (entry.timestamps.length >= options.maxRequests) {
+    const oldestInWindow = entry.timestamps[0];
+    const retryAfterMs = oldestInWindow + options.windowMs - now;
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: Math.max(0, retryAfterMs),
+    };
+  }
+
+  entry.timestamps.push(now);
+  return {
+    allowed: true,
+    remaining: options.maxRequests - entry.timestamps.length,
+    retryAfterMs: 0,
+  };
+}
+
+/** Clear all stored rate-limit state. Intended for tests only. */
+export function resetRateLimitStore(): void {
+  store.clear();
+}
+
+export const clearRateLimitStore = resetRateLimitStore;
+
+export function parseClientIp(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const firstCandidate = value
+    .split(",")
+    .map((segment) => segment.trim())
+    .find((segment) => segment.length > 0);
+
+  return firstCandidate ?? null;
 }
 
 /**
@@ -57,7 +119,7 @@ function sweepStaleEntries(force = false) {
  * true-client-ip, and x-client-ip are strictly ignored.
  */
 export function getRateLimitKey(
-  request: NextRequest | Request | Headers | { headers: Headers | Record<string, string | undefined> },
+  request: Pick<Request, "headers"> | { headers: Headers | Record<string, string | undefined> } | Headers,
 ): string {
   let headers: Headers | { get(name: string): string | null | undefined };
 
@@ -71,67 +133,16 @@ export function getRateLimitKey(
   } else if (typeof (request as Headers).get === "function") {
     headers = request as Headers;
   } else {
-    return "anonymous";
+    return "unknown";
   }
 
   const xForwardedFor = headers.get("x-forwarded-for");
-  if (xForwardedFor) {
-    const clientIp = xForwardedFor.split(",")[0].trim();
-    if (clientIp) return clientIp;
-  }
+  const parsedXff = parseClientIp(xForwardedFor);
+  if (parsedXff) return parsedXff;
 
   const xRealIp = headers.get("x-real-ip");
-  if (xRealIp && xRealIp.trim()) {
-    return xRealIp.trim();
-  }
+  const parsedXReal = parseClientIp(xRealIp);
+  if (parsedXReal) return parsedXReal;
 
-  return "anonymous";
-}
-
-/**
- * Checks and records rate limit for a given key.
- */
-export function checkRateLimit(
-  key: string,
-  options: RateLimitOptions = {},
-): RateLimitResult {
-  const windowMs = options.windowMs ?? 60_000;
-  const maxRequests = options.maxRequests ?? 60;
-  const now = Date.now();
-
-  sweepStaleEntries();
-
-  const existing = rateLimitStore.get(key);
-
-  if (!existing || now > existing.resetTime) {
-    const resetTime = now + windowMs;
-    rateLimitStore.set(key, { count: 1, resetTime });
-    return {
-      success: true,
-      limit: maxRequests,
-      remaining: maxRequests - 1,
-      resetTime,
-    };
-  }
-
-  if (existing.count >= maxRequests) {
-    return {
-      success: false,
-      limit: maxRequests,
-      remaining: 0,
-      resetTime: existing.resetTime,
-    };
-  }
-
-  existing.count += 1;
-  return {
-    success: true,
-    limit: maxRequests,
-    remaining: maxRequests - existing.count,
-    resetTime: existing.resetTime,
-  };
-}
-
-export function clearRateLimitStore() {
-  rateLimitStore.clear();
+  return "unknown";
 }

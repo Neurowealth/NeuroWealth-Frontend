@@ -1,6 +1,10 @@
 import { Suspense } from "react";
-import { Bell, Globe, Shield, Wallet } from "lucide-react";
+import Link from "next/link";
+import { Bell, ChevronRight, Globe, LayoutDashboard, Monitor, Palette, Shield, UserRound, Wallet } from "lucide-react";
 import SettingsLoading from "./loading";
+import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import OnboardingSettings from "@/components/settings/OnboardingSettings";
+import { useI18n } from "@/contexts/I18nContext";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings — NeuroWealth" };
@@ -51,69 +55,106 @@ function SettingsSection({
 }
 
 function ComingSoonBadge() {
+  const { messages } = useI18n();
   return (
-    <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-surface-elevated text-text-muted cursor-not-allowed">
-      Coming soon
-    </span>
+    <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-surface-elevated text-text-muted cursor-not-allowed">{messages.common.comingSoon}</span>
+  );
+}
+
+function LinkAction({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors"
+    >
+      {label}
+      <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+    </Link>
   );
 }
 
 function SettingsContent() {
+  const { messages } = useI18n();
+  const t = messages.settings.index;
   return (
     <div className="max-w-2xl space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-xl font-bold text-text-primary">Settings</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Manage your account preferences and connected wallet.
-        </p>
+        <h1 className="text-xl font-bold text-text-primary">{t.title}</h1>
+        <p className="mt-1 text-sm text-text-secondary">{t.subtitle}</p>
       </div>
 
-      <SettingsSection title="Wallet" icon={Wallet}>
+      <SettingsSection title={t.appearance.title} icon={Palette}>
         <SettingsRow
-          label="Connected Wallet"
-          description="Freighter wallet connection for signing transactions."
+          label={t.appearance.themeTitle}
+          description={t.appearance.themeDesc}
+          action={<ThemeSettings />}
+        />
+      </SettingsSection>
+
+      <SettingsSection title={t.profile.title} icon={UserRound}>
+        <SettingsRow
+          label={t.profile.displayTitle}
+          description={t.profile.displayDesc}
+          action={<LinkAction href="/profile" label={t.profile.editAction} />}
+        />
+        <SettingsRow
+          label={t.profile.regionTitle}
+          description={t.profile.regionDesc}
+          action={<LinkAction href="/profile" label={t.profile.openAction} />}
+        />
+      </SettingsSection>
+
+      <SettingsSection title={t.wallet.title} icon={Wallet}>
+        <SettingsRow
+          label={t.wallet.connectedTitle}
+          description={t.wallet.connectedDesc}
           action={<ComingSoonBadge />}
         />
         <SettingsRow
-          label="Network"
-          description="Switch between Stellar Testnet and Mainnet."
+          label={t.wallet.networkTitle}
+          description={t.wallet.networkDesc}
           action={<ComingSoonBadge />}
         />
       </SettingsSection>
 
-      <SettingsSection title="Notifications" icon={Bell}>
+      <SettingsSection title={t.notifications.title} icon={Bell}>
         <SettingsRow
-          label="Email Alerts"
-          description="Receive email notifications for deposits, withdrawals, and rebalances."
+          label={t.notifications.emailTitle}
+          description={t.notifications.emailDesc}
           action={<ComingSoonBadge />}
         />
         <SettingsRow
-          label="WhatsApp Notifications"
-          description="Get updates via WhatsApp messaging."
-          action={<ComingSoonBadge />}
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Security" icon={Shield}>
-        <SettingsRow
-          label="Two-Factor Authentication"
-          description="Add an extra layer of security to your account."
-          action={<ComingSoonBadge />}
-        />
-        <SettingsRow
-          label="Session Management"
-          description="View and revoke active sessions."
+          label={t.notifications.whatsappTitle}
+          description={t.notifications.whatsappDesc}
           action={<ComingSoonBadge />}
         />
       </SettingsSection>
 
-      <SettingsSection title="Region" icon={Globe}>
+      <SettingsSection title={t.security.title} icon={Shield}>
         <SettingsRow
-          label="Currency Display"
-          description="Choose your preferred display currency (USD, EUR, GBP)."
+          label={t.security.twoFactorTitle}
+          description={t.security.twoFactorDesc}
+          action={<ComingSoonBadge />}
+        />
+        <SettingsRow
+          label={t.security.sessionTitle}
+          description={t.security.sessionDesc}
           action={<ComingSoonBadge />}
         />
       </SettingsSection>
+
+      <SettingsSection title={t.region.title} icon={Globe}>
+        <SettingsRow
+          label={t.region.currencyTitle}
+          description={t.region.currencyDesc}
+          action={<LinkAction href="/profile" label={t.region.openAction} />}
+        />
+      </SettingsSection>
+
+      <section aria-labelledby="section-onboarding">
+        <h2 id="section-onboarding" className="sr-only">Onboarding</h2>
+        <OnboardingSettings />
+      </section>
     </div>
   );
 }

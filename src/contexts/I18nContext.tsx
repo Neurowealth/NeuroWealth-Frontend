@@ -1,6 +1,6 @@
 "use client";
 
-import {
+import React, {
   createContext,
   ReactNode,
   useCallback,
@@ -11,8 +11,14 @@ import {
 } from "react";
 import { AppLocale, dictionaries, localeToIntl } from "@/lib/i18n/messages";
 import { setActiveLocale } from "@/lib/i18n/locale-state";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
 
-const LOCALE_STORAGE_KEY = "neurowealth.locale";
+/**
+ * Persists the *UI translation* locale ("en" | "fr"). This is distinct from the
+ * BCP47 *display formatting* locale stored inside the profile / preferences
+ * blobs — see `src/lib/locale-options.ts` for the relationship between the two.
+ */
+const LOCALE_STORAGE_KEY = STORAGE_KEYS.LOCALE;
 
 interface I18nContextValue {
   locale: AppLocale;

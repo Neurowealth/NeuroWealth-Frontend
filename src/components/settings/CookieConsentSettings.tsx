@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import { ShieldCheck, BarChart2, Megaphone, Sparkles, Settings2, RefreshCcw } from "lucide-react";
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {

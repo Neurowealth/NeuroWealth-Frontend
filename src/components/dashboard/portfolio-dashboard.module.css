@@ -645,7 +645,7 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1023px) {
   .summaryGrid,
   .contentGrid,
   .allocationLayout {
@@ -653,7 +653,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .page {
     padding: 16px 12px 24px;
   }
@@ -686,7 +686,7 @@
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 639px) {
   .summaryGrid {
     grid-template-columns: 1fr;
   }

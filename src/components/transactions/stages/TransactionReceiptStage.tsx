@@ -5,6 +5,7 @@
  * Displays success or failure results with transaction details.
  */
 
+import { useI18n } from "@/contexts/I18nContext";
 import { formatCurrency, formatTimestamp } from "@/lib/formatters";
 import { TransactionKind, TransactionReceipt } from "@/lib/transactions";
 import styles from "../transaction-flow.module.css";
@@ -22,8 +23,15 @@ export function TransactionReceiptStage({
   onNewTransaction,
   onSwitchFlow,
 }: TransactionReceiptStageProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions;
+
   return (
-    <div className={`${styles.receiptCard} ${styles.form}`}>
+    <div
+      className={`${styles.receiptCard} ${styles.form}`}
+      role="status"
+      aria-live="polite"
+    >
       <div className={styles.receiptBanner}>
         <span
           className={`${styles.statusChip} ${
@@ -32,7 +40,9 @@ export function TransactionReceiptStage({
               : styles.statusError
           }`}
         >
-          {receipt.status === "success" ? "Success" : "Failed"}
+          {receipt.status === "success"
+            ? t.receipt.success
+            : t.receipt.failed}
         </span>
         <h3 className={styles.receiptTitle}>{receipt.message}</h3>
         {receipt.failureReason ? (
@@ -41,43 +51,45 @@ export function TransactionReceiptStage({
           </p>
         ) : (
           <p className={`${styles.fieldMessage} ${styles.successMessage}`}>
-            Receipt includes the amount, fees, and reference for follow-up.
+            {t.receipt.receiptIncludes}
           </p>
         )}
       </div>
 
       <div className={styles.referenceCard}>
-        <p className={styles.referenceLabel}>Transaction reference</p>
+        <p className={styles.referenceLabel}>{t.shared.transactionReference}</p>
         <p className={styles.referenceValue}>{receipt.reference}</p>
         <p className={styles.supportingCopy}>
           {receipt.explorerLabel ??
-            "Retry after reviewing the validation state and updated quote."}
+            t.receipt.retryAfterReview}
         </p>
       </div>
 
       <div className={styles.detailList}>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Amount</span>
+          <span className={styles.detailLabel}>{t.shared.amount}</span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(receipt.quote.amount)}
           </span>
         </div>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Fees</span>
+          <span className={styles.detailLabel}>{t.shared.fees}</span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(receipt.quote.fee)}
           </span>
         </div>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>
-            {kind === "deposit" ? "Credited amount" : "Destination amount"}
+            {kind === "deposit"
+              ? t.receipt.creditedAmount
+              : t.receipt.destinationAmount}
           </span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(receipt.quote.netAmount)}
           </span>
         </div>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Settled at</span>
+          <span className={styles.detailLabel}>{t.receipt.settledAt}</span>
           <span className={styles.detailValue}>
             {formatTimestamp(receipt.settledAt)}
           </span>
@@ -87,8 +99,8 @@ export function TransactionReceiptStage({
       <div className={styles.actionBar}>
         <div className={styles.actionMeta}>
           {receipt.status === "success"
-            ? "Start a new transaction or switch flows."
-            : "Retry after reviewing the updated validation details."}
+            ? t.receipt.startNew
+            : t.receipt.retryUpdated}
         </div>
         <div className={styles.actionButtons}>
           <button
@@ -96,14 +108,14 @@ export function TransactionReceiptStage({
             onClick={onNewTransaction}
             type="button"
           >
-            New transaction
+            {t.receipt.newTransaction}
           </button>
           <button
             className={`${styles.button} ${styles.buttonPrimary}`}
             onClick={onSwitchFlow}
             type="button"
           >
-            Switch flow
+            {t.receipt.switchFlow}
           </button>
         </div>
       </div>

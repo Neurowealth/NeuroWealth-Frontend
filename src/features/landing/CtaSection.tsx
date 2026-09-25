@@ -20,7 +20,7 @@ export function CtaSection() {
         </span>
 
         {/* Spec: 36px heading */}
-        <h2 className="mt-5 text-4xl font-bold leading-tight text-slate-50 md:text-5xl">
+        <h2 className="mt-5 text-4xl font-bold leading-normal text-slate-50 md:text-5xl">
           {messages.cta.title}
         </h2>
 

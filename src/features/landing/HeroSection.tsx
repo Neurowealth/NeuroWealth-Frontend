@@ -26,7 +26,7 @@ export function HeroSection() {
         </span>
 
         {/* Headline — spec: 36px / line-height 1.4–1.6 */}
-        <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-slate-50 sm:text-5xl md:text-6xl">
+        <h1 className="mt-4 text-4xl font-bold leading-normal tracking-tight text-slate-50 sm:text-5xl md:text-6xl">
           {messages.hero.titleBeforeAccent}{" "}
           <span className="text-sky-400">{messages.hero.titleAccent}</span>{" "}
           {messages.hero.titleAfterAccent}

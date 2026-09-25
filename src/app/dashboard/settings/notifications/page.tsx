@@ -1,162 +1,113 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AlertCircle, Bell, Mail, Save, ShieldAlert, X } from "lucide-react";
 import { useToast } from "@/components/notifications/ToastProvider";
+import { useI18n } from "@/contexts/I18nContext";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { getApiErrorPresentation } from "@/lib/logger";
+import {
+  DEFAULT_PREFERENCES,
+  type NotificationPreferences,
+} from "@/lib/mock-preferences";
 
 export const dynamic = "force-dynamic";
 import { Button, Card, InlineBanner } from "@/components/ui";
 import { SettingsSectionSkeleton } from "@/components/ui/Skeleton";
-import { mockAudit } from "@/lib/mock-audit";
+import { useSettingsForm } from "@/hooks/useSettingsForm";
+import { PreferenceToggle } from "./PreferenceToggle";
 
-interface NotificationPreferences {
-  emailNotifications: boolean;
-  transactionAlerts: boolean;
-  weeklyDigest: boolean;
-  marketingEmails: boolean;
-  securityAlerts: boolean;
-}
+const STORAGE_KEY = STORAGE_KEYS.NOTIFICATIONS;
 
-const STORAGE_KEY = "nw_notifications";
-const DEFAULT_PREFERENCES: NotificationPreferences = {
-  emailNotifications: true,
-  transactionAlerts: true,
-  weeklyDigest: true,
-  marketingEmails: false,
-  securityAlerts: true,
-};
-
-function PreferenceToggle({
-  id,
-  title,
-  description,
-  checked,
-  disabled,
-  onChange,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  checked: boolean;
-  disabled: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className={`flex items-start justify-between gap-4 rounded-xl border border-slate-700/50 bg-slate-950/35 p-4 transition ${
-        disabled ? "opacity-65" : "hover:border-slate-600"
-      }`}
-    >
-      <div>
-        <p className="text-sm font-semibold text-slate-100">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
-      </div>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-        className="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-sky-400 accent-sky-400"
-      />
-    </label>
-  );
-}
+/**
+ * This page and the notification-bell dropdown (NotificationPreferencesUI /
+ * useNotificationPreferences) both read/write the shared NotificationPreferences
+ * model from src/lib/mock-preferences.ts under the same STORAGE_KEYS.NOTIFICATIONS
+ * key, so toggling one no longer silently corrupts the other's shape. This
+ * page's five toggles map onto the shared model's nested fields below.
+ */
+type TogglePath =
+  | ["channels", "email"]
+  | ["categories", "transactions"]
+  | ["emailDigest", "weeklyDigest"]
+  | ["categories", "promotions"]
+  | ["emailDigest", "securityAlerts"];
 
 export default function NotificationsSettingsPage() {
   const { pushToast } = useToast();
-  const [saved, setSaved] = useState(DEFAULT_PREFERENCES);
-  const [draft, setDraft] = useState(DEFAULT_PREFERENCES);
-  const [editing, setEditing] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as NotificationPreferences;
-          setSaved(parsed);
-          setDraft(parsed);
-        }
-      } catch {
-        // Keep defaults if storage is invalid.
-      } finally {
-        setPageLoading(false);
+  const { messages } = useI18n();
+  const t = messages.settings.notifications;
+  const {
+    draft,
+    setDraft,
+    editing,
+    setEditing,
+    saving,
+    status,
+    pageLoading,
+    isDirty,
+    handleSave,
+    handleCancel,
+  } = useSettingsForm<NotificationPreferences>(STORAGE_KEY, DEFAULT_PREFERENCES, {
+    auditSection: "notifications",
+    loadDelayMs: 500,
+    saveDelayMs: 800,
+    validate: (current) => {
+      if (!current.emailDigest.securityAlerts) {
+        throw new Error("Security alerts must stay enabled in this mock.");
       }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
+    },
+    onSaveSuccess: () => {
+      pushToast({
+        variant: "success",
+        title: t.toast.savedTitle,
+        description: t.toast.savedDesc,
+        duration: 4000,
+      });
+    },
+    onSaveError: (error) => {
+      const copy = getApiErrorPresentation(error, {
+        title: t.toast.failTitle,
+        description: t.toast.failDesc,
+      });
+      pushToast({
+        variant: "error",
+        title: copy.title,
+        description: copy.description,
+        duration: 6000,
+      });
+    },
+  });
 
   if (pageLoading) {
     return <SettingsSectionSkeleton rows={5} />;
   }
 
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const enabledCount = [
-    draft.emailNotifications,
-    draft.emailNotifications && draft.transactionAlerts,
-    draft.emailNotifications && draft.weeklyDigest,
-    draft.emailNotifications && draft.marketingEmails,
-    draft.securityAlerts,
+    draft.channels.email,
+    draft.channels.email && draft.categories.transactions,
+    draft.channels.email && draft.emailDigest.weeklyDigest,
+    draft.channels.email && draft.categories.promotions,
+    draft.emailDigest.securityAlerts,
   ].filter(Boolean).length;
 
-  const togglePreference = (key: keyof NotificationPreferences) => {
-    setDraft((current) => ({ ...current, [key]: !current[key] }));
-  };
-
-  const handleCancel = () => {
-    setDraft(saved);
-    setEditing(false);
-    setStatus("idle");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setStatus("idle");
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (!draft.securityAlerts) {
-        throw new Error("Security alerts must stay enabled in this mock.");
-      }
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-      setSaved(draft);
-      setEditing(false);
-      setStatus("success");
-      mockAudit.logEvent("settings_change", { section: "notifications", changes: draft });
-      pushToast({
-        variant: "success",
-        title: "Preferences saved",
-        description: "Your notification rules were updated for future account activity.",
-        duration: 4000,
-      });
-    } catch {
-      setStatus("error");
-      pushToast({
-        variant: "error",
-        title: "Save failed",
-        description: "Security alerts are required in this mocked flow. Re-enable them and try again.",
-        duration: 6000,
-      });
-    } finally {
-      setSaving(false);
-    }
+  const togglePreference = ([section, key]: TogglePath) => {
+    setDraft((current) => {
+      const sectionValue = current[section] as Record<string, boolean>;
+      return {
+        ...current,
+        [section]: {
+          ...sectionValue,
+          [key]: !sectionValue[key],
+        },
+      };
+    });
   };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-slate-100">Notifications</h1>
-        <p className="text-sm text-slate-400">
-          Manage the alerts we send across email, account activity, and security events.
-        </p>
+        <h1 className="text-2xl font-bold text-slate-100">{t.title}</h1>
+        <p className="text-sm text-slate-400">{t.subtitle}</p>
       </div>
 
       <InlineBanner
@@ -173,7 +124,7 @@ export default function NotificationsSettingsPage() {
       </InlineBanner>
 
       {status === "success" ? (
-        <InlineBanner variant="success" title="Notification preferences saved">
+        <InlineBanner variant="success" title={t.banner.savedTitle}>
           The changes were persisted locally and announced through the global toast queue.
         </InlineBanner>
       ) : null}
@@ -181,18 +132,18 @@ export default function NotificationsSettingsPage() {
       {status === "error" ? (
         <InlineBanner
           variant="error"
-          title="Unable to save your current selection"
+          title={t.banner.failTitle}
           action={
             <Button
               variant="secondary"
               size="sm"
               onClick={() => {
-                if (!draft.securityAlerts) {
-                  togglePreference("securityAlerts");
+                if (!draft.emailDigest.securityAlerts) {
+                  togglePreference(["emailDigest", "securityAlerts"]);
                 }
               }}
             >
-              Restore security alerts
+              {t.actions.restoreAlerts}
             </Button>
           }
         >
@@ -200,9 +151,9 @@ export default function NotificationsSettingsPage() {
         </InlineBanner>
       ) : null}
 
-      {!draft.securityAlerts ? (
-        <InlineBanner variant="warning" title="Security alerts are turned off">
-          High-risk account events may be missed until you re-enable security coverage.
+      {!draft.emailDigest.securityAlerts ? (
+        <InlineBanner variant="warning" title={t.securityAlertsOff.title}>
+          {t.securityAlertsOff.desc}
         </InlineBanner>
       ) : null}
 
@@ -213,53 +164,51 @@ export default function NotificationsSettingsPage() {
               <Mail className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Delivery channels</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Choose which updates reach inboxes, dashboards, and weekly summaries.
-              </p>
+              <h2 className="text-lg font-semibold text-slate-100">{t.channels.title}</h2>
+              <p className="mt-1 text-sm text-slate-400">{t.channels.desc}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <PreferenceToggle
               id="email-notifications"
-              title="Email notifications"
-              description="Receive delivery updates and account notices in your inbox."
-              checked={draft.emailNotifications}
+              title={t.channels.emailTitle}
+              description={t.channels.emailDesc}
+              checked={draft.channels.email}
               disabled={!editing}
-              onChange={() => togglePreference("emailNotifications")}
+              onChange={() => togglePreference(["channels", "email"])}
             />
             <PreferenceToggle
               id="transaction-alerts"
-              title="Transaction alerts"
-              description="Send a notification whenever a deposit, withdrawal, or rebalance completes."
-              checked={draft.transactionAlerts}
-              disabled={!editing || !draft.emailNotifications}
-              onChange={() => togglePreference("transactionAlerts")}
+              title={t.channels.transactionTitle}
+              description={t.channels.transactionDesc}
+              checked={draft.categories.transactions}
+              disabled={!editing || !draft.channels.email}
+              onChange={() => togglePreference(["categories", "transactions"])}
             />
             <PreferenceToggle
               id="weekly-digest"
-              title="Weekly digest"
-              description="Bundle performance summaries and highlights into a single weekly update."
-              checked={draft.weeklyDigest}
-              disabled={!editing || !draft.emailNotifications}
-              onChange={() => togglePreference("weeklyDigest")}
+              title={t.channels.weeklyTitle}
+              description={t.channels.weeklyDesc}
+              checked={draft.emailDigest.weeklyDigest}
+              disabled={!editing || !draft.channels.email}
+              onChange={() => togglePreference(["emailDigest", "weeklyDigest"])}
             />
             <PreferenceToggle
               id="marketing-emails"
-              title="Product updates"
-              description="Hear about launches, experiments, and platform improvements."
-              checked={draft.marketingEmails}
-              disabled={!editing || !draft.emailNotifications}
-              onChange={() => togglePreference("marketingEmails")}
+              title={t.channels.productTitle}
+              description={t.channels.productDesc}
+              checked={draft.categories.promotions}
+              disabled={!editing || !draft.channels.email}
+              onChange={() => togglePreference(["categories", "promotions"])}
             />
             <PreferenceToggle
               id="security-alerts"
-              title="Security alerts"
-              description="Critical sign-in, wallet, and suspicious-activity notifications."
-              checked={draft.securityAlerts}
+              title={t.channels.securityTitle}
+              description={t.channels.securityDesc}
+              checked={draft.emailDigest.securityAlerts}
               disabled={!editing}
-              onChange={() => togglePreference("securityAlerts")}
+              onChange={() => togglePreference(["emailDigest", "securityAlerts"])}
             />
           </div>
         </Card>
@@ -271,34 +220,32 @@ export default function NotificationsSettingsPage() {
                 <Bell className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-100">Current summary</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Track enabled signals before publishing changes.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-100">{t.summary.title}</h2>
+                <p className="mt-1 text-sm text-slate-400">{t.summary.desc}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-xl border border-slate-700/50 bg-slate-950/35 px-4 py-3 text-sm">
-                <span className="text-slate-300">Enabled preferences</span>
+                <span className="text-slate-300">{t.summary.enabledPreferences}</span>
                 <span className="font-semibold text-sky-300">{enabledCount} / 5</span>
               </div>
               <div className="flex items-center justify-between rounded-xl border border-slate-700/50 bg-slate-950/35 px-4 py-3 text-sm">
-                <span className="text-slate-300">Email channel</span>
+                <span className="text-slate-300">{t.summary.emailChannel}</span>
                 <span className="font-semibold text-slate-100">
-                  {draft.emailNotifications ? "Active" : "Muted"}
+                  {draft.channels.email ? t.summary.active : t.summary.muted}
                 </span>
               </div>
               <div className="flex items-center justify-between rounded-xl border border-slate-700/50 bg-slate-950/35 px-4 py-3 text-sm">
-                <span className="text-slate-300">Security coverage</span>
+                <span className="text-slate-300">{t.summary.securityCoverage}</span>
                 <span
                   className={
-                    draft.securityAlerts
+                    draft.emailDigest.securityAlerts
                       ? "font-semibold text-emerald-300"
                       : "font-semibold text-amber-300"
                   }
                 >
-                  {draft.securityAlerts ? "Protected" : "At risk"}
+                  {draft.emailDigest.securityAlerts ? t.summary.protected : t.summary.atRisk}
                 </span>
               </div>
             </div>
@@ -310,10 +257,8 @@ export default function NotificationsSettingsPage() {
                 <ShieldAlert className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-100">Save behavior</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Successful saves emit a success banner and toast. Disabling security alerts simulates a blocked save.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-100">{t.saveBehavior.title}</h2>
+                <p className="mt-1 text-sm text-slate-400">{t.saveBehavior.desc}</p>
               </div>
             </div>
           </Card>
@@ -323,27 +268,28 @@ export default function NotificationsSettingsPage() {
       {!editing ? (
         <div>
           <Button variant="secondary" onClick={() => setEditing(true)}>
-            Edit Preferences
+            {t.actions.edit}
           </Button>
         </div>
       ) : (
         <div
           className="sticky bottom-6 z-40 flex flex-col gap-3 rounded-2xl border border-slate-700/60 bg-slate-950/90 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur md:flex-row md:items-center md:justify-between"
+          style={{ paddingBottom: "max(1rem, calc(1rem + var(--sai-bottom, 0px)))" }}
           role="group"
           aria-label="Notification settings actions"
         >
           <div className="flex items-center gap-2 text-sm text-amber-300">
             <AlertCircle className="h-4 w-4" />
-            <span>{isDirty ? "Unsaved changes" : "No pending changes"}</span>
+            <span>{isDirty ? t.actions.unsaved : t.actions.noPending}</span>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="ghost" onClick={handleCancel} disabled={saving}>
               <X className="h-4 w-4" />
-              Cancel
+              {t.actions.cancel}
             </Button>
             <Button onClick={handleSave} disabled={saving || !isDirty} aria-busy={saving}>
               <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? t.actions.saving : t.actions.save}
             </Button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 /**
  * @module Skeleton
+ * // Fixes issue 441: Implement global loading, empty, and error state system
  *
  * Reusable skeleton loading primitives for NeuroWealth.
  *
@@ -28,13 +29,22 @@
  * <AuditTableSkeleton />
  * <ProfileFormSkeleton />
  * <OnboardingStepSkeleton />
+ * <SettingsSectionSkeleton rows={3} />
+ * <StatCardSkeleton />
+ * <ActivityRowSkeleton />
  * ```
  */
 
 "use client";
 
-import { CSSProperties, HTMLAttributes } from "react";
-import styles from "./Skeleton.module.css";
+import React, { CSSProperties, HTMLAttributes } from "react";
+import rawStyles from "./Skeleton.module.css";
+
+const styles: Record<string, string> =
+  rawStyles ||
+  new Proxy({}, {
+    get: (_target, prop) => (typeof prop === "string" ? prop : ""),
+  });
 
 // ─── Primitive: Skeleton ───────────────────────────────────────────────────────
 
@@ -618,6 +628,58 @@ export function SettingsSectionSkeleton({
           <Skeleton height={24} width={44} radius={999} />
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── Preset: StatCard ─────────────────────────────────────────────────────────
+
+export interface StatCardSkeletonProps {
+  className?: string;
+}
+
+/**
+ * Skeleton for a summary stat card (balance, APY, yield, strategy).
+ * Matches stat card layout: label + large value + helper text.
+ */
+export function StatCardSkeleton({ className = "" }: StatCardSkeletonProps) {
+  return (
+    <article
+      aria-hidden="true"
+      role="presentation"
+      className={`${styles.metricCard} ${className}`}
+    >
+      <Skeleton height={12} width="60%" />
+      <Skeleton height={28} width="80%" />
+      <Skeleton height={12} width="70%" />
+    </article>
+  );
+}
+
+// ─── Preset: ActivityRow ──────────────────────────────────────────────────────
+
+export interface ActivityRowSkeletonProps {
+  className?: string;
+}
+
+/**
+ * Skeleton for a single activity/transaction row in a list.
+ * Icon + title/description + amount.
+ */
+export function ActivityRowSkeleton({ className = "" }: ActivityRowSkeletonProps) {
+  return (
+    <div
+      aria-hidden="true"
+      role="presentation"
+      className={className}
+      style={{ display: "flex", alignItems: "center", gap: 12, paddingBlock: 12, paddingInline: 0 }}
+    >
+      <Skeleton width={32} height={32} radius={8} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+        <Skeleton width="60%" height={12} />
+        <Skeleton width="45%" height={10} />
+      </div>
+      <Skeleton width={48} height={12} />
     </div>
   );
 }

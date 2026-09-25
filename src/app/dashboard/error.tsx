@@ -18,6 +18,7 @@ export default function DashboardError({
       icon={<AlertTriangle size={32} />}
       primaryAction={{ label: "Back to dashboard home", href: "/dashboard" }}
       secondaryAction={{ label: "Try again", onClick: reset }}
+      ownsLandmark={false}
     />
   );
 }

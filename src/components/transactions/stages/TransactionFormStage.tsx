@@ -5,17 +5,17 @@
  * Handles amount and wallet address input with validation.
  */
 
+import { useI18n } from "@/contexts/I18nContext";
 import { formatCurrency } from "@/lib/formatters";
+import { joinDescribedBy } from "@/lib/form-validation";
 import {
   TransactionFormValues,
   TransactionKind,
   getTransactionContext,
 } from "@/lib/transactions";
 import styles from "../transaction-flow.module.css";
-import {
-  getInputStateClassName,
-  sanitizeAmount,
-} from "../utils/transaction-utils";
+import { sanitizeAmount } from "../utils/transaction-utils";
+import { getInputStateClassName } from "../utils/transaction-style-utils";
 import type { TransactionFieldErrors } from "@/lib/transactions";
 
 interface TransactionFormStageProps {
@@ -42,7 +42,9 @@ export function TransactionFormStage({
   onMaxAmount,
   onSubmit,
 }: TransactionFormStageProps) {
-  const context = getTransactionContext(kind);
+  const { messages } = useI18n();
+  const t = messages.transactions;
+  const context = getTransactionContext(kind, messages.transactions.domain.context);
 
   const amountInputClassName = [
     styles.input,
@@ -72,7 +74,10 @@ export function TransactionFormStage({
             {context.amountLabel}
           </label>
           <span className={styles.fieldHint}>
-            Available {formatCurrency(context.availableAmount)}
+            {t.form.available.replace(
+              "{amount}",
+              formatCurrency(context.availableAmount),
+            )}
           </span>
         </div>
 
@@ -86,24 +91,41 @@ export function TransactionFormStage({
             }
             placeholder="0.00"
             value={formValues.amount}
+            aria-invalid={Boolean(fieldErrors.amount)}
+            aria-describedby={joinDescribedBy(
+              "amount-supporting-copy",
+              fieldErrors.amount ? "amount-error" : undefined,
+              formValues.amount && !fieldErrors.amount
+                ? "amount-success"
+                : undefined,
+            )}
           />
           <button
             className={styles.inlineButton}
             onClick={onMaxAmount}
             type="button"
           >
-            Max
+            {t.form.max}
           </button>
         </div>
 
-        <p className={styles.supportingCopy}>{context.amountHint}</p>
+        <p id="amount-supporting-copy" className={styles.supportingCopy}>
+          {context.amountHint}
+        </p>
         {fieldErrors.amount ? (
-          <p className={`${styles.fieldMessage} ${styles.errorMessage}`}>
+          <p
+            id="amount-error"
+            className={`${styles.fieldMessage} ${styles.errorMessage}`}
+            role="alert"
+          >
             {fieldErrors.amount}
           </p>
         ) : formValues.amount ? (
-          <p className={`${styles.fieldMessage} ${styles.successMessage}`}>
-            Amount looks valid for the next confirmation step.
+          <p
+            id="amount-success"
+            className={`${styles.fieldMessage} ${styles.successMessage}`}
+          >
+            {t.form.amountValid}
           </p>
         ) : null}
       </div>
@@ -134,7 +156,9 @@ export function TransactionFormStage({
                 }
                 type="button"
               >
-                {formValues.walletConnected ? "Disconnect" : "Reconnect"}
+                {formValues.walletConnected
+                  ? t.form.disconnect
+                  : t.form.reconnect}
               </button>
             </div>
             <p className={styles.supportingCopy}>{context.walletHint}</p>
@@ -144,7 +168,7 @@ export function TransactionFormStage({
               </p>
             ) : (
               <p className={`${styles.fieldMessage} ${styles.successMessage}`}>
-                Deposit uses the connected funding wallet shown above.
+                {t.form.depositUsesWallet}
               </p>
             )}
           </>
@@ -161,6 +185,14 @@ export function TransactionFormStage({
               }
               placeholder="G..."
               value={formValues.walletAddress}
+              aria-invalid={Boolean(fieldErrors.walletAddress)}
+              aria-describedby={joinDescribedBy(
+                "wallet-hint",
+                fieldErrors.walletAddress ? "wallet-error" : undefined,
+                formValues.walletAddress && !fieldErrors.walletAddress
+                  ? "wallet-success"
+                  : undefined,
+              )}
             />
             <div className={styles.connectRow}>
               <button
@@ -171,22 +203,34 @@ export function TransactionFormStage({
                 type="button"
               >
                 {formValues.walletConnected
-                  ? "Disconnect vault"
-                  : "Reconnect vault"}
+                  ? t.form.disconnectVault
+                  : t.form.reconnectVault}
               </button>
-              <span className={styles.fieldHint}>{context.walletHint}</span>
+              <span id="wallet-hint" className={styles.fieldHint}>
+                {context.walletHint}
+              </span>
             </div>
             {fieldErrors.walletAddress ? (
-              <p className={`${styles.fieldMessage} ${styles.errorMessage}`}>
+              <p
+                id="wallet-error"
+                className={`${styles.fieldMessage} ${styles.errorMessage}`}
+                role="alert"
+              >
                 {fieldErrors.walletAddress}
               </p>
             ) : (
-              <p className={`${styles.fieldMessage} ${styles.successMessage}`}>
-                Destination address passes the Stellar public key format check.
+              <p
+                id="wallet-success"
+                className={`${styles.fieldMessage} ${styles.successMessage}`}
+              >
+                {t.form.destinationValid}
               </p>
             )}
             {fieldErrors.walletConnected ? (
-              <p className={`${styles.fieldMessage} ${styles.errorMessage}`}>
+              <p
+                className={`${styles.fieldMessage} ${styles.errorMessage}`}
+                role="alert"
+              >
                 {fieldErrors.walletConnected}
               </p>
             ) : null}
@@ -202,8 +246,7 @@ export function TransactionFormStage({
 
       <div className={styles.actionBar}>
         <div className={styles.actionMeta}>
-          Primary action stays anchored at the bottom on mobile for longer
-          forms.
+          {t.form.anchoredNote}
         </div>
         <div className={styles.actionButtons}>
           <button
@@ -212,7 +255,7 @@ export function TransactionFormStage({
             type="submit"
             data-qa="transaction-review-button"
           >
-            {isSubmitting ? "Preparing..." : context.primaryActionLabel}
+            {isSubmitting ? t.form.preparing : context.primaryActionLabel}
           </button>
         </div>
       </div>

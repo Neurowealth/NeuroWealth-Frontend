@@ -1,4 +1,4 @@
-import { HTMLAttributes } from "react";
+import React, { HTMLAttributes } from "react";
 
 type BadgeVariant = "default" | "success" | "warning" | "error" | "info";
 type BadgeSize = "sm" | "md";

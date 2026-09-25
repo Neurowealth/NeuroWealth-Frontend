@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/contexts/I18nContext";
 import styles from "./transaction-flow.module.css";
 import type { TransactionRecoveryUI, RecoveryAction } from "@/lib/transactions";
 
@@ -19,11 +20,14 @@ export function TransactionErrorRecovery({
   onActionSelect,
   isLoading = false,
 }: TransactionErrorRecoveryProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions;
+
   return (
     <div className={`${styles.form}`}>
       <div className={styles.receiptBanner}>
         <span className={`${styles.statusChip} ${styles.statusError}`}>
-          Error
+          {t.recovery.error}
         </span>
         <h3 className={styles.receiptTitle}>{recovery.title}</h3>
         <p className={`${styles.fieldMessage} ${styles.errorMessage}`}>
@@ -33,10 +37,10 @@ export function TransactionErrorRecovery({
 
       {recovery.reference && (
         <div className={styles.referenceCard}>
-          <p className={styles.referenceLabel}>Transaction reference</p>
+          <p className={styles.referenceLabel}>{t.shared.transactionReference}</p>
           <p className={styles.referenceValue}>{recovery.reference}</p>
           <p className={styles.supportingCopy}>
-            Include this reference when contacting support.
+            {t.recovery.includeReference}
           </p>
         </div>
       )}
@@ -44,8 +48,8 @@ export function TransactionErrorRecovery({
       <div className={styles.actionBar}>
         <div className={styles.actionMeta}>
           {recovery.primaryAction.action === "retry"
-            ? "Please try again."
-            : "Please review and update your details."}
+            ? t.recovery.tryAgain
+            : t.recovery.reviewUpdate}
         </div>
         <div className={styles.actionButtons}>
           {recovery.secondaryAction && (

@@ -1,18 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import type { DateRange } from "@/types";
-
-export interface DateFilterable {
-  date: string | Date;
-  [key: string]: unknown;
-}
+import type { DateFilterable, DateRange } from "@/types";
 
 export function filterByDateRange<T extends DateFilterable>(
-  data: T[],
+  data: readonly T[],
   range: DateRange,
 ): T[] {
-  if (!range.start && !range.end) return data;
+  if (!range.start && !range.end) return [...data];
 
   return data.filter((item) => {
     const dateValue = item.date instanceof Date ? item.date : new Date(item.date);
@@ -29,11 +24,11 @@ export function filterByDateRange<T extends DateFilterable>(
 }
 
 export function filterByTimeRange<T extends { time: string }>(
-  data: T[],
+  data: readonly T[],
   from: { hours: number; minutes: number } | null,
   to: { hours: number; minutes: number } | null,
 ): T[] {
-  if (!from && !to) return data;
+  if (!from && !to) return [...data];
 
   return data.filter((item) => {
     const [hours, minutes] = item.time.split(":").map(Number);
@@ -53,7 +48,7 @@ export function filterByTimeRange<T extends { time: string }>(
  * const { filtered, count } = useDateFilter(transactions, range);
  */
 export function useDateFilter<T extends DateFilterable>(
-  data: T[],
+  data: readonly T[],
   range: DateRange
 ): { filtered: T[]; count: number; hasFilter: boolean } {
   const { start, end } = range;
@@ -74,7 +69,7 @@ export function useDateFilter<T extends DateFilterable>(
  * Useful for audit logs, transactions with timestamps.
  */
 export function useTimeFilter<T extends { time: string }>(
-  data: T[],
+  data: readonly T[],
   from: { hours: number; minutes: number } | null,
   to: { hours: number; minutes: number } | null
 ): T[] {

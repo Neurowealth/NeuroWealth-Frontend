@@ -23,8 +23,16 @@ export function NotificationToggle() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && isOpen) {
+            setIsOpen(false);
+            e.preventDefault();
+          }
+        }}
         className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
-        aria-label="Toggle notifications"
+        aria-label={unreadCount > 0 ? `Toggle notifications, ${unreadCount} unread` : "Toggle notifications"}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
       >
         <span className="text-xl">🔔</span>
         {unreadCount > 0 && (
@@ -35,7 +43,15 @@ export function NotificationToggle() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 z-[100] animate-in fade-in zoom-in duration-200 origin-top-right">
+        <div 
+          className="absolute right-0 mt-2 z-dropdown animate-in fade-in zoom-in duration-200 origin-top-right"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsOpen(false);
+              e.preventDefault();
+            }
+          }}
+        >
           <NotificationCenter />
         </div>
       )}

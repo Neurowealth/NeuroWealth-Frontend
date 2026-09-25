@@ -1,18 +1,18 @@
-import SkeletonBlock from "@/components/skeletons/SkeletonBlock";
+import { Skeleton, SkeletonCircle } from "@/components/ui/Skeleton";
 
 export default function StrategyLoading() {
   return (
     <div className="space-y-6 animate-fade-in" aria-busy="true" aria-label="Loading strategy">
-      <SkeletonBlock className="h-3.5 w-48 mb-1" />
-      <SkeletonBlock className="h-3 w-72" />
+      <Skeleton height={14} width="48%" />
+      <Skeleton height={12} width="72%" />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="card space-y-3">
-            <SkeletonBlock className="h-10 w-10 rounded-xl" />
-            <SkeletonBlock className="h-4 w-28" />
-            <SkeletonBlock className="h-3 w-full" />
-            <SkeletonBlock className="h-3 w-3/4" />
-            <SkeletonBlock className="h-6 w-16 mt-2" />
+          <div key={i} style={{ padding: 24, borderRadius: 12, border: "1px solid var(--border)" }}>
+            <SkeletonCircle size={40} />
+            <Skeleton height={16} width="70%" style={{ marginTop: 12, marginBottom: 12 }} />
+            <Skeleton height={12} width="100%" style={{ marginBottom: 8 }} />
+            <Skeleton height={12} width="75%" />
+            <Skeleton height={24} width={64} radius={6} style={{ marginTop: 16 }} />
           </div>
         ))}
       </div>

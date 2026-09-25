@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// #335 — presentation only. Step orchestration lives in useOnboardingFlow.
+
+import React, { useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import OnboardingStepper from './OnboardingStepper';
 import WalletConnectStep from './steps/WalletConnectStep';
 import StrategyOverviewStep from './steps/StrategyOverviewStep';
 import FirstDepositStep from './steps/FirstDepositStep';
-import { STORAGE_KEYS } from '@/lib/storage-keys';
-const ONBOARDING_STATE_STORAGE_KEY = STORAGE_KEYS.ONBOARDING_STATE;
+import { useOnboardingFlow } from '@/hooks/useOnboardingFlow';
 
 interface OnboardingStep {
   id: string;
@@ -26,20 +27,20 @@ const onboardingSteps: OnboardingStep[] = [
     id: 'wallet',
     title: 'Connect Wallet',
     description: 'Secure your account',
-    component: WalletConnectStep
+    component: WalletConnectStep,
   },
   {
     id: 'strategy',
     title: 'Choose Strategy',
     description: 'Set your preferences',
-    component: StrategyOverviewStep
+    component: StrategyOverviewStep,
   },
   {
     id: 'deposit',
     title: 'Make Deposit',
     description: 'Start investing',
-    component: FirstDepositStep
-  }
+    component: FirstDepositStep,
+  },
 ];
 
 interface OnboardingFlowProps {
@@ -48,77 +49,34 @@ interface OnboardingFlowProps {
   initialStep?: number;
 }
 
-export default function OnboardingFlow({ 
-  onComplete, 
-  onSkip, 
-  initialStep = 0 
+export default function OnboardingFlow({
+  onComplete,
+  onSkip,
+  initialStep = 0,
 }: OnboardingFlowProps) {
-  const [currentStep, setCurrentStep] = useState(initialStep);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const {
+    currentStep,
+    isCompleted,
+    handleNext,
+    handleBack,
+    handleSkip,
+    handleStepClick,
+    resetFlow,
+  } = useOnboardingFlow({
+    totalSteps: onboardingSteps.length,
+    initialStep,
+    onComplete,
+    onSkip,
+  });
 
-  // Load saved state from localStorage
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+
   useEffect(() => {
-    const savedState = localStorage.getItem(ONBOARDING_STATE_STORAGE_KEY);
-    if (savedState) {
-      try {
-        const { completed, lastStep } = JSON.parse(savedState);
-        if (completed) {
-          setIsCompleted(true);
-        } else if (lastStep !== undefined) {
-          setCurrentStep(lastStep);
-        }
-      } catch (error) {
-        console.error('Failed to load onboarding state:', error);
-      }
+    // Move focus to the step heading when step changes
+    if (stepHeadingRef.current && !isCompleted) {
+      stepHeadingRef.current.focus();
     }
-  }, []);
-
-  // Save state to localStorage
-  const saveState = (step: number, completed: boolean = false) => {
-    try {
-      localStorage.setItem(ONBOARDING_STATE_STORAGE_KEY, JSON.stringify({
-        lastStep: step,
-        completed,
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      console.error('Failed to save onboarding state:', error);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentStep < onboardingSteps.length - 1) {
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      saveState(nextStep);
-    } else {
-      // Complete onboarding
-      setIsCompleted(true);
-      saveState(currentStep, true);
-      onComplete?.();
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      const prevStep = currentStep - 1;
-      setCurrentStep(prevStep);
-      saveState(prevStep);
-    }
-  };
-
-  const handleSkip = () => {
-    setIsCompleted(true);
-    saveState(currentStep, true);
-    onSkip?.();
-  };
-
-  const handleStepClick = (stepIndex: number) => {
-    if (stepIndex <= currentStep + 1) {
-      setCurrentStep(stepIndex);
-      saveState(stepIndex);
-    }
-  };
+  }, [currentStep, isCompleted]);
 
   if (isCompleted) {
     return (
@@ -138,15 +96,7 @@ export default function OnboardingFlow({
               <Button onClick={onComplete} className="w-full">
                 Go to Dashboard
               </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => {
-                  setIsCompleted(false);
-                  setCurrentStep(0);
-                  saveState(0, false);
-                }}
-                className="w-full"
-              >
+              <Button variant="ghost" onClick={resetFlow} className="w-full">
                 Review Onboarding
               </Button>
             </div>
@@ -161,7 +111,6 @@ export default function OnboardingFlow({
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Get Started with NeuroWealth</h1>
           <p className="text-slate-400">
@@ -169,14 +118,20 @@ export default function OnboardingFlow({
           </p>
         </div>
 
-        {/* Stepper */}
+        <h2
+          ref={stepHeadingRef}
+          tabIndex={-1}
+          className="sr-only"
+        >
+          {onboardingSteps[currentStep].title}
+        </h2>
+
         <OnboardingStepper
           steps={onboardingSteps}
           currentStep={currentStep}
           onStepClick={handleStepClick}
         />
 
-        {/* Current Step Content */}
         <div className="max-w-4xl mx-auto">
           <Card className="overflow-hidden">
             <div className="p-6 sm:p-8">
@@ -188,7 +143,6 @@ export default function OnboardingFlow({
             </div>
           </Card>
 
-          {/* Navigation Footer */}
           <div className="flex justify-between items-center mt-6 px-4">
             <div>
               {currentStep > 0 && (
@@ -197,11 +151,11 @@ export default function OnboardingFlow({
                 </Button>
               )}
             </div>
-            
-            <div className="text-sm text-slate-400">
+
+            <div className="text-sm text-slate-400" aria-live="polite">
               Step {currentStep + 1} of {onboardingSteps.length}
             </div>
-            
+
             <div>
               <Button variant="ghost" onClick={handleSkip}>
                 Skip All

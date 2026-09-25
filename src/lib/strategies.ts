@@ -130,12 +130,6 @@ export function parseStrategyKind(value: string | null): StrategyKind | null {
   return null;
 }
 
-export function getStrategy(kind: StrategyKind): StrategyCard {
-  const found = STRATEGIES.find((s) => s.kind === kind);
-  // STRATEGIES covers all StrategyKind values so this is always defined
-  return found!;
-}
-
 const PREFERENCE_STORAGE_KEY = STORAGE_KEYS.STRATEGY_PREFERENCE;
 
 export function loadStoredPreference(): StrategyKind | null {

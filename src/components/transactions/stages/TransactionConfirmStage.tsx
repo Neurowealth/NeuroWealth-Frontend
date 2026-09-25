@@ -5,6 +5,7 @@
  * Displays quote details and fees before submission.
  */
 
+import { useI18n } from "@/contexts/I18nContext";
 import { formatCurrency } from "@/lib/formatters";
 import { TransactionKind, TransactionQuote } from "@/lib/transactions";
 import styles from "../transaction-flow.module.css";
@@ -24,34 +25,44 @@ export function TransactionConfirmStage({
   onBack,
   onConfirm,
 }: TransactionConfirmStageProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions;
   const confirmLabel =
-    kind === "deposit" ? "Confirm deposit" : "Confirm withdrawal";
+    kind === "deposit" ? t.confirm.confirmDeposit : t.confirm.confirmWithdrawal;
 
   return (
-    <div className={styles.form}>
+    <div
+      className={styles.form}
+      role="status"
+      aria-live="polite"
+    >
       <div className={styles.summaryCard}>
         <p className={styles.heroAmount}>{formatCurrency(quote.amount)}</p>
         <p className={styles.heroSubtext}>
-          {kind === "deposit" ? "Deposit amount" : "Withdrawal amount"}
+          {kind === "deposit"
+            ? t.confirm.depositAmount
+            : t.confirm.withdrawalAmount}
         </p>
       </div>
 
       <div className={styles.detailList}>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Amount</span>
+          <span className={styles.detailLabel}>{t.shared.amount}</span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(quote.amount)}
           </span>
         </div>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Fees</span>
+          <span className={styles.detailLabel}>{t.shared.fees}</span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(quote.fee)}
           </span>
         </div>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>
-            {kind === "deposit" ? "Total debit" : "Net destination amount"}
+            {kind === "deposit"
+              ? t.confirm.totalDebit
+              : t.confirm.netDestinationAmount}
           </span>
           <span className={`${styles.detailValue} ${styles.detailValueMono}`}>
             {formatCurrency(
@@ -60,23 +71,22 @@ export function TransactionConfirmStage({
           </span>
         </div>
         <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Strategy</span>
+          <span className={styles.detailLabel}>{t.shared.strategy}</span>
           <span className={styles.detailValue}>{quote.strategyLabel}</span>
         </div>
       </div>
 
       <div className={styles.referenceCard}>
-        <p className={styles.referenceLabel}>Transaction reference</p>
+        <p className={styles.referenceLabel}>{t.shared.transactionReference}</p>
         <p className={styles.referenceValue}>{quote.reference}</p>
         <p className={styles.supportingCopy}>
-          Share this reference with support if you need help tracing the
-          request.
+          {t.confirm.shareReference}
         </p>
       </div>
 
       <div className={styles.actionBar}>
         <div className={styles.actionMeta}>
-          Confirm after reviewing amount, fees, and reference.
+          {t.confirm.confirmAfterReview}
         </div>
         <div className={styles.actionButtons}>
           <button
@@ -84,16 +94,16 @@ export function TransactionConfirmStage({
             onClick={onBack}
             type="button"
           >
-            Back
+            {t.confirm.back}
           </button>
           <button
             className={`${styles.button} ${styles.buttonPrimary}`}
             onClick={onConfirm}
             disabled={isSubmitting}
             type="button"
-            data-qa="transaction-confirm-button"
+            data-qa="transaction-submit-button"
           >
-            {isSubmitting ? "Submitting..." : confirmLabel}
+            {isSubmitting ? t.confirm.submitting : confirmLabel}
           </button>
         </div>
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useId } from "react";
+import React, { useRef, useState, useCallback, useId, useEffect } from "react";
 import Image from "next/image";
+import { random } from "@/lib/seeded-rng";
 
 export interface UploadFile {
   id: string;
@@ -9,6 +10,7 @@ export interface UploadFile {
   progress: number;        // 0–100
   status: "pending" | "uploading" | "done" | "cancelled" | "error";
   previewUrl?: string;
+  errorMessage?: string;
 }
 
 export interface FileUploadProps {
@@ -28,7 +30,7 @@ function mockUpload(
   let pct = 0;
   const tick = () => {
     if (signal.aborted) return;
-    pct = Math.min(100, pct + Math.random() * 18 + 4);
+    pct = Math.min(100, pct + random() * 18 + 4);
     onProgress(fileId, Math.round(pct));
     if (pct < 100) setTimeout(tick, 120);
     else onDone(fileId);
@@ -73,16 +75,30 @@ export default function FileUpload({
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const abortMap = useRef<Map<string, AbortController>>(new Map());
+  const previewUrlsRef = useRef<Set<string>>(new Set());
 
   const startUpload = useCallback((file: File) => {
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      alert(`File exceeds ${maxSizeMB}MB limit.`);
-      return;
-    }
     const id = crypto.randomUUID();
     const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
-    const entry: UploadFile = { id, file, progress: 0, status: "uploading", previewUrl };
 
+    if (previewUrl) {
+      previewUrlsRef.current.add(previewUrl);
+    }
+
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      const entry: UploadFile = {
+        id,
+        file,
+        progress: 0,
+        status: "error",
+        previewUrl,
+        errorMessage: `File exceeds ${maxSizeMB}MB limit.`,
+      };
+      setFiles((prev) => [...prev, entry]);
+      return;
+    }
+
+    const entry: UploadFile = { id, file, progress: 0, status: "uploading", previewUrl };
     setFiles((prev) => [...prev, entry]);
 
     const ac = new AbortController();
@@ -116,10 +132,21 @@ export default function FileUpload({
   const remove = (id: string) => {
     setFiles((prev) => {
       const f = prev.find((x) => x.id === id);
-      if (f?.previewUrl) URL.revokeObjectURL(f.previewUrl);
+      if (f?.previewUrl) {
+        URL.revokeObjectURL(f.previewUrl);
+        previewUrlsRef.current.delete(f.previewUrl);
+      }
       return prev.filter((x) => x.id !== id);
     });
   };
+
+  // Cleanup: revoke all outstanding blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrlsRef.current.clear();
+    };
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -238,7 +265,9 @@ export default function FileUpload({
                   <span style={{ fontSize: 11, color: "#6b7280" }}>cancelled</span>
                 )}
                 {f.status === "error" && (
-                  <span style={{ fontSize: 11, color: "#ef4444" }}>upload failed</span>
+                  <span style={{ fontSize: 11, color: "#ef4444" }}>
+                    {f.errorMessage || "upload failed"}
+                  </span>
                 )}
               </div>
 

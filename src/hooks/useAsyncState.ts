@@ -1,18 +1,23 @@
 "use client";
 
-import { useCallback, useReducer } from "react";
-import { ServiceError } from "@/lib/mock-services";
+import { useCallback, useReducer, useRef } from "react";
+import { ServiceError, type ServiceErrorCode } from "@/lib/mock-services";
 
 // ─── State shape ──────────────────────────────────────────────────────────────
 
 export type AsyncStatus = "idle" | "loading" | "success" | "error";
 
+/** Predictable error shape exposed to consumers — mirrors ServiceError fields. */
+export interface AsyncError {
+  message: string;
+  code: ServiceErrorCode;
+  retryable: boolean;
+}
+
 export interface AsyncState<T> {
   status: AsyncStatus;
   data: T | null;
-  error: string | null;
-  /** True when the error is retryable (from ServiceError.retryable) */
-  retryable: boolean;
+  error: AsyncError | null;
 }
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -20,7 +25,7 @@ export interface AsyncState<T> {
 type Action<T> =
   | { type: "LOADING" }
   | { type: "SUCCESS"; payload: T }
-  | { type: "ERROR"; message: string; retryable: boolean }
+  | { type: "ERROR"; error: AsyncError }
   | { type: "RESET" };
 
 function reducer<T>(state: AsyncState<T>, action: Action<T>): AsyncState<T> {
@@ -28,11 +33,11 @@ function reducer<T>(state: AsyncState<T>, action: Action<T>): AsyncState<T> {
     case "LOADING":
       return { ...state, status: "loading", error: null };
     case "SUCCESS":
-      return { status: "success", data: action.payload, error: null, retryable: false };
+      return { status: "success", data: action.payload, error: null };
     case "ERROR":
-      return { ...state, status: "error", error: action.message, retryable: action.retryable };
+      return { ...state, status: "error", error: action.error };
     case "RESET":
-      return { status: "idle", data: null, error: null, retryable: false };
+      return { status: "idle", data: null, error: null };
     default:
       return state;
   }
@@ -52,7 +57,7 @@ function reducer<T>(state: AsyncState<T>, action: Action<T>): AsyncState<T> {
  * }, [run]);
  *
  * if (state.status === "loading") return <DashboardSkeleton />;
- * if (state.status === "error")   return <ErrorBlock title="…" description={state.error!} onAction={() => run(…)} />;
+ * if (state.status === "error")   return <ErrorBlock title="…" description={state.error!.message} onAction={() => run(…)} />;
  * ```
  */
 export function useAsyncState<T>() {
@@ -60,27 +65,34 @@ export function useAsyncState<T>() {
     status: "idle",
     data: null,
     error: null,
-    retryable: false,
   });
+  const requestIdRef = useRef(0);
 
   const run = useCallback(async (fn: () => Promise<T>) => {
+    const requestId = ++requestIdRef.current;
     dispatch({ type: "LOADING" });
     try {
       const result = await fn();
+      if (requestId !== requestIdRef.current) return;
       dispatch({ type: "SUCCESS", payload: result });
     } catch (err) {
-      const message =
+      if (requestId !== requestIdRef.current) return;
+      const error: AsyncError =
         err instanceof ServiceError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "An unexpected error occurred.";
-      const retryable = err instanceof ServiceError ? err.retryable : true;
-      dispatch({ type: "ERROR", message, retryable });
+          ? { message: err.message, code: err.code, retryable: err.retryable }
+          : {
+              message: err instanceof Error ? err.message : "An unexpected error occurred.",
+              code: "UNKNOWN",
+              retryable: true,
+            };
+      dispatch({ type: "ERROR", error });
     }
   }, []);
 
-  const reset = useCallback(() => dispatch({ type: "RESET" }), []);
+  const reset = useCallback(() => {
+    requestIdRef.current += 1;
+    dispatch({ type: "RESET" });
+  }, []);
 
   return { state, run, reset };
 }

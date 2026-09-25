@@ -3,6 +3,12 @@
  *
  * Typed mock service layer for auth, portfolio, strategy, and transaction flows.
  *
+ * Seed strategy:
+ *   All randomness flows through seeded-rng.ts. Use NEXT_PUBLIC_DEMO_SEED
+ *   (or import DEFAULT_SEED) to get deterministic output across sessions.
+ *   Call reseed(DEFAULT_SEED) before running service methods to reproduce
+ *   a specific demo or screenshot baseline.
+ *
  * Adapter contract:
  *   Each service exposes an interface (e.g. `AuthService`) that mirrors the
  *   shape a real backend adapter must satisfy. Swap `mockAuthService` for a
@@ -36,6 +42,7 @@ import {
 } from "./transactions";
 import type { AuthSession } from "./mock-auth";
 import { adaptMockAuthUser } from "./user";
+import { STORAGE_KEYS } from "./storage-keys";
 
 // ─── Shared error model ───────────────────────────────────────────────────────
 
@@ -99,7 +106,7 @@ const STORAGE_KEY = "nw_auth_session";
 
 export const mockAuthService: AuthService = {
   async signIn(email, password, opts = {}) {
-    logger.info("mockAuthService.signIn", { email });
+    logger.info("mockAuthService.signIn");
     await delay(opts.latencyMs ?? 800);
 
     if (shouldFail(opts.outcome)) {
@@ -129,7 +136,7 @@ export const mockAuthService: AuthService = {
   },
 
   async signUp(email, name, password, opts = {}) {
-    logger.info("mockAuthService.signUp", { email, name });
+    logger.info("mockAuthService.signUp");
     await delay(opts.latencyMs ?? 1000);
 
     if (shouldFail(opts.outcome)) {
@@ -200,6 +207,55 @@ export const mockPortfolioService: PortfolioService = {
 
     const raw = buildScenarioPayload("live");
     return normalizePortfolioPayload(raw, "demo");
+  },
+};
+
+// ─── Profile service ─────────────────────────────────────────────────────────
+
+export interface ProfileData {
+  displayName: string;
+  locale: string;
+  timezone: string;
+  currencyFormat: string;
+}
+
+export const DEFAULT_PROFILE: ProfileData = {
+  displayName: "",
+  locale: "en",
+  timezone: "UTC",
+  currencyFormat: "USD",
+};
+
+export interface ProfileService {
+  saveProfile(data: ProfileData, opts?: SimulationOptions): Promise<void>;
+  loadProfile(): ProfileData;
+}
+
+const PROFILE_STORAGE_KEY = STORAGE_KEYS.PROFILE;
+
+export const mockProfileService: ProfileService = {
+  async saveProfile(data, opts = {}) {
+    logger.info("mockProfileService.saveProfile");
+    await delay(opts.latencyMs ?? 800);
+
+    if (shouldFail(opts.outcome)) {
+      throw new ServiceError(
+        "NETWORK_ERROR",
+        "Network error — please try again.",
+        true,
+      );
+    }
+
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
+  },
+
+  loadProfile(): ProfileData {
+    if (typeof window === "undefined") return DEFAULT_PROFILE;
+    try {
+      const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_PROFILE;
   },
 };
 

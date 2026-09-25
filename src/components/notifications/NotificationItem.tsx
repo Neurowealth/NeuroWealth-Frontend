@@ -19,27 +19,51 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
     error: "🔴",
   };
 
+  const statusLabels: Record<string, string> = {
+    info: "Info",
+    success: "Success",
+    warning: "Warning",
+    error: "Error",
+  };
+
   const formattedDate = new Date(timestamp).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const handleRead = () => {
+    if (!isRead) {
+      onMarkAsRead(id);
+      analytics.track("notification_read", { id });
+    }
+  };
 
   return (
     <div
       className={`
         relative p-4 flex flex-col gap-2 transition-colors hover:bg-white/5
         ${!isRead ? "border-l-2 border-brand-400 bg-brand-400/5" : "border-l-2 border-transparent"}
+        ${!isRead ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset" : ""}
       `}
-      onClick={() => {
-        if (!isRead) {
-          onMarkAsRead(id);
-          analytics.track("notification_read", { id, title });
-        }
-      }}
+      onClick={handleRead}
+      role="listitem"
+      tabIndex={!isRead ? 0 : undefined}
+      aria-label={!isRead ? `Mark as read: ${title}` : undefined}
+      onKeyDown={
+        !isRead
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleRead();
+              }
+            }
+          : undefined
+      }
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
-          <span>{statusIcons[status]}</span>
+          <span aria-hidden="true">{statusIcons[status]}</span>
+          <span className="sr-only">{statusLabels[status]}</span>
           <h4 className={`text-sm font-semibold ${!isRead ? "text-white" : "text-slate-300"}`}>
             {title}
           </h4>

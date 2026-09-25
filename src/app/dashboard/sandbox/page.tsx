@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import SandboxClientPage from "./SandboxClientPage";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ const CAN_ACCESS_SANDBOX =
 
 export default function SandboxPage() {
   if (!CAN_ACCESS_SANDBOX) {
-    notFound();
+    redirect("/dashboard");
   }
 
   return <SandboxClientPage />;

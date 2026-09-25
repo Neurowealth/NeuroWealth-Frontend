@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 import type { PortfolioSummary, Transaction } from "@/types";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/formatters";
 import EmptyState from "@/components/ui/EmptyState";
+import { FormattedCurrency, FormattedPercent } from "@/components/ui/FormattedValue";
 
 // ── Placeholder / mock data ───────────────────────────────────────────────────
 // Replace with real API calls (Issue 10) once the backend is wired.
@@ -20,25 +22,11 @@ import EmptyState from "@/components/ui/EmptyState";
 const MOCK_SUMMARY: PortfolioSummary | null = null; // set to null for empty state demo
 const MOCK_TRANSACTIONS: Transaction[] = [];
 
-// ── Helper formatters ─────────────────────────────────────────────────────────
-
-function formatUsd(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
-
-function formatPct(n: number) {
-  return `${n.toFixed(2)}%`;
-}
-
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   label: string;
-  value: string;
+  value: React.ReactNode;
   subtext?: string;
   icon: React.ElementType;
   accent?: string;
@@ -111,16 +99,11 @@ function TransactionRow({ tx }: { tx: Transaction }) {
         </p>
       </div>
       <div className="text-right shrink-0">
-        <p
-          className={cn(
-            "text-sm font-semibold",
-            tx.type === "deposit" || tx.type === "yield"
-              ? "text-success"
-              : "text-text-primary"
-          )}
-        >
-          {tx.type === "withdrawal" ? "-" : "+"}
-          {formatUsd(tx.amount)}
+        <p className="text-sm font-semibold">
+          <FormattedCurrency
+            value={tx.type === "withdrawal" ? -Math.abs(tx.amount) : Math.abs(tx.amount)}
+            signed
+          />
         </p>
         <span
           className={cn(
@@ -158,21 +141,23 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
               label="Total Balance"
-              value={formatUsd(summary.totalBalance)}
+              value={
+                <FormattedCurrency value={summary.totalBalance} colorBySign={false} />
+              }
               subtext="USDC across all strategies"
               icon={Wallet}
               accent="text-primary"
             />
             <StatCard
               label="Total Yield Earned"
-              value={formatUsd(summary.totalYield)}
+              value={<FormattedCurrency value={summary.totalYield} signed />}
               subtext="All time"
               icon={TrendingUp}
               accent="text-success"
             />
             <StatCard
               label="Current APY"
-              value={formatPct(summary.currentApy)}
+              value={<FormattedPercent value={summary.currentApy} apy colorBySign={false} />}
               subtext="7-day average"
               icon={Percent}
               accent="text-warning"
@@ -190,8 +175,8 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {(
               [
-                { label: "Total Balance", value: "$0.00", icon: Wallet },
-                { label: "Total Yield Earned", value: "$0.00", icon: TrendingUp },
+                { label: "Total Balance", value: formatCurrency(0), icon: Wallet },
+                { label: "Total Yield Earned", value: formatCurrency(0), icon: TrendingUp },
                 { label: "Current APY", value: "—", icon: Percent },
                 { label: "Active Strategy", value: "None", icon: BarChart2 },
               ] as const

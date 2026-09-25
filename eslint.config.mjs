@@ -1,5 +1,7 @@
 // @ts-check
 import next from "eslint-config-next";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
 
 /** @type {import("eslint").Linter.Config[]} */
 const eslintConfig = [
@@ -7,7 +9,15 @@ const eslintConfig = [
   ...next,
   {
     files: ["src/**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
     rules: {
+      // Catch new unsafe any at lint time (#654). Warn so existing call sites can be triaged gradually.
+      "@typescript-eslint/no-explicit-any": "warn",
       "no-restricted-imports": [
         "error",
         {

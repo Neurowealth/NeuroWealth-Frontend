@@ -1,336 +1,246 @@
-NeuroWealth 💰
+# NeuroWealth — Frontend
 
-AI-Powered DeFi Yield Platform on Stellar
+This repository contains the Next.js frontend for NeuroWealth. It's a demo-ready frontend with mock authentication, UI components, and client-side adapters that let the app run without a backend.
 
-NeuroWealth is an autonomous AI investment agent that automatically manages and grows your crypto assets on the Stellar blockchain. Deposit once, let the AI find the best yield opportunities across Stellar's DeFi ecosystem — and withdraw anytime with no lock-ups.
+**Assumptions**: This frontend targets the **Stellar testnet** by default (`NEXT_PUBLIC_STELLAR_NETWORK=testnet`). For production, configure `NEXT_PUBLIC_STELLAR_NETWORK=mainnet` and provide a real API backend via `NEUROWEALTH_API_BASE_URL`.
 
-Overview
-Traditional savings accounts offer near-zero interest. Traditional DeFi is too complex for most users. NeuroWealth bridges the gap a simple chat interface web powered by an AI agent that autonomously deploys your funds into the highest-yielding, safest opportunities on Stellar.
+## Package manager
 
-Why Stellar?
+This project uses **Yarn 1 (Classic)** as the package manager. The exact version is pinned in the
+`packageManager` field of `package.json` (`yarn@1.22.22`).
 
-Transaction fees of fractions of a penny — perfect for frequent AI-driven rebalancing
-3–5 second finality — the AI can act on market changes instantly
-Native DEX + Soroban smart contracts — composable, programmable yield strategies
-Native USDC + XLM — borderless capital movement with no friction
-Growing DeFi ecosystem — Blend (lending), Templar (borrowing), RWA protocols
+**Do not use `npm install` or `pnpm install`** — they will produce a different lockfile format and
+break the Corepack pin. Always run `yarn install` to install dependencies.
 
-Features
-FeatureDescription🤖 AI AgentAutonomous 24/7 yield optimization across Stellar DeFi💬 Natural LanguageChat to deposit, withdraw, and check balances📈 Auto-RebalancingAgent shifts funds to best opportunities automatically🔐 Non-CustodialYour funds live in audited Soroban smart contracts⚡ Instant WithdrawalsNo lock-ups, no penalties, withdraw anytime📱 WhatsApp ReadyFull functionality through WhatsApp chat interface🌍 Global AccessNo geographic restrictions, no bank account required🛡️ Security FirstSoroban contracts with ReentrancyGuard and access controls
+The lockfile (`yarn.lock`) is committed to the repository. After adding or upgrading packages,
+commit the updated `yarn.lock` alongside the `package.json` change.
 
-How It Works
+Next.js uses the **SWC compiler** for both development (Fast Refresh) and production builds.
+No Babel configuration is present; SWC is the default when using Next.js 13+. The SWC binary
+is resolved automatically by Next.js — no extra install step is needed.
 
-1. User deposits USDC via web app
-   ↓
-2. Soroban vault contract receives and records the deposit
-   ↓
-3. Contract emits a deposit event
-   ↓
-4. AI agent detects the event and deploys funds to best protocol (e.g. Blend)
-   ↓
-5. Yield accumulates 24/7 — agent rebalances hourly if better opportunities exist
-   ↓
-6. User requests withdrawal anytime → agent pulls funds → sends back in seconds
-   Three Investment Strategies
+**Platform-specific dependency**: `@tailwindcss/oxide-linux-x64-gnu` is listed under
+`optionalDependencies` in `package.json`. This is the native Rust engine binary for
+Tailwind CSS v4 on Linux x86-64 GNU targets (e.g. most CI and Codespace environments).
+It is marked optional so `yarn install` does not fail on macOS or Windows — Tailwind CSS
+falls back to a pure-JS engine on those platforms automatically. No manual action needed.
 
-Conservative — Stablecoin lending on Blend. Low risk, steady 3–6% APY.
-Balanced — Mix of lending + DEX liquidity provision. Medium risk, 6–10% APY.
-Growth — Aggressive multi-protocol deployment. Higher risk, 10–15% APY.
+## Quick start
 
-Tech Stack
-Smart Contracts
+Requirements: Node.js 20+, Yarn (Corepack supported)
 
-Language: Rust (Soroban SDK 21.0.0)
-Standard: ERC-4626 inspired vault architecture
-Network: Stellar Mainnet / Testnet
-Security: OpenZeppelin-equivalent patterns (ReentrancyGuard, Pausable, Access Control)
-
-Backend / AI Agent
-
-Runtime: Node.js or Python
-Stellar SDK: @stellar/stellar-sdk
-AI: Claude API / OpenAI for natural language intent parsing
-Database: PostgreSQL / Supabase for user position tracking
-Queue: Bull / Redis for reliable transaction processing
-
-Frontend
-
-Framework: Next.js 15
-Blockchain: Stellar SDK + Freighter wallet integration
-Styling: Tailwind CSS
-Charts: Recharts for portfolio analytics
-
-Integrations
-
-Yield Protocols: Blend Protocol (lending), Stellar DEX (liquidity)
-Price Feeds: Stellar anchor price feeds
-
-Project Structure
-neurowealth/
-├── contracts/ # Soroban smart contracts (Rust)
-│ └── vault/
-│ ├── Cargo.toml
-│ └── src/
-│ └── lib.rs # Core vault contract
-├── agent/ # AI agent backend
-│ ├── index.ts # Agent entry point
-│ ├── stellar.ts # Stellar transaction helpers
-│ ├── strategies/ # Yield strategy logic
-│ │ ├── conservative.ts
-│ │ ├── balanced.ts
-│ │ └── growth.ts
-│ ├── protocols/ # DeFi protocol integrations
-│ │ └── blend.ts
-│ └── nlp/ # Natural language intent parsing
-│ └── parser.ts
-├── frontend/ # Next.js web app
-│ ├── app/
-│ ├── components/
-│ └── lib/
-├── whatsapp/ # WhatsApp bot handler
-│ ├── webhook.ts
-│ └── responses.ts
-├── scripts/ # Deployment and utility scripts
-│ ├── deploy.sh
-│ └── initialize.sh
-└── README.md
-
-WhatsApp Integration
-NeuroWealth is designed to be fully operable through WhatsApp, making it accessible to anyone with a smartphone — no wallet app or browser extension needed.
-User Flow
-
-1. User sends "hi" to NeuroWealth WhatsApp number
-2. Bot introduces itself and asks for phone number verification (OTP)
-3. OTP verified → agent creates a Stellar keypair for this user (custodial)
-4. User can now deposit, withdraw, and check balance entirely through chat
-5. Funds are secured in the Soroban vault contract under their wallet address
-   Setting Up the Webhook
-   bash# Your webhook endpoint receives WhatsApp messages
-   POST /api/whatsapp/webhook
-
-# Register your webhook URL with Twilio
-
-# ngrok http 3000 ← for local testing
-
-Example Conversation
-User: deposit 100 USDC
-Agent: Got it! Depositing 100 USDC into your Balanced strategy.
-This should take about 5 seconds on Stellar... ✅ Done!
-You're now earning ~8.4% APY. I'll optimize automatically.
-
-User: what's my balance?
-Agent: 💰 Your NeuroWealth Portfolio
-Balance: 100.23 USDC
-Earnings today: +$0.23
-Current APY: 8.4%
-Strategy: Balanced
-
-User: withdraw everything
-Agent: Withdrawing 100.23 USDC... ✅ Done!
-Funds sent to your wallet. Arrived in 4 seconds.
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js**: 20.x or higher
-- **Yarn**: 1.22.22 (managed via Corepack)
-
-### Package Manager
-
-This project uses **Yarn** as the package manager. The version is specified in `package.json`:
-
-```json
-"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
-```
-
-**Installation:**
-
-- Install Yarn globally: `npm install -g yarn`
-- Or use Corepack (Node.js 16.9+): `corepack enable`
-
-**Common Commands:**
+Install and run:
 
 ```bash
-yarn install          # Install dependencies
-yarn dev              # Start development server
-yarn build            # Build for production
-yarn start            # Start production server
-yarn lint             # Run ESLint
-yarn typecheck        # Run TypeScript type checking
-yarn test             # Run unit tests
-yarn analyze          # Run bundle analyzer (ANALYZE=true next build)
-yarn qa:visual-baseline  # Capture visual test baselines
+# Enable the pinned yarn version via Corepack (run once per machine)
+corepack enable
+corepack prepare
+
+yarn install
+yarn dev
 ```
 
-### Bundle Analysis
-
-To analyze your production bundle:
+Run tests:
 
 ```bash
-ANALYZE=true yarn build
+yarn test
 ```
 
-Or use the convenience script:
+Inspect bundle size locally:
 
 ```bash
 yarn analyze
 ```
 
-This generates a bundle analysis report in `.next/analyze/`. The output is git-ignored and intended for local development use only.
+This runs a production build with the Next.js bundle analyzer enabled via `ANALYZE=true`.
+The report is written under `.next/analyze/`, which is already ignored by git.
 
-### Setup Instructions
+Use this command when checking for bundle regressions before merging. We do not run it in CI
+because analyzer builds are slower than the normal test/lint/build pipeline.
 
-1. **Clone the repository**
+## What this repo contains
 
-   ```bash
-   git clone https://github.com/NeuroWealth/NeuroWealth-Frontend.git
-   cd NeuroWealth-Frontend
-   ```
+- Next.js 14 app under `src/app`
+- Client-side mock auth (`src/lib/mock-auth.ts`) that persists an in-browser session in `localStorage` and mirrors it to a non-httpOnly cookie so `middleware.ts` can perform edge-side redirects.
+- Edge middleware (`middleware.ts`) that protects routes under `/dashboard`, `/profile`, and `/settings` and redirects unauthenticated users to `/login?from=...`.
+- Tests using the Node test runner (match: `src/**/*.test.ts`).
 
-2. **Install dependencies**
+## Folder structure
 
-   ```bash
-   yarn install
-   ```
-
-3. **Configure environment variables**
-
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
-   ```
-
-4. **Start development server**
-   ```bash
-   yarn dev
-   ```
-
-The app will be available at `http://localhost:3000`
-
-## Environment Variables
-
-### Required Environment Variables
-
-```bash
-# Public (embedded in browser bundle)
-NEXT_PUBLIC_WEBHOOK_URL=http://localhost:2000
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_STELLAR_NETWORK=testnet
-NEXT_PUBLIC_STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
-
-# Demo Seed (for consistent mock data in demos/screenshots)
-# Set to any string (e.g., "demo-123") to get deterministic random values
-# Leave unset to use normal random behavior
-NEXT_PUBLIC_DEMO_SEED=
-
-# Server-only (do not expose)
-# NEUROWEALTH_API_BASE_URL=http://localhost:8000
-# NEUROWEALTH_PORTFOLIO_PATH=/portfolio/overview
-# NEUROWEALTH_TRANSACTIONS_PATH=/transactions
-AUTH_SECRET=change-me-in-production
+```
+src/
+├── app/                   # Next.js App Router — routes and layouts
+│   ├── (auth)/            # Signup flow route group only
+│   ├── (errors)/          # Standalone error pages (401 unauthorized, 403 forbidden, 500 server-error)
+│   ├── api/               # Route handlers for app APIs and mock backends
+│   ├── dashboard/         # Protected dashboard shell and sub-routes
+│   │   ├── dev-errors/    # Dev-only error trigger routes (hidden in production)
+│   │   ├── portfolio/
+│   │   ├── activity/
+│   │   ├── strategy/
+│   │   └── settings/
+│   ├── demo/              # Dev-only demo pages and UI probes
+│   ├── docs/              # Reference docs pages and examples
+│   ├── login/             # Login entry flow and redirect handling
+│   ├── not-found.tsx      # Global 404 page
+│   ├── onboarding/        # Multi-step onboarding flow
+│   ├── page.tsx           # Landing page and marketing entry screen
+│   ├── profile/           # Account and profile pages
+│   ├── settings/          # Top-level settings shell and pages
+│   └── error.tsx          # Global 500 / uncaught error boundary
+├── components/            # Shared UI components (ui/, dashboard/, auth/, layout/)
+├── features/              # Feature-scoped logic co-located with its UI
+├── hooks/                 # Reusable React hooks
+├── lib/                   # Pure utilities, constants, and adapters
+│   ├── mock-auth.ts       # Client-side mock auth session
+│   ├── auth-constants.ts  # Canonical storage/cookie key names
+│   └── …
+└── types/                 # Shared TypeScript types and interfaces
 ```
 
-### Demo Seed for Consistent Mock Data
+TypeScript strict mode is enabled (`tsconfig.json` → `"strict": true`).
+Lint runs via `yarn lint` (ESLint + `eslint-config-next`).
 
-When running demos or capturing screenshots, set `NEXT_PUBLIC_DEMO_SEED` to any string value to get deterministic random values from mock services. This ensures consistent data across runs:
+## Environment variables
 
-```bash
-NEXT_PUBLIC_DEMO_SEED=demo-123 yarn dev
+See `docs/env.md` for the full variable reference, including the public/server-only split,
+Edge middleware constraints, and runtime validation notes. Typed accessors and validation
+live in `src/lib/env.ts` — each field is documented with its corresponding env var name.
+
+## Backend integration (mock vs real API)
+
+The frontend supports two runtime modes controlled by **server-only** env vars (see
+`src/lib/env.ts` and [NEUROWEALTH_API.md](NEUROWEALTH_API.md)):
+
+| Mode | Condition | Behaviour |
+| --- | --- | --- |
+| **Demo / mock** | `NEUROWEALTH_API_BASE_URL` unset | All `/api/*` route handlers return in-process mock data (`source: "demo"`). No backend required — default for local dev and PR previews. |
+| **Real API** | `NEUROWEALTH_API_BASE_URL` set | Route handlers proxy to the backend via `createServerApiClient()` with `Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>`. |
+
+### Request paths
+
+| Browser calls | Next.js route | Backend path (when configured) |
+| --- | --- | --- |
+| Portfolio data | `GET /api/portfolio` | `GET {NEUROWEALTH_PORTFOLIO_PATH}` (default `/portfolio/overview`) |
+| Transactions | `POST /api/transactions` | `POST {NEUROWEALTH_TRANSACTIONS_PATH}` (default `/transactions`) |
+| Strategy | `GET/PUT /api/strategy` | `GET/PUT {NEUROWEALTH_STRATEGY_PATH}` (default `/strategy/preference`) |
+
+Browser → Next.js requests authenticate via the httpOnly session cookie (`nw_session`).
+Next.js → backend requests require the Bearer token — never expose it to the client bundle.
+
+### Headers
+
+| Hop | Required headers |
+| --- | --- |
+| Browser → `/api/*` | `Accept: application/json`; `Content-Type: application/json` on writes; session cookie |
+| Server → backend | `Accept: application/json`; `Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>` |
+
+### Response envelope & errors
+
+All `/api/*` responses use the unified envelope defined in `src/lib/api-response.ts`:
+
+```json
+{ "success": true, "data": { } }
+{ "success": false, "error": { "code": "ERROR_CODE", "message": "…", "details": { } } }
 ```
 
-Without this variable set, mock services use normal random behavior.
+The typed client in `src/lib/api-client.ts` unwraps success payloads and throws `ApiRequestError`
+on failure. Built-in client error codes include `REQUEST_TIMEOUT` (408), `NETWORK_ERROR` (503),
+`INVALID_JSON`, and `INVALID_ENVELOPE`. Backend codes are forwarded verbatim.
 
-### Database Setup
+Use `useAsyncData((signal) => apiRequest("/api/…", { signal }))` so in-flight requests abort on
+unmount. See [NEUROWEALTH_API.md](NEUROWEALTH_API.md) and [docs/api-integration.md](docs/api-integration.md)
+for full endpoint schemas and integration checklists.
 
-1. Install PostgreSQL (version 12 or higher)
-2. Create the database:
-   ```bash
-   createdb neurowealth
-   ```
-3. Run migrations:
-   ```bash
-   psql -d neurowealth -f backend/migrations/001_create_users_table.sql
-   psql -d neurowealth -f backend/migrations/002_create_deposits_table.sql
-   ```
+## Provider tree & data flow
 
-### Stellar Network Configuration
+The React provider tree is composed in `src/components/ClientProviders.tsx` using grouped sub-composers and a conditional wallet mount:
 
-Network switching for the frontend is controlled via `NEXT_PUBLIC_STELLAR_NETWORK` and `NEXT_PUBLIC_STELLAR_HORIZON_URL`.
+```
+ClientProviders
+├── Providers
+│   ├── AppShellProviders
+│   │   ├── SandboxProvider          # Dev-only error trigger context
+│   │   ├── ThemeProvider            # Dark/light theme with localStorage persistence
+│   │   └── I18nProvider             # Internationalization & locale state
+│   ├── AuthProviders
+│   │   └── AuthProvider             # User session: localStorage ↔ cookie sync
+│   └── FeedbackProviders
+│       ├── ToastProvider            # Toast notifications & alerts
+│       └── CookieConsentProvider    # Privacy & cookie banner state
+├── ErrorTrackingMount               # Global error tracking (window errors + unhandledrejections)
+├── WalletProvider                   # Conditional: only on /dashboard and /profile
+│   └── children
+├── CookieBanner                     # Cookie consent banner
+├── PrivacyModal                     # Consent modal
+└── children
+```
 
-See:
-- [Networks](docs/networks.md)
+**Provider order matters**: Each provider depends on layers below it. For example, `ThemeProvider` initializes before `AuthProvider` so theme preferences load before the user checks authentication, and the wallet context is mounted only on wallet-capable routes.
 
-## Deposit Detection System
+### Key data flows
 
-The deposit detection system monitors user Stellar wallet addresses for incoming USDC deposits in real-time using the Horizon streaming API.
+1. **Authentication**:
+   - User signs in via `/login` → `AuthContext.signIn()` → `mock-auth.ts` creates session
+   - Session stored in `localStorage` (key: `SESSION_STORAGE_KEY`)
+   - Session mirrored to httpOnly cookie (key: `SESSION_COOKIE_NAME`) for middleware
+   - Middleware (`middleware.ts`) reads cookie to redirect unauth users
+   - Sign-in on other tabs triggers `storage` event → all tabs sync
 
-### How It Works
+2. **Stellar wallet integration**:
+   - `WalletProvider` resolves network based on `NEXT_PUBLIC_STELLAR_NETWORK` env (testnet/mainnet)
+   - Horizon URL configurable via `NEXT_PUBLIC_STELLAR_HORIZON_URL` (falls back to public nodes)
+   - `useWallet()` hook provides wallet state and account info
 
-1. **Monitoring**: When a user completes onboarding and receives a wallet address, the deposit monitor establishes a streaming connection to Horizon API
-2. **Detection**: USDC deposits are detected within 10 seconds of Stellar confirmation
-3. **Recording**: Deposits are recorded in PostgreSQL with idempotency (duplicate transactions are ignored)
-4. **Notification**: Users receive WhatsApp confirmation messages at two stages:
-   - "Deposit Received" - immediately after detection
-   - "Funds Deployed" - after AI agent deploys funds to yield strategy
-5. **Deployment**: The system emits deployment events for external AI agent handlers
+3. **API requests**:
+   - Browser → Next.js `/api/*` routes: authenticated via httpOnly cookie (no extra header needed)
+   - Next.js → Real backend: use `createServerApiClient()` in route handlers to inject Bearer token (from `NEUROWEALTH_API_AUTH_TOKEN` env)
+   - All responses must conform to the standard envelope (see NEUROWEALTH_API.md)
+   - Demo mode (no backend): all `/api/*` routes return mock data
 
-### Key Features
+4. **Internationalization**:
+   - Active locale stored in `localStorage` (key from `auth-constants.ts`)
+   - `dictionaries` map locale codes to message objects
+   - All formatters (`formatCurrency`, `formatDate`, etc.) use `getActiveIntlLocale()` for locale-aware output
 
-- Real-time streaming with automatic reconnection
-- Exponential backoff for connection failures (1s to 60s max)
-- Transaction hash-based idempotency
-- Atomic database transactions for portfolio updates
-- Graceful error handling with user notifications
+5. **Theme**:
+   - Light/dark mode persisted to `localStorage`
+   - CSS variables injected into `:root` for tailwind theming
+   - `ThemeProvider` initializes before auth so theme loads without flash
 
-### Services
+## Auth syncing note
 
-- **Deposit Monitor**: Streams payment events from Stellar Horizon
-- **Deposit Recorder**: Records deposits in database with idempotency
-- **Deployment Coordinator**: Emits deployment events and handles confirmations
-- **Deposit Messaging**: Sends WhatsApp notifications for deposit lifecycle events
+The mock auth flow stores the session in `localStorage` using `SESSION_STORAGE_KEY` and mirrors it into a cookie named `SESSION_COOKIE_NAME`. This allows the browser UI and Next.js middleware to agree on authentication state in demo setups. See `src/lib/auth-constants.ts` for the canonical values.
 
-## Documentation
+## Contributing
 
-- [Networks](docs/networks.md): frontend network switching config and current mainnet scope boundaries.
-- [Environment](docs/env.md): server-only vs `NEXT_PUBLIC_*` env, and future Edge runtime constraints.
-- [Third-party scripts](docs/third-party-scripts.md): how to add analytics/SDK scripts using `next/script` without hurting LCP.
-- [Security Policy](SECURITY.md): private vulnerability reporting process and response expectations.
+- Follow existing patterns for components and hooks.
+- Tests live next to logic under `src/` and run via `yarn test`.
+- For bundle-size checks, run `yarn analyze` locally and review the generated report before
+  changing code that affects route or vendor bundles.
+- Use `data-qa` only for smoke-flow anchors, with kebab-case names that describe the flow and
+  action, for example `landing-primary-cta-button`, `wallet-connect-button`, and
+  `transaction-submit-button`.
 
-## Pull Request Guidelines
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, CI gates, branch rules, and
+PR checklist.
 
-### Before Submitting
+### Issue queues
 
-1. **Run linting and type checking**
-   ```bash
-   yarn lint
-   yarn typecheck
-   ```
+| Queue | Purpose |
+|-------|---------|
+| [Audit issues](/.github/audit-issues/) | 30 engineering/platform issues — auth, CI, performance, docs |
+| [Backlog](/.github/backlog/) | 50 scoped feature and design work items |
+| [Issues index](/.github/ISSUES.md) | Label guide and queue overview |
 
-2. **Build the project**
-   ```bash
-   yarn build
-   ```
+When picking up work, choose an item from the audit queue (engineering clean-up) or the
+backlog (features), then open a GitHub issue using the closest
+[issue template](/.github/ISSUE_TEMPLATE/).
 
-3. **Add `data-qa` attributes** to critical E2E flows
-   - Primary CTAs
-   - Wallet connect buttons
-   - Transaction submit buttons
-   - See issue #160 for naming pattern
+## Security
 
-### PR Expectations
+To report a vulnerability or for our handling and response expectations, see [SECURITY.md](SECURITY.md). Please do not file public issues for security reports.
 
-- **Branch protection**: Direct pushes to `main` are not allowed. All changes must go through pull requests.
-- **Issue linkage**: Link your PR to related issues using the issue tracker.
-- **Review process**: All PRs require at least one approval before merging.
-- **Tests**: Ensure new features include appropriate tests (unit or E2E).
-- **Documentation**: Update relevant documentation for new features or breaking changes.
+## License
 
-### Issue Templates
-
-Use the appropriate issue template when reporting bugs or requesting features:
-- Bug Report
-- Feature Request
-- Enhancement
-
-See the [issue queue](https://github.com/NeuroWealth/NeuroWealth-Frontend/issues) for open issues and priorities.
+Internal/demo project — see repository owner for license details

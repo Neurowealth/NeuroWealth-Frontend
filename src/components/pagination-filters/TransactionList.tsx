@@ -1,29 +1,73 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import FilterChips from "./FilterChips";
 import Pagination from "./Pagination";
-import { useTransactionList, buildFilterOptions, MOCK_TRANSACTIONS } from "../../hooks/useTransactionList";
+import { useTransactionList, buildFilterOptions, MOCK_TRANSACTIONS, type Transaction } from "../../hooks/useTransactionList";
+import { formatNumber } from "@/lib/formatters";
+import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { Badge } from "@/components/ui/Badge";
 
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  completed: { bg: "rgba(16,185,129,0.12)", color: "#10b981" },
-  pending:   { bg: "rgba(245,158,11,0.12)",  color: "#f59e0b" },
-  failed:    { bg: "rgba(239,68,68,0.12)",   color: "#ef4444" },
-  cancelled: { bg: "rgba(107,114,128,0.12)", color: "#6b7280" },
+// Map transaction statuses onto the shared Badge variants (success/warning/error; neutral default).
+const STATUS_VARIANT: Record<string, "success" | "warning" | "error" | "default"> = {
+  completed: "success",
+  pending: "warning",
+  failed: "error",
+  cancelled: "default",
 };
+
+const COLUMNS: DataTableColumn<Transaction>[] = [
+  { key: "date", header: "Date", accessor: (tx) => tx.date },
+  { key: "description", header: "Description", accessor: (tx) => tx.description },
+  {
+    key: "type",
+    header: "Type",
+    accessor: (tx) => tx.type,
+    render: (tx) => (
+      <Badge variant="default" size="sm">
+        {tx.type}
+      </Badge>
+    ),
+  },
+  {
+    key: "amount",
+    header: "Amount",
+    accessor: (tx) => tx.amount,
+    align: "right",
+    render: (tx) => (
+      <span className="tabular-nums">
+        {formatNumber(tx.amount)} {tx.currency}
+      </span>
+    ),
+  },
+  {
+    key: "status",
+    header: "Status",
+    accessor: (tx) => tx.status,
+    render: (tx) => (
+      <Badge variant={STATUS_VARIANT[tx.status] ?? "default"} size="sm">
+        {tx.status}
+      </Badge>
+    ),
+  },
+];
 
 export default function TransactionList() {
   const { items, totalItems, page, setPage, selectedFilters, setSelectedFilters, itemsPerPage } =
     useTransactionList(8);
 
-  const filterOptions = buildFilterOptions(MOCK_TRANSACTIONS);
+  const filterOptions = useMemo(() => buildFilterOptions(MOCK_TRANSACTIONS), []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Header */}
+      {/* Header — light/dark text pairing matches DataTable cell text below */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ fontSize: 16, fontWeight: 500, color: "#f9fafb", margin: 0 }}>Transactions</h2>
-        <span style={{ fontSize: 12, color: "#6b7280" }}>{totalItems} results</span>
+        <h2 className="m-0 text-base font-medium text-slate-700 dark:text-slate-200">
+          Transactions
+        </h2>
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {totalItems} results
+        </span>
       </div>
 
       {/* Filters */}
@@ -34,53 +78,14 @@ export default function TransactionList() {
       />
 
       {/* Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: "0.5px solid #21262d" }}>
-              {["Date", "Description", "Type", "Amount", "Status"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "#6b7280", fontWeight: 400, fontSize: 11, letterSpacing: "0.05em" }}>
-                  {h.toUpperCase()}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((tx) => (
-              <tr key={tx.id} style={{ borderBottom: "0.5px solid #161b22" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <td style={{ padding: "10px 12px", color: "#6b7280", whiteSpace: "nowrap" }}>{tx.date}</td>
-                <td style={{ padding: "10px 12px", color: "#e5e7eb" }}>{tx.description}</td>
-                <td style={{ padding: "10px 12px" }}>
-                  <span style={{ fontSize: 11, color: "#9ca3af", background: "#1f2937", borderRadius: 4, padding: "2px 7px" }}>
-                    {tx.type}
-                  </span>
-                </td>
-                <td style={{ padding: "10px 12px", color: "#e5e7eb", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                  {tx.amount.toLocaleString()} {tx.currency}
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  <span style={{
-                    fontSize: 11, borderRadius: 4, padding: "2px 8px",
-                    background: STATUS_COLORS[tx.status]?.bg,
-                    color: STATUS_COLORS[tx.status]?.color,
-                  }}>
-                    {tx.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {items.length === 0 && (
-          <div style={{ textAlign: "center", padding: "32px 0", color: "#6b7280", fontSize: 13 }}>
-            No transactions match the selected filters.
-          </div>
-        )}
-      </div>
+      <DataTable
+        data={items}
+        columns={COLUMNS}
+        rowKey={(tx) => tx.id}
+        searchable={false}
+        caption={`Transaction history, ${totalItems} results`}
+        emptyMessage="No transactions match the selected filters."
+      />
 
       {/* Pagination */}
       <Pagination

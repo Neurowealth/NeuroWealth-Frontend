@@ -46,6 +46,10 @@ export function paginateTransactions(
   page: number,
   itemsPerPage: number,
 ): Transaction[] {
+  if (page < 1 || itemsPerPage < 1) {
+    return [];
+  }
+
   const start = (page - 1) * itemsPerPage;
   return transactions.slice(start, start + itemsPerPage);
 }

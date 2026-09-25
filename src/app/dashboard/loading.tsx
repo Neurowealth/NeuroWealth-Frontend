@@ -1,4 +1,4 @@
-import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 
 /**
  * Suspense fallback for the /dashboard route.

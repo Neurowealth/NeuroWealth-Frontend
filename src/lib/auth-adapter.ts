@@ -32,6 +32,12 @@ export interface AuthAdapter {
 
     /**
      * Sign up with email, name, and password.
+     *
+     * IMPORTANT (enumeration-safe contract): Implementations MUST NOT
+     * distinguish between "email already registered" and "email available"
+     * in the error message. Return a generic response (e.g. "check your
+     * email") or throw a non-specific error for both paths so callers
+     * cannot probe for existing accounts.
      */
     signUp(
         email: string,

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/logger';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface StrategyOverviewStepProps {
   onNext: () => void;
@@ -57,11 +59,11 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Save to localStorage for persistence
-      localStorage.setItem('user-strategy', selectedStrategy);
+      localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, selectedStrategy);
       
       onNext();
     } catch (error) {
-      console.error('Failed to save strategy:', error);
+      logger.error('Failed to save strategy:', error);
     } finally {
       setIsSaving(false);
     }
@@ -97,6 +99,7 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
             onClick={() => setSelectedStrategy(strategy.id)}
             role="button"
             tabIndex={0}
+            aria-pressed={selectedStrategy === strategy.id}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
