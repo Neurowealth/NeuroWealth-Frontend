@@ -77,7 +77,7 @@ const MOCK_SEARCH_INDEX: SearchResultItem[] = [
     group: "Actions",
     title: "Start Withdrawal",
     description: "Move funds from your strategy back to wallet.",
-    href: "/dashboard/transactions?kind=withdraw",
+    href: "/dashboard/transactions?kind=withdrawal",
     keywords: ["cash out", "withdraw", "redeem"],
   },
   {
