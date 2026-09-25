@@ -58,22 +58,48 @@ export default function SecurityPage() {
     return <SettingsSectionSkeleton rows={3} />;
   }
 
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "", color: "" };
+    let score = 0;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (pass.length < 8) {
+      return { score: 1, label: "Too short (min 8 chars)", color: "#f43f5e" };
+    }
+    if (score <= 2) {
+      return { score: 2, label: "Weak", color: "#fbbf24" };
+    }
+    if (score === 3) {
+      return { score: 3, label: "Medium", color: "#38bdf8" };
+    }
+    return { score: 4, label: "Strong", color: "#34d399" };
+  };
+
+  const passwordStrength = getPasswordStrength(newPassword);
+
   const handleChangePassword = async () => {
-    if (!newPassword) return;
+    if (!newPassword || newPassword.length < 8) return;
     setSaving(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 600));
-      const updated = {
-        ...draft,
-        lastPasswordChange: new Date().toISOString(),
+      const timestamp = new Date().toISOString();
+      const updatedSaved = {
+        ...saved,
+        lastPasswordChange: timestamp,
       };
-      setDraft(updated);
-      setSaved(updated);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setSaved(updatedSaved);
+      setDraft((prev) => ({
+        ...prev,
+        lastPasswordChange: timestamp,
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSaved));
       setStatus("success");
       setShowPasswordModal(false);
       setNewPassword("");
-      mockAuditService.logEvent("password_change", { timestamp: new Date().toISOString() });
+      mockAuditService.logEvent("password_change", { timestamp });
       setTimeout(() => setStatus("idle"), 3000);
     } catch (error) {
       logger.error("security_password_change_failed", error);
@@ -262,8 +288,26 @@ export default function SecurityPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder={t.modal.newPasswordPlaceholder}
                   className={styles.modalInput}
+                  minLength={8}
                   disabled={saving}
                 />
+                {newPassword ? (
+                  <div className="mt-2 text-xs">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-slate-400">Strength:</span>
+                      <span
+                        style={{ color: passwordStrength.color, fontWeight: 600 }}
+                      >
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    {newPassword.length < 8 && (
+                      <p style={{ color: "#f43f5e", marginTop: 4 }}>
+                        Must be at least 8 characters
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -279,7 +323,7 @@ export default function SecurityPage() {
               <Button
                 onClick={handleChangePassword}
                 size="md"
-                disabled={saving || !newPassword}
+                disabled={saving || !newPassword || newPassword.length < 8}
                 aria-busy={saving}
               >
                 {saving ? t.modal.updating : t.modal.update}

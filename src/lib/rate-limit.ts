@@ -24,6 +24,35 @@ export interface RateLimiterOptions {
 }
 
 const store = new Map<string, RateLimitEntry>();
+const MAX_MAP_SIZE = 1000;
+let lastSweepTime = Date.now();
+const SWEEP_INTERVAL_MS = 30_000;
+
+/**
+ * Sweep stale/expired entries from the rate limit store to prevent memory exhaustion.
+ */
+function sweepStaleEntries(windowMs: number = 60_000, force = false): void {
+  const now = Date.now();
+  if (!force && now - lastSweepTime < SWEEP_INTERVAL_MS && store.size < MAX_MAP_SIZE) {
+    return;
+  }
+
+  lastSweepTime = now;
+  for (const [key, entry] of store.entries()) {
+    entry.timestamps = entry.timestamps.filter((t) => t > now - windowMs);
+    if (entry.timestamps.length === 0) {
+      store.delete(key);
+    }
+  }
+
+  // If still oversized after removing expired timestamps, prune oldest keys
+  if (store.size > MAX_MAP_SIZE) {
+    const keysToDelete = Array.from(store.keys()).slice(0, store.size - MAX_MAP_SIZE);
+    for (const key of keysToDelete) {
+      store.delete(key);
+    }
+  }
+}
 
 /**
  * Check whether `key` is within the rate limit. Returns immediately — does
@@ -35,6 +64,8 @@ export function checkRateLimit(
 ): RateLimitResult {
   const now = Date.now();
   const windowStart = now - options.windowMs;
+
+  sweepStaleEntries(options.windowMs);
 
   let entry = store.get(key);
   if (!entry) {
@@ -68,7 +99,9 @@ export function resetRateLimitStore(): void {
   store.clear();
 }
 
-export function parseClientIp(value: string | null): string | null {
+export const clearRateLimitStore = resetRateLimitStore;
+
+export function parseClientIp(value: string | null | undefined): string | null {
   if (!value) return null;
 
   const firstCandidate = value
@@ -79,20 +112,37 @@ export function parseClientIp(value: string | null): string | null {
   return firstCandidate ?? null;
 }
 
-export function getRateLimitKey(request: Pick<Request, "headers">): string {
-  const trustedHeaders = [
-    "x-real-ip",
-    "cf-connecting-ip",
-    "x-client-ip",
-    "fastly-client-ip",
-    "true-client-ip",
-  ];
+/**
+ * Extracts a client rate limit identifier without trusting unverified proxy headers.
+ * Only standard x-forwarded-for (first hop) or x-real-ip are trusted.
+ * Vendor-specific / spoofable headers like cf-connecting-ip, fastly-client-ip,
+ * true-client-ip, and x-client-ip are strictly ignored.
+ */
+export function getRateLimitKey(
+  request: Pick<Request, "headers"> | { headers: Headers | Record<string, string | undefined> } | Headers,
+): string {
+  let headers: Headers | { get(name: string): string | null | undefined };
 
-  for (const headerName of trustedHeaders) {
-    const ip = parseClientIp(request.headers.get(headerName));
-    if (ip) return ip;
+  if ("headers" in request && typeof (request as { headers: Headers }).headers.get === "function") {
+    headers = (request as { headers: Headers }).headers;
+  } else if ("headers" in request && typeof request.headers === "object") {
+    const headerObj = request.headers as Record<string, string | undefined>;
+    headers = {
+      get: (name: string) => headerObj[name.toLowerCase()] ?? headerObj[name] ?? null,
+    };
+  } else if (typeof (request as Headers).get === "function") {
+    headers = request as Headers;
+  } else {
+    return "unknown";
   }
 
-  return parseClientIp(request.headers.get("x-forwarded-for")) ?? "unknown";
-}
+  const xForwardedFor = headers.get("x-forwarded-for");
+  const parsedXff = parseClientIp(xForwardedFor);
+  if (parsedXff) return parsedXff;
 
+  const xRealIp = headers.get("x-real-ip");
+  const parsedXReal = parseClientIp(xRealIp);
+  if (parsedXReal) return parsedXReal;
+
+  return "unknown";
+}

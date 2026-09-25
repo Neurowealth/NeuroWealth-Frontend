@@ -84,9 +84,9 @@ export default function NotificationsSettingsPage() {
 
   const enabledCount = [
     draft.channels.email,
-    draft.categories.transactions,
-    draft.emailDigest.weeklyDigest,
-    draft.categories.promotions,
+    draft.channels.email && draft.categories.transactions,
+    draft.channels.email && draft.emailDigest.weeklyDigest,
+    draft.channels.email && draft.categories.promotions,
     draft.emailDigest.securityAlerts,
   ].filter(Boolean).length;
 

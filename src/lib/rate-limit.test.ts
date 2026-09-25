@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { checkRateLimit, resetRateLimitStore } from "./rate-limit";
+import {
+  checkRateLimit,
+  getRateLimitKey,
+  resetRateLimitStore,
+} from "./rate-limit";
 
 test.afterEach(() => {
   resetRateLimitStore();
@@ -54,4 +58,32 @@ test("resets after the window elapses", () => {
 
   const afterWindow = checkRateLimit("user:e", opts);
   assert.equal(afterWindow.allowed, true);
+});
+
+test("getRateLimitKey extracts client IP from x-forwarded-for first hop", () => {
+  const headers = new Headers({
+    "x-forwarded-for": "203.0.113.195, 70.41.3.18, 150.172.238.178",
+  });
+  const key = getRateLimitKey(headers);
+  assert.equal(key, "203.0.113.195");
+});
+
+test("getRateLimitKey extracts client IP from x-real-ip when x-forwarded-for is missing", () => {
+  const headers = new Headers({
+    "x-real-ip": "198.51.100.42",
+  });
+  const key = getRateLimitKey(headers);
+  assert.equal(key, "198.51.100.42");
+});
+
+test("getRateLimitKey ignores spoofed vendor-specific headers (cf-connecting-ip, fastly-client-ip)", () => {
+  const headers = new Headers({
+    "cf-connecting-ip": "1.2.3.4",
+    "fastly-client-ip": "5.6.7.8",
+    "true-client-ip": "9.10.11.12",
+    "x-client-ip": "13.14.15.16",
+  });
+  const key = getRateLimitKey(headers);
+  // Vendor headers must not be used as trusted keys
+  assert.equal(key, "unknown");
 });
