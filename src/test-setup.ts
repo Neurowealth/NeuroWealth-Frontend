@@ -38,6 +38,13 @@ export function setupDomGlobals() {
     writable: true,
     configurable: true,
   });
+  Object.defineProperty(globalThis, "self", { value: dom.window, writable: true, configurable: true });
+  Object.defineProperty(globalThis, "IntersectionObserver", {
+    value: dom.window.IntersectionObserver ||
+      class { observe() {} unobserve() {} disconnect() {} },
+    writable: true,
+    configurable: true,
+  });
   Object.defineProperty(globalThis, "getComputedStyle", { value: dom.window.getComputedStyle, writable: true, configurable: true });
   Object.defineProperty(globalThis, "requestAnimationFrame", {
     value: (cb: FrameRequestCallback) => setTimeout(cb, 0),

@@ -315,11 +315,13 @@ export function getDefaultTransactionValues(kind: TransactionKind): TransactionF
   };
 }
 
-function parseAmount(value: string): number {
+export function parseAmount(value: string): number {
   const normalized = value.replace(/,/g, "").trim();
 
-  // Reject hexadecimal (0x...), scientific notation (e/E), or anything not a simple decimal number
-  if (!/^-?\d*\.?\d+$/.test(normalized) || /^[+-]?(0x)?[0-9a-fA-F]+\.?[0-9a-fA-F]*(e[+-]?[0-9]+)?$/.test(normalized) && !/^-?\d*\.?\d+$/.test(normalized)) {
+  // Only a plain decimal number (optional leading "-", digits, optional "."):
+  // this alone rejects hexadecimal (0x...) and scientific notation (e/E)
+  // input, since neither can match a string made only of digits and ".".
+  if (!/^-?\d*\.?\d+$/.test(normalized)) {
     return Number.NaN;
   }
 
