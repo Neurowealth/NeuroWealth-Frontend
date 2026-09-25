@@ -7,7 +7,11 @@ Versions are tagged in GitHub Releases and linked from this file.
 
 ---
 
-## [Unreleased] — 2026-04-26
+## [Unreleased] — 2026-09-25 (Through PR #899)
+
+### Fixed / Refactored
+- Guard `useStorageSync` callback against editing state to prevent overwriting active user edits during background sync (PR #899)
+- Remove dead `setAuditService` export and clean up unused audit service bindings (PR #898)
 
 ### Added
 - `CHANGELOG.md` with initial dated section and release notes process (closes #168)

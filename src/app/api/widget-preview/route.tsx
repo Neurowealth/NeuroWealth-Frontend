@@ -7,8 +7,6 @@ import {
 import { buildScenarioPayload } from "@/lib/portfolio";
 import { ImageResponse } from "next/og";
 
-export const dynamic = "force-dynamic";
-
 type ThemeMode = "light" | "dark";
 
 function getThemePalette(theme: ThemeMode) {

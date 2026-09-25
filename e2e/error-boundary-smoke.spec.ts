@@ -15,4 +15,11 @@ test.describe("Dashboard error boundaries", () => {
     await expect(page.getByRole("heading", { name: /we hit a temporary app issue/i })).toBeVisible();
     await expect(page.getByText(/Try reloading this view/i)).toBeVisible();
   });
+
+  test("global error boundary fallback renders on provider-level initialization failure", async ({ page }) => {
+    await page.goto("/dashboard/dev-errors/global-error");
+
+    await expect(page.getByRole("heading", { name: /(application error|we ran into an unexpected issue)/i })).toBeVisible();
+    await expect(page.getByText(/Your (account and )?funds remain safe/i)).toBeVisible();
+  });
 });
