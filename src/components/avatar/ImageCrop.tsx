@@ -19,7 +19,19 @@ export interface ImageCropProps {
 
 const HANDLE_HIT = 12; // px hit area per spec (8–12px)
 
+/** Arrow-key step for keyboard resizing/moving (fraction of the image). */
+const KEY_STEP = 0.02;
+/** Step used while Shift is held. */
+const KEY_STEP_LARGE = 0.1;
+
 type Handle = "nw" | "ne" | "sw" | "se";
+
+const HANDLE_LABELS: Record<Handle, string> = {
+  nw: "top-left",
+  ne: "top-right",
+  sw: "bottom-left",
+  se: "bottom-right",
+};
 
 interface CropState {
   x: number; y: number; size: number;
@@ -39,6 +51,7 @@ export default function ImageCrop({
   const [dragging, setDragging] = useState<Handle | "move" | null>(null);
   const dragStart = useRef<{ mx: number; my: number; crop: CropState } | null>(null);
   const [ready, setReady] = useState(false);
+  const [focused, setFocused] = useState<Handle | "move" | null>(null);
 
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -53,6 +66,64 @@ export default function ImageCrop({
     setCrop(c);
     onCropChange?.({ ...c });
   }, [onCropChange]);
+
+  /**
+   * Resize from one corner by `delta` (positive grows, negative shrinks),
+   * keeping the opposite corner anchored. A single formula covers both signs,
+   * so keyboard and pointer paths share it.
+   */
+  const resizeFromHandle = useCallback((handle: Handle, delta: number) => {
+    const nextSize = clamp(crop.size + delta, 0.1, 1);
+    const applied = nextSize - crop.size;
+    let { x, y } = crop;
+    if (handle.includes("w")) x = x - applied;
+    if (handle.includes("n")) y = y - applied;
+    updateCrop({ x, y, size: nextSize });
+  }, [crop, updateCrop]);
+
+  const moveCrop = useCallback((dx: number, dy: number) => {
+    updateCrop({ x: crop.x + dx, y: crop.y + dy, size: crop.size });
+  }, [crop, updateCrop]);
+
+  /**
+   * Keyboard control (issue #970): arrows move the crop box, and on a corner
+   * handle they resize it towards or away from that corner. Shift = big step.
+   */
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>, target: Handle | "move") => {
+      const arrow = e.key;
+      if (
+        arrow !== "ArrowLeft" &&
+        arrow !== "ArrowRight" &&
+        arrow !== "ArrowUp" &&
+        arrow !== "ArrowDown"
+      ) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+
+      const step = e.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
+
+      if (target === "move") {
+        if (arrow === "ArrowLeft") moveCrop(-step, 0);
+        else if (arrow === "ArrowRight") moveCrop(step, 0);
+        else if (arrow === "ArrowUp") moveCrop(0, -step);
+        else moveCrop(0, step);
+        return;
+      }
+
+      // Moving left grows a west handle and shrinks an east one; same idea
+      // vertically with north/south.
+      const grows =
+        arrow === "ArrowLeft" || arrow === "ArrowRight"
+          ? (arrow === "ArrowLeft") === target.includes("w")
+          : (arrow === "ArrowUp") === target.includes("n");
+
+      resizeFromHandle(target, grows ? step : -step);
+    },
+    [moveCrop, resizeFromHandle],
+  );
 
   const getRelative = useCallback((e: MouseEvent | TouchEvent) => {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -166,8 +237,14 @@ export default function ImageCrop({
 
         {ready && (
           <>
-            {/* Bright crop region */}
+            {/* Crop region — movable with the pointer or the arrow keys */}
             <div
+              tabIndex={0}
+              role="group"
+              aria-label="Crop area, use the arrow keys to move it, hold Shift for larger steps"
+              onKeyDown={(e) => onKeyDown(e, "move")}
+              onFocus={() => setFocused("move")}
+              onBlur={() => setFocused(null)}
               style={{
                 position: "absolute",
                 left, top,
@@ -175,7 +252,10 @@ export default function ImageCrop({
                 boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
                 borderRadius: 4,
                 cursor: dragging === "move" ? "grabbing" : "grab",
-                outline: "1.5px solid rgba(255,255,255,0.7)",
+                outline: focused === "move"
+                  ? "2px solid #6366f1"
+                  : "1.5px solid rgba(255,255,255,0.7)",
+                outlineOffset: focused === "move" ? 2 : 0,
               }}
               onMouseDown={(e) => onMouseDown(e, "move")}
               onTouchStart={(e) => onMouseDown(e, "move")}
@@ -192,9 +272,15 @@ export default function ImageCrop({
               {(["nw", "ne", "sw", "se"] as Handle[]).map((h) => (
                 <div
                   key={h}
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => onKeyDown(e, h)}
+                  onFocus={() => setFocused(h)}
+                  onBlur={() => setFocused(null)}
                   onMouseDown={(e) => onMouseDown(e, h)}
                   onTouchStart={(e) => onMouseDown(e, h)}
-                  aria-label={`${h} resize handle`}
+                  aria-label={`Resize crop from the ${HANDLE_LABELS[h]} corner, use the arrow keys, hold Shift for larger steps`}
+                  data-testid={`crop-handle-${h}`}
                   style={{
                     position: "absolute",
                     width: HANDLE_HIT * 2,
@@ -206,11 +292,14 @@ export default function ImageCrop({
                     alignItems: "center",
                     justifyContent: "center",
                     zIndex: 2,
+                    outline: focused === h ? "2px solid #6366f1" : "none",
+                    outlineOffset: 2,
+                    borderRadius: 4,
                   }}
                 >
                   <div style={{
                     width: 10, height: 10,
-                    background: "#fff",
+                    background: focused === h ? "#6366f1" : "#fff",
                     borderRadius: 2,
                     border: "1.5px solid #6366f1",
                   }} />
