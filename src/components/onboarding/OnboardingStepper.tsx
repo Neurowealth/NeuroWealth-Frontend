@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { getOnboardingProgressWidth, isOnboardingStepClickable } from './onboarding-utils';
 
 interface Step {
   id: string;
@@ -26,14 +26,14 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
           {/* Progress Line */}
           <div 
             className="absolute left-0 top-1/2 h-0.5 bg-green-500 -translate-y-1/2 transition-all duration-500 ease-out"
-            style={{ width: `${((currentStep) / (steps.length - 1)) * 100}%` }}
+            style={{ width: `${getOnboardingProgressWidth(currentStep, steps.length)}%` }}
           />
           
           {/* Step Indicators */}
           {steps.map((step, index) => {
             const isCompleted = index < currentStep;
             const isCurrent = index === currentStep;
-            const isClickable = onStepClick && (isCompleted || index === currentStep + 1);
+            const isClickable = onStepClick && isOnboardingStepClickable(index, currentStep);
             
             return (
               <div key={step.id} className="relative z-10 flex flex-col items-center">
@@ -81,7 +81,7 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
       
       {/* Mobile Step Counter */}
       <div className="md:hidden text-center mb-6">
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-slate-400" aria-live="polite">
           Step {currentStep + 1} of {steps.length}
         </span>
       </div>

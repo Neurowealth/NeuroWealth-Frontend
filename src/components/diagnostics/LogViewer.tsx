@@ -30,7 +30,7 @@ export function LogViewer({ logs, onClear }: LogViewerProps) {
                 <span className={`font-bold uppercase ${levelColors[log.level]}`}>{log.level}</span>
                 <span className="text-slate-300">{log.message}</span>
               </div>
-              {log.context && (
+              {log.context != null && (
                 <pre className="text-slate-500 mt-1 overflow-x-auto">
                   {JSON.stringify(log.context, null, 2)}
                 </pre>

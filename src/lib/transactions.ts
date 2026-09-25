@@ -9,6 +9,8 @@ export type TransactionPreviewState =
   | "failure";
 export type ValidationTone = "error" | "success" | "warning";
 
+import { random } from "./seeded-rng";
+
 // Error recovery types
 export type RecoveryAction = "retry" | "edit" | "support";
 export type ErrorMode =
@@ -159,111 +161,62 @@ const STRATEGY_LABEL = "Balanced";
 const STELLAR_ADDRESS_PATTERN = /^G[A-Z2-7]{55}$/;
 
 // Error recovery product copy mapping for each failure mode
-const ERROR_RECOVERY_COPY: Record<ErrorMode, TransactionRecoveryUI> = {
-  network_error: {
-    title: "Connection lost",
-    description: "Your connection to the service was interrupted. Please check your network and try again, or contact support if the problem persists.",
-    primaryAction: {
-      label: "Retry request",
-      action: "retry",
+function getRecoveryCopy(t: any): Record<ErrorMode, TransactionRecoveryUI> {
+  return {
+    network_error: {
+      title: t.networkErrorTitle,
+      description: t.networkErrorDesc,
+      primaryAction: { label: t.actionRetry, action: "retry" },
+      secondaryAction: { label: t.actionEdit, action: "edit" },
+      tertiaryAction: { label: t.actionSupport, action: "support" },
+      supportEmail: "support@neurowealth.com",
     },
-    secondaryAction: {
-      label: "Edit details",
-      action: "edit",
+    timeout: {
+      title: t.timeoutTitle,
+      description: t.timeoutDesc,
+      primaryAction: { label: t.actionRetry, action: "retry" },
+      secondaryAction: { label: t.actionEdit, action: "edit" },
+      tertiaryAction: { label: t.actionSupport, action: "support" },
+      supportEmail: "support@neurowealth.com",
     },
-    tertiaryAction: {
-      label: "Contact support",
-      action: "support",
+    server_error: {
+      title: t.serverErrorTitle,
+      description: t.serverErrorDesc,
+      primaryAction: { label: t.actionRetry, action: "retry" },
+      secondaryAction: { label: t.actionEdit, action: "edit" },
+      tertiaryAction: { label: t.actionSupport, action: "support" },
+      supportEmail: "support@neurowealth.com",
     },
-    supportEmail: "support@neurowealth.com",
-  },
-  timeout: {
-    title: "Request timed out",
-    description: "The server took too long to respond. Your amount and wallet settings are still saved. Retry the request or adjust your amount and try again.",
-    primaryAction: {
-      label: "Retry",
-      action: "retry",
+    validation_error: {
+      title: t.validationErrorTitle,
+      description: t.validationErrorDesc,
+      primaryAction: { label: t.actionEdit, action: "edit" },
+      secondaryAction: { label: t.actionBack, action: "edit" },
+      supportEmail: "support@neurowealth.com",
     },
-    secondaryAction: {
-      label: "Edit amount",
-      action: "edit",
+    quota_error: {
+      title: t.quotaErrorTitle,
+      description: t.quotaErrorDesc,
+      primaryAction: { label: t.actionEdit, action: "edit" },
+      supportEmail: "support@neurowealth.com",
     },
-    tertiaryAction: {
-      label: "Contact support",
-      action: "support",
+    state_conflict: {
+      title: t.stateConflictTitle,
+      description: t.stateConflictDesc,
+      primaryAction: { label: t.actionReview, action: "edit" },
+      tertiaryAction: { label: t.actionSupport, action: "support" },
+      supportEmail: "support@neurowealth.com",
     },
-    supportEmail: "support@neurowealth.com",
-  },
-  server_error: {
-    title: "Service experiencing issues",
-    description: "Service is temporarily unavailable or experiencing issues. Your details are saved. Try again in a few moments, or contact support for assistance.",
-    primaryAction: {
-      label: "Try again later",
-      action: "retry",
+    unknown_error: {
+      title: t.unknownErrorTitle,
+      description: t.unknownErrorDesc,
+      primaryAction: { label: t.actionRetry, action: "retry" },
+      secondaryAction: { label: t.actionEdit, action: "edit" },
+      tertiaryAction: { label: t.actionSupport, action: "support" },
+      supportEmail: "support@neurowealth.com",
     },
-    secondaryAction: {
-      label: "Edit details",
-      action: "edit",
-    },
-    tertiaryAction: {
-      label: "Contact support",
-      action: "support",
-    },
-    supportEmail: "support@neurowealth.com",
-  },
-  validation_error: {
-    title: "Validation failed",
-    description: "The amount or wallet details didn't pass validation. Review your entries and make corrections before retrying.",
-    primaryAction: {
-      label: "Edit details",
-      action: "edit",
-    },
-    secondaryAction: {
-      label: "Go back",
-      action: "edit",
-    },
-    supportEmail: "support@neurowealth.com",
-  },
-  quota_error: {
-    title: "Amount exceeds limit",
-    description: "The amount exceeds your available balance or transaction limit. Adjust the amount to a lower value and try again.",
-    primaryAction: {
-      label: "Edit amount",
-      action: "edit",
-    },
-    supportEmail: "support@neurowealth.com",
-  },
-  state_conflict: {
-    title: "Account state changed",
-    description: "Your account balance, wallet, or transaction status changed. Review your current balance and wallet settings, then retry.",
-    primaryAction: {
-      label: "Review and retry",
-      action: "edit",
-    },
-    tertiaryAction: {
-      label: "Contact support",
-      action: "support",
-    },
-    supportEmail: "support@neurowealth.com",
-  },
-  unknown_error: {
-    title: "Something went wrong",
-    description: "An unexpected error occurred while processing your transaction. Your details are saved. Please try again or contact support for help.",
-    primaryAction: {
-      label: "Retry",
-      action: "retry",
-    },
-    secondaryAction: {
-      label: "Edit details",
-      action: "edit",
-    },
-    tertiaryAction: {
-      label: "Contact support",
-      action: "support",
-    },
-    supportEmail: "support@neurowealth.com",
-  },
-};
+  };
+}
 
 function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
@@ -279,7 +232,7 @@ function generateReference(kind: TransactionKind): string {
     .toISOString()
     .replace(/[-:TZ.]/g, "")
     .slice(0, 14);
-  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const suffix = random().toString(36).slice(2, 8).toUpperCase();
 
   return `NW-${prefix}-${stamp}-${suffix}`;
 }
@@ -302,47 +255,47 @@ export function parsePreviewState(value: string | null): TransactionPreviewState
   return "interactive";
 }
 
-export function getTransactionContext(kind: TransactionKind): TransactionContext {
+export function getTransactionContext(kind: TransactionKind, t: any): TransactionContext {
   if (kind === "withdrawal") {
     return {
       kind,
-      title: "Withdraw funds",
-      intro: "Move settled capital out of NeuroWealth with clear validation and a traceable receipt.",
-      primaryActionLabel: "Review withdrawal",
-      confirmActionLabel: "Confirm withdrawal",
-      amountLabel: "Withdrawal amount",
-      amountHint: "Minimum withdrawal is 10 USDC. Amounts above 10,000 USDC may require an extra treasury check.",
-      walletLabel: "Destination wallet",
-      walletHint: "Enter a Stellar public address that starts with G. We validate before confirmation.",
-      connectedWalletLabel: "Vault account ready",
+      title: t.withdrawFunds,
+      intro: t.withdrawIntro,
+      primaryActionLabel: t.reviewWithdrawal,
+      confirmActionLabel: t.confirmWithdrawal,
+      amountLabel: t.withdrawalAmount,
+      amountHint: t.withdrawHint,
+      walletLabel: t.destinationWallet,
+      walletHint: t.destinationHint,
+      connectedWalletLabel: t.vaultReady,
       connectedWalletAddress: DEPOSIT_WALLET.address,
       minAmount: MINIMUM_AMOUNT.withdrawal,
       fee: NETWORK_FEE.withdrawal,
       availableAmount: AVAILABLE_AMOUNT.withdrawal,
       strategyLabel: STRATEGY_LABEL,
-      settlementLabel: "Same-day settlement",
-      reviewLabel: "Treasury review may apply",
+      settlementLabel: t.sameDay,
+      reviewLabel: t.treasuryReview,
     };
   }
 
   return {
     kind,
-    title: "Add capital",
-    intro: "Deposit USDC from your connected wallet and confirm the amount, fees, and request reference before submission.",
-    primaryActionLabel: "Review deposit",
-    confirmActionLabel: "Confirm deposit",
-    amountLabel: "Deposit amount",
-    amountHint: "Minimum deposit is 10 USDC. Stellar network fees stay separate from the credited deposit amount.",
-    walletLabel: "Funding wallet",
-    walletHint: "Use the connected Freighter wallet for the funding step. Disconnecting blocks submission until you reconnect.",
-    connectedWalletLabel: "Freighter connected",
+    title: t.addCapital,
+    intro: t.depositIntro,
+    primaryActionLabel: t.reviewDeposit,
+    confirmActionLabel: t.confirmDeposit,
+    amountLabel: t.depositAmount,
+    amountHint: t.depositHint,
+    walletLabel: t.fundingWallet,
+    walletHint: t.fundingHint,
+    connectedWalletLabel: t.freighterConnected,
     connectedWalletAddress: DEPOSIT_WALLET.address,
     minAmount: MINIMUM_AMOUNT.deposit,
     fee: NETWORK_FEE.deposit,
     availableAmount: AVAILABLE_AMOUNT.deposit,
     strategyLabel: STRATEGY_LABEL,
-    settlementLabel: "Usually completes in under 20 seconds",
-    reviewLabel: "Network fee shown at confirmation",
+    settlementLabel: t.usuallyCompletes,
+    reviewLabel: t.networkFee,
   };
 }
 
@@ -364,6 +317,12 @@ export function getDefaultTransactionValues(kind: TransactionKind): TransactionF
 
 function parseAmount(value: string): number {
   const normalized = value.replace(/,/g, "").trim();
+
+  // Reject hexadecimal (0x...), scientific notation (e/E), or anything not a simple decimal number
+  if (!/^-?\d*\.?\d+$/.test(normalized) || /^[+-]?(0x)?[0-9a-fA-F]+\.?[0-9a-fA-F]*(e[+-]?[0-9]+)?$/.test(normalized) && !/^-?\d*\.?\d+$/.test(normalized)) {
+    return Number.NaN;
+  }
+
   const amount = Number(normalized);
 
   if (!Number.isFinite(amount)) {
@@ -373,51 +332,38 @@ function parseAmount(value: string): number {
   return amount;
 }
 
-export function validateTransactionValues(
-  kind: TransactionKind,
-  values: TransactionFormValues,
-): TransactionFieldErrors {
-  const context = getTransactionContext(kind);
+export function validateTransactionValues(kind: TransactionKind, values: TransactionFormValues, t: any): TransactionFieldErrors {
+  const context = getTransactionContext(kind, t.context);
   const amount = parseAmount(values.amount);
   const errors: TransactionFieldErrors = {};
 
   if (!values.walletConnected) {
-    errors.walletConnected =
-      kind === "deposit"
-        ? "Connect a funding wallet before submitting a deposit."
-        : "Reconnect your vault wallet before withdrawing funds.";
+    errors.walletConnected = kind === "deposit" ? t.validation.connectFunding : t.validation.reconnectVault;
   }
 
   if (!values.amount.trim()) {
-    errors.amount = "Enter an amount to continue.";
+    errors.amount = t.validation.enterAmount;
   } else if (!Number.isFinite(amount) || amount <= 0) {
-    errors.amount = "Enter a valid amount greater than 0.";
+    errors.amount = t.validation.validAmount;
   } else if (amount < context.minAmount) {
-    errors.amount = `Minimum ${kind} amount is ${context.minAmount} USDC.`;
+    errors.amount = kind === "deposit" ? t.validation.minDeposit(context.minAmount) : t.validation.minWithdrawal(context.minAmount);
   } else if (amount > context.availableAmount) {
-    errors.amount =
-      kind === "deposit"
-        ? `Funding wallet only has ${context.availableAmount.toFixed(2)} USDC available.`
-        : `Available to withdraw is ${context.availableAmount.toFixed(2)} USDC.`;
+    errors.amount = kind === "deposit" ? t.validation.fundingAvailable(context.availableAmount.toFixed(2)) : t.validation.withdrawAvailable(context.availableAmount.toFixed(2));
   }
 
   if (kind === "withdrawal") {
     if (!values.walletAddress.trim()) {
-      errors.walletAddress = "Enter a destination wallet address.";
+      errors.walletAddress = t.validation.enterDestination;
     } else if (!STELLAR_ADDRESS_PATTERN.test(values.walletAddress.trim())) {
-      errors.walletAddress = "Use a valid Stellar public address that starts with G.";
+      errors.walletAddress = t.validation.validStellarAddress;
     }
   }
 
   return errors;
 }
 
-export function buildTransactionQuote(
-  kind: TransactionKind,
-  values: TransactionFormValues,
-  reference = generateReference(kind),
-): TransactionQuote {
-  const context = getTransactionContext(kind);
+export function buildTransactionQuote(kind: TransactionKind, values: TransactionFormValues, tContext: any, reference = generateReference(kind)): TransactionQuote {
+  const context = getTransactionContext(kind, t.context);
   const amount = roundCurrency(parseAmount(values.amount));
   const fee = NETWORK_FEE[kind];
   const totalDebit = roundCurrency(kind === "deposit" ? amount + fee : amount);
@@ -437,58 +383,35 @@ export function buildTransactionQuote(
   };
 }
 
-export function buildPendingTransaction(
-  kind: TransactionKind,
-  values: TransactionFormValues,
-  nextStatus: "success" | "failure" = "success",
-): PendingTransaction {
-  const quote = buildTransactionQuote(kind, values);
+export function buildPendingTransaction(kind: TransactionKind, values: TransactionFormValues, tPending: any, tContext: any, nextStatus: "success" | "failure" = "success"): PendingTransaction {
+  const quote = buildTransactionQuote(kind, values, tContext);
 
   return {
     kind,
     reference: quote.reference,
     quote,
-    statusLabel: "Pending on Stellar",
-    message:
-      kind === "deposit"
-        ? "Submitting your deposit and waiting for network confirmation."
-        : "Submitting your withdrawal and waiting for liquidity settlement.",
+    statusLabel: tPending.statusLabel,
+    message: kind === "deposit" ? tPending.submittingDeposit : tPending.submittingWithdrawal,
     completionDelayMs: 1600,
     nextStatus,
-    failureReason:
-      nextStatus === "failure"
-        ? kind === "deposit"
-          ? "Network fee estimate expired before submission. Refresh the quote and try again."
-          : "Treasury liquidity changed mid-flight. Retry after reviewing the updated amount."
-        : null,
+    failureReason: nextStatus === "failure" ? (kind === "deposit" ? tPending.feeExpired : tPending.liquidityChanged) : null,
   };
 }
 
-export function buildTransactionReceipt(
-  pending: PendingTransaction,
-  status: "success" | "failure",
-): TransactionReceipt {
+export function buildTransactionReceipt(pending: PendingTransaction, status: "success" | "failure", tReceipt: any): TransactionReceipt {
   return {
     kind: pending.kind,
     status,
     reference: pending.reference,
     quote: pending.quote,
-    message:
-      status === "success"
-        ? pending.kind === "deposit"
-          ? "Deposit confirmed and added to your active strategy."
-          : "Withdrawal confirmed and ready for your destination wallet."
-        : "Transaction failed before final settlement.",
+    message: status === "success" ? (pending.kind === "deposit" ? tReceipt.depositConfirmed : tReceipt.withdrawalConfirmed) : tReceipt.failed,
     failureReason: status === "failure" ? pending.failureReason : null,
-    explorerLabel: status === "success" ? "Explorer reference available after backend wiring" : null,
+    explorerLabel: status === "success" ? tReceipt.explorerAvailable : null,
     settledAt: new Date().toISOString(),
   };
 }
 
-export function buildPreviewSnapshot(
-  kind: TransactionKind,
-  preview: TransactionPreviewState,
-): TransactionPreviewSnapshot {
+export function buildPreviewSnapshot(kind: TransactionKind, preview: TransactionPreviewState, t: any): TransactionPreviewSnapshot {
   const baseValues = getDefaultTransactionValues(kind);
 
   if (preview === "validation") {
@@ -501,12 +424,12 @@ export function buildPreviewSnapshot(
       fieldErrors:
         kind === "withdrawal"
           ? {
-              amount: "Available to withdraw is 12480.54 USDC.",
-              walletAddress: "Use a valid Stellar public address that starts with G.",
+              amount: t.validation.withdrawAvailable("12480.54"),
+              walletAddress: t.validation.validStellarAddress,
             }
           : {
-              amount: "Enter an amount to continue.",
-              walletConnected: "Connect a funding wallet before submitting a deposit.",
+              amount: t.validation.enterAmount,
+              walletConnected: t.validation.connectFunding,
             },
       quote: null,
       pending: null,
@@ -524,7 +447,7 @@ export function buildPreviewSnapshot(
       stage: "confirm",
       form,
       fieldErrors: {},
-      quote: buildTransactionQuote(kind, form, `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-CNFRM`),
+      quote: buildTransactionQuote(kind, form, t.context, `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-CNFRM`),
       pending: null,
       receipt: null,
     };
@@ -535,7 +458,7 @@ export function buildPreviewSnapshot(
       kind === "withdrawal"
         ? { ...baseValues, amount: "4200" }
         : { ...baseValues, amount: "2500" };
-    const pending = buildPendingTransaction(kind, form);
+    const pending = buildPendingTransaction(kind, form, t.pending, t.context);
 
     pending.reference = `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-PEND`;
     pending.quote.reference = pending.reference;
@@ -555,11 +478,7 @@ export function buildPreviewSnapshot(
       kind === "withdrawal"
         ? { ...baseValues, amount: "4200" }
         : { ...baseValues, amount: "2500" };
-    const pending = buildPendingTransaction(
-      kind,
-      form,
-      preview === "success" ? "success" : "failure",
-    );
+    const pending = buildPendingTransaction(kind, form, t.pending, t.context, preview === "success" ? "success" : "failure");
 
     pending.reference = `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-${preview.toUpperCase()}`;
     pending.quote.reference = pending.reference;
@@ -570,7 +489,7 @@ export function buildPreviewSnapshot(
       fieldErrors: {},
       quote: pending.quote,
       pending,
-      receipt: buildTransactionReceipt(pending, preview),
+      receipt: buildTransactionReceipt(pending, preview, t.receipt),
     };
   }
 
@@ -584,15 +503,12 @@ export function buildPreviewSnapshot(
   };
 }
 
-export function buildStatusChips(
-  kind: TransactionKind,
-  values: TransactionFormValues,
-): Array<{ label: string; tone: ValidationTone }> {
-  const context = getTransactionContext(kind);
+export function buildStatusChips(kind: TransactionKind, values: TransactionFormValues, t: any): Array<{ label: string; tone: ValidationTone }> {
+  const context = getTransactionContext(kind, t.context);
 
   return [
     {
-      label: values.walletConnected ? context.connectedWalletLabel : "Wallet required",
+      label: values.walletConnected ? context.connectedWalletLabel : t.statusChips.walletRequired,
       tone: values.walletConnected ? "success" : "error",
     },
     {
@@ -600,10 +516,7 @@ export function buildStatusChips(
       tone: "warning",
     },
     {
-      label:
-        kind === "deposit"
-          ? `${titleCase(kind)} capacity ${context.availableAmount.toFixed(0)}`
-          : `Available ${context.availableAmount.toFixed(0)}`,
+      label: kind === "deposit" ? t.statusChips.depositCapacity(context.availableAmount.toFixed(0)) : t.statusChips.withdrawalCapacity(context.availableAmount.toFixed(0)),
       tone: "success",
     },
   ];
@@ -646,15 +559,17 @@ export function mapErrorCodeToErrorMode(code: string): ErrorMode {
  */
 export function getTransactionRecoveryUI(
   codeOrMode: string,
+  t: any,
   reference?: string,
 ): TransactionRecoveryUI {
   const normalized = codeOrMode.toLowerCase() as ErrorMode;
+  const copyMap = getRecoveryCopy(t);
   const mode: ErrorMode =
-    normalized in ERROR_RECOVERY_COPY
+    normalized in copyMap
       ? normalized
       : mapErrorCodeToErrorMode(codeOrMode);
 
-  const copy = ERROR_RECOVERY_COPY[mode] || ERROR_RECOVERY_COPY.unknown_error;
+  const copy = copyMap[mode] || copyMap.unknown_error;
 
   return {
     ...copy,

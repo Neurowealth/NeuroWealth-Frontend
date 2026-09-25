@@ -3,7 +3,7 @@
 import { useTheme } from "@/contexts/ThemeProvider";
 
 export function ThemeToggle() {
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme, mounted } = useTheme();
 
   function toggle() {
     if (theme === "light") {
@@ -13,6 +13,10 @@ export function ThemeToggle() {
     } else {
       setTheme(resolvedTheme === "light" ? "dark" : "light");
     }
+  }
+
+  if (!mounted) {
+    return <div className="w-[34px] h-[34px]" aria-hidden="true" />;
   }
 
   return (

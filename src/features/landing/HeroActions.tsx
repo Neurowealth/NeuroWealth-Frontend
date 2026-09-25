@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/contexts";
+import { connectFreighter } from "@/lib/stellar-wallet-kit";
 
 export function HeroActions() {
   const { messages } = useI18n();
@@ -15,16 +16,15 @@ export function HeroActions() {
     setLoading(true);
     setError(null);
     try {
-      const freighter = await import("@stellar/freighter-api");
-      const isConnected = await freighter.isConnected();
-      if (!isConnected) {
-        setError(messages.heroActions.errorNoWallet);
-        return;
-      }
-      await freighter.getAddress();
+      await connectFreighter();
       setConnected(true);
-    } catch {
-      setError(messages.heroActions.errorFailedConnect);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("not installed") || message.includes("not available")) {
+        setError(messages.heroActions.errorNoWallet);
+      } else {
+        setError(messages.heroActions.errorFailedConnect);
+      }
     } finally {
       setLoading(false);
     }
@@ -35,10 +35,17 @@ export function HeroActions() {
       <div className="flex flex-wrap justify-center gap-3">
         {connected ? (
           <Link href="/dashboard">
-            <Button size="lg">{messages.heroActions.openDashboardArrow}</Button>
+            <Button size="lg" data-qa="landing-primary-cta-button">
+              {messages.heroActions.openDashboardArrow}
+            </Button>
           </Link>
         ) : (
-          <Button size="lg" onClick={connectWallet} disabled={loading}>
+          <Button
+            size="lg"
+            onClick={connectWallet}
+            disabled={loading}
+            data-qa="landing-primary-cta-button"
+          >
             {loading ? messages.heroActions.connecting : messages.heroActions.connectWallet}
           </Button>
         )}

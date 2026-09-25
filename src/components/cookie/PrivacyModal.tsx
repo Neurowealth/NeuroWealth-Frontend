@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCookieConsent, CookiePreferences } from "@/contexts/CookieConsentContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, ShieldCheck, BarChart2, Megaphone, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 const CYAN = "#22d3ee";
@@ -18,12 +19,37 @@ export function PrivacyModal() {
   const { showModal, closeModal, consentState, acceptAll, rejectAll, savePreferences } = useCookieConsent();
   const [localPrefs, setLocalPrefs] = useState<CookiePreferences>(consentState.preferences);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  useFocusTrap(containerRef, showModal);
+
   useEffect(() => { if (showModal) setLocalPrefs(consentState.preferences); }, [showModal, consentState.preferences]);
+
+  // Remember the trigger button and restore focus to it when the modal closes.
+  useEffect(() => {
+    if (showModal) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showModal]);
+
+  // Escape closes the dialog.
+  useEffect(() => {
+    if (!showModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showModal, closeModal]);
+
   if (!showModal) return null;
   const toggle = (key: keyof CookiePreferences) => { if (key === "necessary") return; setLocalPrefs((p) => ({ ...p, [key]: !p[key] })); };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Privacy preferences">
+    <div ref={containerRef} className="fixed inset-0 z-modal flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Privacy preferences">
       <div onClick={closeModal} style={{ position: "absolute", inset: 0, background: "rgba(2, 6, 18, 0.8)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }} />
       <div className="relative w-full sm:max-w-lg flex flex-col" style={{ background: "rgba(4, 10, 22, 0.98)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: "16px", boxShadow: "0 0 0 1px rgba(34,211,238,0.05), 0 24px 64px rgba(0,0,0,0.8)", maxHeight: "90vh", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderBottom: `1px solid ${BORDER_SUBTLE}`, flexShrink: 0 }}>
@@ -50,7 +76,7 @@ export function PrivacyModal() {
             return (
               <div key={g.key} style={{ background: "rgba(255,255,255,0.025)", border: `1px solid ${BORDER_SUBTLE}`, borderRadius: "10px", overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px" }}>
-                  <button onClick={() => setExpanded(isEx ? null : g.key)} style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "ba(255,255,255,0.35)", cursor: "pointer", borderRadius: "6px", flexShrink: 0 }}>
+                  <button onClick={() => setExpanded(isEx ? null : g.key)} style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer", borderRadius: "6px", flexShrink: 0 }}>
                     {isEx ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, cursor: "pointer" }} onClick={() => setExpanded(isEx ? null : g.key)}>
@@ -77,7 +103,7 @@ export function PrivacyModal() {
             onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}>Reject all</button>
           <button onClick={() => savePreferences(localPrefs)} style={{ flex: 1, height: "44px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, cursor: "pointer", background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.3)", color: CYAN }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.18)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(34,211,238,0.1)"; }}>Save preferences</button>
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(34,211,238,0.1)"; }}>Save Preferences</button>
           <button onClick={acceptAll} style={{ flex: 1, height: "44px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)", border: "none", color: "#020917" }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>Accept all</button>

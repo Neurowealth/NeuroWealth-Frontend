@@ -14,8 +14,8 @@ export const STORAGE_KEYS = {
   // Dashboard settings
   PREFERENCES: "nw_preferences",
   NOTIFICATIONS: "nw_notifications",
+  NOTIFICATIONS_LIST: "nw_notifications_list",
   SECURITY: "nw_security",
-  NOTIFICATION_PREFERENCES: "nw-notification-preferences",
 
   // User profile
   PROFILE: "nw_profile",
@@ -30,6 +30,25 @@ export const STORAGE_KEYS = {
   ONBOARDING_STATE: "onboarding-state",
   ONBOARDING_USER_STRATEGY: "user-strategy",
   ONBOARDING_FIRST_DEPOSIT: "first-deposit",
+
+  // Stellar wallet connection (WalletProvider)
+  WALLET_CONNECTED: "nw_wallet_connected",
+  WALLET_PUBLIC_KEY: "nw_wallet_public_key",
+  WALLET_NETWORK: "nw_wallet_network",
+  WALLET_PROVIDER: "nw_wallet_provider",
+  WALLET_DISPLAY_NAME: "nw_wallet_display_name",
+
+  // UI translation locale (I18nContext). Distinct from the BCP47 locale stored
+  // inside the PROFILE / PREFERENCES blobs — see src/lib/locale-options.ts.
+  LOCALE: "neurowealth.locale",
+} as const;
+
+/** Legacy keys used before centralization; migrated on read. */
+export const LEGACY_WALLET_STORAGE_KEYS = {
+  CONNECTED: "stellar_wallet_connected",
+  PROVIDER: "stellar_wallet_id",
+  PUBLIC_KEY: "stellar_wallet_address",
+  DISPLAY_NAME: "stellar_wallet_name",
 } as const;
 
 /**

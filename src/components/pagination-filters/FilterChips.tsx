@@ -30,6 +30,10 @@ export default function FilterChips({ options, selected, onChange, className = "
   const clearAll = () => onChange([]);
   const hasActive = selected.length > 0;
 
+  const activeLabel = selected.length === 0
+    ? "No filters active"
+    : `${selected.length} filter${selected.length > 1 ? "s" : ""} active`;
+
   return (
     <div
       role="group"
@@ -37,6 +41,10 @@ export default function FilterChips({ options, selected, onChange, className = "
       className={className}
       style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
     >
+      {/* Announces filter state changes to screen readers */}
+      <span role="status" aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {activeLabel}
+      </span>
       {options.map((opt) => {
         const active = selected.includes(opt.id);
         return (

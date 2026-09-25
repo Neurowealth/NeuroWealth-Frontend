@@ -26,10 +26,12 @@ export const HTTP_STATUS = {
     OK: 200,
     CREATED: 201,
     BAD_REQUEST: 400,
+    PAYLOAD_TOO_LARGE: 413,
     UNAUTHORIZED: 401,
     FORBIDDEN: 403,
     NOT_FOUND: 404,
     UNPROCESSABLE_ENTITY: 422,
+    TOO_MANY_REQUESTS: 429,
     INTERNAL_SERVER_ERROR: 500,
     SERVICE_UNAVAILABLE: 503,
 } as const;
@@ -42,6 +44,8 @@ export const ERROR_CODE = {
     UNAUTHORIZED: "UNAUTHORIZED",
     FORBIDDEN: "FORBIDDEN",
     NOT_FOUND: "NOT_FOUND",
+    PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+    RATE_LIMITED: "RATE_LIMITED",
     INTERNAL_ERROR: "INTERNAL_ERROR",
     SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
     BACKEND_ERROR: "BACKEND_ERROR",
@@ -71,10 +75,17 @@ function normalizeErrorDetails(
 
 /**
  * Maximum allowed request body size for POST API routes (100 KB).
- * Aligns with Vercel's default serverless function body limit.
- * Documented here so all routes share the same constant.
+ * This application-level guard is intentionally below Vercel Functions' 4.5 MB
+ * payload cap because transaction and strategy writes only need small JSON.
  */
 export const MAX_BODY_BYTES = 100 * 1024; // 100 KB
+
+function payloadTooLargeResponse(maxBytes: number) {
+    return errorResponse(
+        ERROR_CODE.PAYLOAD_TOO_LARGE,
+        `Request body must not exceed ${maxBytes / 1024} KB.`,
+    );
+}
 
 /**
  * Read and parse a JSON request body, enforcing a byte-size limit.
@@ -96,60 +107,101 @@ export async function readJsonBody(
 > {
     const { NextResponse } = await import("next/server");
 
-    // Check Content-Length header first (fast path — not always present)
+    // Fast path: reject oversized requests before reading the body when the
+    // client/proxy provides Content-Length. The same limit is also enforced
+    // while streaming below because this header is optional and client-controlled.
     const contentLength = request.headers.get("content-length");
-    if (contentLength !== null && parseInt(contentLength, 10) > maxBytes) {
+    const declaredBytes =
+        contentLength === null ? Number.NaN : Number(contentLength);
+    if (Number.isFinite(declaredBytes) && declaredBytes > maxBytes) {
         return {
             ok: false,
             response: NextResponse.json(
-                errorResponse(
-                    "PAYLOAD_TOO_LARGE",
-                    `Request body must not exceed ${maxBytes / 1024} KB.`,
-                ),
-                { status: 413 },
+                payloadTooLargeResponse(maxBytes),
+                { status: HTTP_STATUS.PAYLOAD_TOO_LARGE },
             ),
         };
     }
 
-    // Read the raw bytes so we can enforce the limit even without Content-Length
-    let bytes: Uint8Array;
+    let chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+
     try {
-        const arrayBuffer = await request.arrayBuffer();
-        bytes = new Uint8Array(arrayBuffer);
+        if (request.body) {
+            const reader = request.body.getReader();
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    totalBytes += value.byteLength;
+
+                    if (totalBytes > maxBytes) {
+                        await reader.cancel();
+                        return {
+                            ok: false,
+                            response: NextResponse.json(
+                                payloadTooLargeResponse(maxBytes),
+                                { status: HTTP_STATUS.PAYLOAD_TOO_LARGE },
+                            ),
+                        };
+                    }
+
+                    chunks.push(value);
+                }
+            } finally {
+                reader.releaseLock();
+            }
+        } else {
+            chunks = [new Uint8Array(await request.arrayBuffer())];
+            totalBytes = chunks[0].byteLength;
+        }
     } catch {
         return {
             ok: false,
             response: NextResponse.json(
-                errorResponse("VALIDATION_ERROR", "Failed to read request body."),
-                { status: 400 },
+                errorResponse(
+                    ERROR_CODE.VALIDATION_ERROR,
+                    "Failed to read request body.",
+                ),
+                { status: HTTP_STATUS.BAD_REQUEST },
             ),
         };
     }
 
-    if (bytes.byteLength > maxBytes) {
+    if (totalBytes > maxBytes) {
         return {
             ok: false,
             response: NextResponse.json(
-                errorResponse(
-                    "PAYLOAD_TOO_LARGE",
-                    `Request body must not exceed ${maxBytes / 1024} KB.`,
-                ),
-                { status: 413 },
+                payloadTooLargeResponse(maxBytes),
+                { status: HTTP_STATUS.PAYLOAD_TOO_LARGE },
             ),
         };
     }
 
     try {
+        const bytes = new Uint8Array(totalBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+
         const text = new TextDecoder().decode(bytes);
         return { ok: true, data: JSON.parse(text) };
     } catch {
         return {
             ok: false,
             response: NextResponse.json(
-                errorResponse("VALIDATION_ERROR", "Request body must be valid JSON.", {
-                    body: ["Malformed JSON payload."],
-                }),
-                { status: 400 },
+                errorResponse(
+                    ERROR_CODE.VALIDATION_ERROR,
+                    "Request body must be valid JSON.",
+                    {
+                        body: ["Malformed JSON payload."],
+                    },
+                ),
+                { status: HTTP_STATUS.BAD_REQUEST },
             ),
         };
     }

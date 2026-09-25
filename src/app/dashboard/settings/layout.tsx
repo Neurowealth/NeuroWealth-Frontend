@@ -11,8 +11,8 @@ export default function SettingsLayout({
     <ProtectedRoute>
       <Navbar />
       <div className="settings-layout">
-        <aside className="settings-sidebar">
-          <nav className="settings-nav">
+        <aside className="settings-sidebar" aria-label="Settings sidebar">
+          <nav className="settings-nav" aria-label="Settings navigation">
             <h2 className="settings-nav-title">Settings</h2>
             <ul className="settings-nav-list">
               <li>
@@ -28,6 +28,11 @@ export default function SettingsLayout({
               <li>
                 <Link href="/dashboard/settings/notifications" className="settings-nav-link">
                   Notifications
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/settings/privacy" className="settings-nav-link">
+                  Privacy
                 </Link>
               </li>
             </ul>

@@ -1,36 +1,142 @@
-# Preview Endpoints Documentation
+# Preview Route Endpoints
 
-This document describes the OpenGraph (OG) image generation and preview endpoints available in the NeuroWealth Frontend application.
+The NeuroWealth frontend includes server-side rendered preview endpoints for generating preview images and documentation of transaction flows and portfolio widgets.
 
-## Overview
+## Transaction Preview Endpoint
 
-The preview endpoints render dynamic SVG/PNG images using Next.js `next/og` (`ImageResponse`). These are used for social sharing cards, dashboard embeds, and interactive widget snapshots.
+**Route:** `GET /api/transaction-preview`
 
-## Endpoints
+Generates a preview image showing a transaction flow (deposit or withdrawal) in a specific state.
 
-### 1. `/api/transaction-preview`
-Generates a visual summary card for a specific transaction.
+### Query Parameters
 
-- **Method:** `GET`
-- **Query Parameters:**
-  - `kind`: Transaction kind (`deposit`, `withdraw`, `rebalance`, `yield`, `transfer`)
-  - `amount`: Transaction amount
-  - `currency`: Currency symbol/code (e.g. `USD`, `XLM`)
-  - `status`: Transaction status (`completed`, `pending`, `failed`)
-  - `theme`: Color scheme (`light` | `dark`, default `dark`)
-  - `timestamp`: ISO timestamp string or UNIX epoch
+| Parameter | Type | Values | Default | Description |
+|-----------|------|--------|---------|-------------|
+| `theme` | string | `light`, `dark` | `light` | Color theme for the preview image |
+| `kind` | string | `deposit`, `withdrawal` | `deposit` | Transaction type |
+| `preview` | string | `form`, `confirm`, `pending`, `success`, `failure` | `form` | Current stage of the transaction flow |
 
-### 2. `/api/widget-preview`
-Generates a snapshot card of portfolio and strategy metrics.
+### Example URLs
 
-- **Method:** `GET`
-- **Query Parameters:**
-  - `scenario`: Scenario key or risk profile (`conservative`, `balanced`, `growth`)
-  - `theme`: Color scheme (`light` | `dark`, default `dark`)
-  - `horizon`: Projection horizon (e.g. `1y`, `5y`, `10y`)
+**Basic deposit form preview (light theme):**
+```
+/api/transaction-preview?kind=deposit&preview=form&theme=light
+```
 
-## Route Configuration & Caching
+**Withdrawal confirmation preview (dark theme):**
+```
+/api/transaction-preview?kind=withdrawal&preview=confirm&theme=dark
+```
 
-- The preview routes inspect incoming request URL parameters (`request.url` / `searchParams`) on each invocation to render personalized preview cards.
-- **Dynamic behavior:** In Next.js App Router, routes reading request URL parameters or search params are dynamically evaluated per request without requiring redundant `export const dynamic = "force-dynamic"` declarations.
-- **Response Headers:** `Cache-Control` headers are set on the returned `ImageResponse` to allow CDN-level caching of static asset renders while preventing unwanted stale browser caches when needed.
+**Transaction success state:**
+```
+/api/transaction-preview?kind=deposit&preview=success&theme=light
+```
+
+**Transaction failure state:**
+```
+/api/transaction-preview?kind=withdrawal&preview=failure&theme=dark
+```
+
+### Preview States
+
+- **form**: Initial transaction form with amount input and wallet selection
+- **confirm**: Review stage showing quote details, fees, and destination amount
+- **pending**: Transaction being processed with reference number display
+- **success**: Successful transaction completion with receipt details
+- **failure**: Failed transaction with error information and reference for support
+
+### Response
+
+The endpoint returns an OpenGraph image (1600×1000px) that can be:
+- Used in social sharing (meta tags)
+- Embedded in documentation
+- Used for screenshots and previews
+- Shared in communications about transaction flows
+
+---
+
+## Widget Preview Endpoint
+
+**Route:** `GET /api/widget-preview`
+
+Generates a preview image showing the NeuroWealth portfolio dashboard widgets and asset allocation overview.
+
+### Query Parameters
+
+| Parameter | Type | Values | Default | Description |
+|-----------|------|--------|---------|-------------|
+| `theme` | string | `light`, `dark` | `light` | Color theme for the preview image |
+
+### Example URLs
+
+**Portfolio overview (light theme):**
+```
+/api/widget-preview?theme=light
+```
+
+**Portfolio overview (dark theme):**
+```
+/api/widget-preview?theme=dark
+```
+
+### Preview Content
+
+The widget preview displays:
+- Total balance and yields across positions
+- Current APY and active strategy
+- Asset allocation breakdown
+- Recent activity and transaction history
+- Portfolio composition visualization
+
+### Response
+
+The endpoint returns an OpenGraph image (1600×1080px) that can be:
+- Used in social sharing
+- Included in feature documentation
+- Used for product demos and screenshots
+- Shared in marketing materials
+
+---
+
+## Usage Notes
+
+### Caching
+
+Both endpoints dynamically evaluate request parameters per request without exporting `force-dynamic`. They set explicit `Cache-Control` response headers so CDNs and browsers can cache the rendered images:
+
+| Endpoint | `Cache-Control` header |
+|---|---|
+| `/api/transaction-preview` | `public, s-maxage=86400, max-age=3600` |
+| `/api/widget-preview` | `public, s-maxage=86400, max-age=3600` |
+
+CDNs (e.g. Vercel Edge) may cache a response for up to **24 hours** (`s-maxage=86400`); browsers cache it for up to **1 hour** (`max-age=3600`). Because the images are parameterised by query string, each distinct combination of parameters is cached independently — a fresh render is triggered only when a previously-unseen parameter set is requested, or after the TTL expires.
+
+### Image Dimensions
+
+- Transaction preview: **1600×1000px**
+- Widget preview: **1600×1080px**
+
+### Browser Integration
+
+Preview endpoints can be embedded in `<meta og:image>` tags for dynamic Open Graph images:
+
+```html
+<meta property="og:image" content="/api/transaction-preview?kind=deposit&theme=dark" />
+<meta property="og:image:width" content="1600" />
+<meta property="og:image:height" content="1000" />
+```
+
+### Testing
+
+You can test preview endpoints directly in your browser or with curl:
+
+```bash
+# View transaction preview
+curl -v "http://localhost:3000/api/transaction-preview?kind=deposit&preview=confirm&theme=dark"
+
+# View widget preview
+curl -v "http://localhost:3000/api/widget-preview?theme=dark"
+```
+
+The endpoint will return the image with appropriate Content-Type headers for direct viewing or embedding.

@@ -1,17 +1,27 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PortfolioDashboard } from "@/components/dashboard/PortfolioDashboard";
+import { RealtimeDashboard } from "@/components/dashboard/RealtimeDashboard";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Dashboard — NeuroWealth" };
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description:
+    "Your NeuroWealth portfolio overview — track yields, strategies, and transaction history.",
+  robots: { index: false, follow: false },
+};
 
 export default function DashboardPage() {
   return (
     <ProtectedRoute>
-      <Suspense fallback={<DashboardSkeleton />}>
-        <PortfolioDashboard />
-      </Suspense>
+      <OnboardingGate>
+        <Suspense fallback={<DashboardSkeleton />}>
+          <RealtimeDashboard />
+        </Suspense>
+      </OnboardingGate>
     </ProtectedRoute>
   );
 }

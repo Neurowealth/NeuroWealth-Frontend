@@ -2,7 +2,7 @@ import {
   buildScenarioPayload,
   normalizePortfolioPayload,
 } from "@/lib/portfolio";
-import { isSandboxScenario, resolveSandboxScenario } from "@/lib/api-sandbox";
+import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
 import {
   ERROR_CODE,
   HTTP_STATUS,
@@ -10,22 +10,14 @@ import {
   successResponse,
 } from "@/lib/api-response";
 import { portfolioQuerySchema, zodErrorToDetails } from "@/lib/validation/api";
+import { createServerFetcher } from "@/lib/api-client";
+import { requireAuth } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-function resolveEndpoint(baseUrl: string, pathOrUrl: string): string {
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
-    return pathOrUrl;
-  }
-
-  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-  const normalizedPath = pathOrUrl.startsWith("/")
-    ? pathOrUrl.slice(1)
-    : pathOrUrl;
-
-  return new URL(normalizedPath, normalizedBase).toString();
-}
-
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const parsedQuery = portfolioQuerySchema.safeParse({
     scenario: request.nextUrl.searchParams.get("scenario") ?? undefined,
   });
@@ -41,8 +33,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const scenario = resolveSandboxScenario(parsedQuery.data.scenario);
-  const apiBaseUrl = process.env.NEUROWEALTH_API_BASE_URL;
+  const scenario = parseSandboxScenario(parsedQuery.data.scenario);
   const portfolioPath =
     process.env.NEUROWEALTH_PORTFOLIO_PATH ?? "/portfolio/overview";
 
@@ -56,7 +47,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  if (!apiBaseUrl) {
+  const fetchBackend = createServerFetcher();
+
+  if (!fetchBackend) {
     return NextResponse.json(successResponse(buildScenarioPayload("live")), {
       headers: {
         "Cache-Control": "no-store",
@@ -66,7 +59,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(resolveEndpoint(apiBaseUrl, portfolioPath), {
+    const response = await fetchBackend(portfolioPath, {
       cache: "no-store",
       headers: {
         Accept: "application/json",
@@ -92,7 +85,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       errorResponse(
         ERROR_CODE.SERVICE_UNAVAILABLE,
-        "Portfolio service temporarily unavailable. Showing preview data.",
+        "Portfolio service temporarily unavailable.",
         { details: message },
       ),
       {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, useId } from "react";
 
 export interface TimeValue { hours: number; minutes: number; }
 
@@ -39,47 +39,75 @@ const ClockIcon = () => (
 export default function TimePicker({ value, onChange, step = 15, use24h = false, placeholder = "Select time", disabled }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const listboxId = useId();
+  const optionId = (i: number) => `${listboxId}-option-${i}`;
 
   const slots = useMemo(() => buildSlots(step, use24h), [step, use24h]);
-  const filtered = useMemo(() => 
+  const filtered = useMemo(() =>
     search ? slots.filter(s => s.label.toLowerCase().includes(search.toLowerCase())) : slots,
     [search, slots]
   );
-  const formatted = useMemo(() => 
+  const formatted = useMemo(() =>
     value ? fmt(value.hours, value.minutes, use24h) : "",
     [value, use24h]
   );
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => { 
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); 
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Scroll selected into view when opening
+  // Reset the active option whenever the picker opens or the filtered list changes
   useEffect(() => {
-    if (open && value && listRef.current) {
-      const idx = slots.findIndex(s => s.value.hours === value.hours && s.value.minutes === value.minutes);
-      if (idx !== -1) {
-        const item = listRef.current.children[idx] as HTMLElement;
-        item?.scrollIntoView({ block: "center" });
-      }
+    if (!open) {
+      setActiveIndex(-1);
+      return;
     }
-  }, [open, value, slots]);
+    const idx = value
+      ? filtered.findIndex(s => s.value.hours === value.hours && s.value.minutes === value.minutes)
+      : -1;
+    setActiveIndex(idx !== -1 ? idx : 0);
+  }, [open, value, filtered]);
 
-  const select = useCallback((tv: TimeValue) => { 
-    onChange?.(tv); 
-    setOpen(false); 
-    setSearch(""); 
+  // Scroll the active option into view
+  useEffect(() => {
+    if (open && activeIndex >= 0 && listRef.current) {
+      const item = listRef.current.children[activeIndex] as HTMLElement;
+      item?.scrollIntoView({ block: "center" });
+    }
+  }, [open, activeIndex]);
+
+  const select = useCallback((tv: TimeValue) => {
+    onChange?.(tv);
+    setOpen(false);
+    setSearch("");
   }, [onChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
     if (e.key === "ArrowDown" && !open) setOpen(true);
+  };
+
+  const handleFilterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex(i => (filtered.length === 0 ? -1 : Math.min(i + 1, filtered.length - 1)));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex(i => (filtered.length === 0 ? -1 : Math.max(i - 1, 0)));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const option = filtered[activeIndex];
+      if (option) select(option.value);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
   };
 
   return (
@@ -121,8 +149,13 @@ export default function TimePicker({ value, onChange, step = 15, use24h = false,
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onKeyDown={handleFilterKeyDown}
               placeholder="Filter..."
               aria-label="Filter times"
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={listboxId}
+              aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
               style={{
                 width: "100%", height: 30, borderRadius: 6,
                 border: "0.5px solid #374151", background: "#1f2937",
@@ -137,6 +170,7 @@ export default function TimePicker({ value, onChange, step = 15, use24h = false,
           {/* Time slot list — scrollable, 44px touch target */}
           <ul
             ref={listRef}
+            id={listboxId}
             role="listbox"
             aria-label="Time slots"
             style={{ listStyle: "none", padding: "4px 4px", margin: 0, maxHeight: 200, overflowY: "auto" }}
@@ -146,23 +180,26 @@ export default function TimePicker({ value, onChange, step = 15, use24h = false,
             )}
             {filtered.map((s, i) => {
               const isSelected = value && s.value.hours === value.hours && s.value.minutes === value.minutes;
+              const isActive = i === activeIndex;
               return (
                 <li
                   key={i}
+                  id={optionId(i)}
                   role="option"
                   aria-selected={!!isSelected}
                   onClick={() => select(s.value)}
+                  onMouseEnter={() => setActiveIndex(i)}
                   style={{
                     padding: "0 10px",
                     height: 36,          // ≥36px pointer, approx 44px touch via line-height
                     display: "flex", alignItems: "center",
                     fontSize: 13, cursor: "pointer", borderRadius: 6,
-                    background: isSelected ? "#6366f1" : "transparent",
+                    background: isSelected ? "#6366f1" : isActive ? "#1f2937" : "transparent",
                     color: isSelected ? "#fff" : "#d1d5db",
+                    outline: isActive && !isSelected ? "1px solid #6366f1" : "none",
+                    outlineOffset: -1,
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "#1f2937"; }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
                   {s.label}
                 </li>

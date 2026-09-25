@@ -1,6 +1,6 @@
 import type { User } from "./user";
 
-export type { User } from "./user";
+export type { User, UserRole } from "./user";
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -65,6 +65,11 @@ export interface PageState<T> {
 }
 
 export interface DateRange {
-  start: Date | null;
-  end: Date | null;
+  start: string | Date | null;
+  end: string | Date | null;
+}
+
+export interface DateFilterable {
+  date: string | Date;
+  [key: string]: unknown;
 }

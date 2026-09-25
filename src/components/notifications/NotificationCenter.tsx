@@ -16,14 +16,21 @@ export function NotificationCenter() {
   const hasMore = paginatedNotifications.length < notifications.length;
 
   return (
-    <div className="w-80 bg-dark-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]">
+    <div
+      className="w-80 bg-dark-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]"
+      role="region"
+      aria-label="Notifications"
+    >
       <div className="p-4 border-b border-white/5 flex items-center justify-between bg-dark-900/50">
         <div className="flex items-center gap-2">
           <h3 className="font-bold text-white uppercase tracking-wider text-xs">
             {view === "list" ? "Notifications" : "Preferences"}
           </h3>
           {view === "list" && unreadCount > 0 && (
-            <span className="bg-brand-400 text-dark-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            <span
+              className="bg-brand-400 text-dark-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+              aria-label={`${unreadCount} unread`}
+            >
               {unreadCount}
             </span>
           )}
@@ -31,10 +38,11 @@ export function NotificationCenter() {
         <div className="flex gap-2">
           <button
             onClick={() => setView(view === "list" ? "preferences" : "list")}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 rounded"
+            aria-label={view === "list" ? "Open notification preferences" : "Back to notification list"}
             title={view === "list" ? "Preferences" : "Back to List"}
           >
-            {view === "list" ? "⚙️" : "🔙"}
+            <span aria-hidden="true">{view === "list" ? "⚙️" : "🔙"}</span>
           </button>
         </div>
       </div>
@@ -48,7 +56,7 @@ export function NotificationCenter() {
               </div>
             ) : (
               <>
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/5" role="list" aria-label="Notification list">
                   {paginatedNotifications.map((notif) => (
                     <NotificationItem
                       key={notif.id}

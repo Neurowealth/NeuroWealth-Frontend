@@ -1,18 +1,20 @@
 import { ChartTone } from "@/lib/portfolio";
-import { CVD_PALETTES } from "@/lib/chart-colors-cvd";
+import { CHART_TONE_PATTERNS, CVD_PALETTES } from "@/lib/chart-colors-cvd";
 
 // Chart theme configuration
-// Issue #163: Colors are CVD-safe and tested for WCAG AA contrast
+// Issue #422: Colors are CVD-safe and tested for WCAG AA graphics contrast
 export const chartTheme = {
   // Color palette using CVD-safe tokens
-  // Primary palette: Blue/Orange/Teal (safe for deuteranopia, protanopia, tritanopia)
+  // Primary palette: Sky/Orange/Magenta/Neutral with pattern redundancy
   colors: {
-    primary: CVD_PALETTES.primary.blue,           // #0369a1 - Sky blue
-    accent: CVD_PALETTES.primary.orange,          // #ea580c - Vibrant orange
-    warning: CVD_PALETTES.primary.teal,           // #0d9488 - Teal
-    "neutral-strong": CVD_PALETTES.neutral.strong,
+    primary: CVD_PALETTES.primary.sky,
+    accent: CVD_PALETTES.primary.orange,
+    warning: CVD_PALETTES.primary.magenta,
+    "neutral-strong": CVD_PALETTES.primary.neutral,
     "neutral-soft": CVD_PALETTES.neutral.soft,
   } as Record<ChartTone, string>,
+
+  patterns: CHART_TONE_PATTERNS,
 
   // Grid configuration
   grid: {
@@ -81,6 +83,10 @@ export const chartDimensions = {
 // Utility function to get chart color by tone
 export function getChartColor(tone: ChartTone): string {
   return chartTheme.colors[tone];
+}
+
+export function getChartStrokeDasharray(tone: ChartTone): string {
+  return chartTheme.patterns[tone];
 }
 
 // Utility function to get responsive chart config

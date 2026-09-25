@@ -17,7 +17,9 @@ import {
   HistoryStatus,
   TransactionHistoryPage,
 } from "@/lib/transaction-history";
-import { formatTimestamp } from "@/lib/formatters";
+import { apiRequest } from "@/lib/api-client";
+import { formatCurrency, formatTimestamp } from "@/lib/formatters";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/components/ui/Button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,19 +95,25 @@ function dataReducer(state: DataState, action: DataAction): DataState {
 
 const PAGE_SIZE = 10;
 
-const KIND_CHIPS: { label: string; value: HistoryKind | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Deposits", value: "deposit" },
-  { label: "Withdrawals", value: "withdrawal" },
-  { label: "Rebalances", value: "rebalance" },
-];
+type HistoryMessages = ReturnType<typeof useI18n>["messages"]["transactions"]["history"];
 
-const STATUS_CHIPS: { label: string; value: HistoryStatus | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Success", value: "success" },
-  { label: "Pending", value: "pending" },
-  { label: "Failed", value: "failed" },
-];
+function kindChips(t: HistoryMessages): { label: string; value: HistoryKind | "all" }[] {
+  return [
+    { label: t.all, value: "all" },
+    { label: t.deposits, value: "deposit" },
+    { label: t.withdrawals, value: "withdrawal" },
+    { label: t.rebalances, value: "rebalance" },
+  ];
+}
+
+function statusChips(t: HistoryMessages): { label: string; value: HistoryStatus | "all" }[] {
+  return [
+    { label: t.all, value: "all" },
+    { label: t.statusSuccess, value: "success" },
+    { label: t.statusPending, value: "pending" },
+    { label: t.statusFailed, value: "failed" },
+  ];
+}
 
 // Stellar Testnet explorer base URL
 const EXPLORER_BASE = "https://stellar.expert/explorer/testnet/tx";
@@ -124,14 +132,14 @@ function statusStyles(status: HistoryStatus): string {
   }
 }
 
-function statusLabel(status: HistoryStatus): string {
+function statusLabel(status: HistoryStatus, t: HistoryMessages): string {
   switch (status) {
     case "success":
-      return "Success";
+      return t.statusSuccess;
     case "pending":
-      return "Pending";
+      return t.statusPending;
     case "failed":
-      return "Failed";
+      return t.statusFailed;
   }
 }
 
@@ -146,24 +154,20 @@ function kindIcon(kind: HistoryKind) {
   }
 }
 
-function kindLabel(kind: HistoryKind): string {
+function kindLabel(kind: HistoryKind, t: HistoryMessages): string {
   switch (kind) {
     case "deposit":
-      return "Deposit";
+      return t.kindDeposit;
     case "withdrawal":
-      return "Withdrawal";
+      return t.kindWithdrawal;
     case "rebalance":
-      return "Rebalance";
+      return t.kindRebalance;
   }
 }
 
 function formatAmount(amount: number | null, kind: HistoryKind): string {
   if (amount === null) return "—";
-  const abs = Math.abs(amount).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
+  const abs = formatCurrency(Math.abs(amount));
   if (kind === "withdrawal" || amount < 0) return `-${abs}`;
   return `+${abs}`;
 }
@@ -182,11 +186,14 @@ function truncateHash(hash: string): string {
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function StatusTag({ status }: { status: HistoryStatus }) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
+
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyles(status)}`}
     >
-      {statusLabel(status)}
+      {statusLabel(status, t)}
     </span>
   );
 }
@@ -263,6 +270,9 @@ interface EmptyStateProps {
 }
 
 function EmptyState({ filtered, onReset }: EmptyStateProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
+
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
       <div className="rounded-full border border-white/10 bg-white/5 p-5">
@@ -270,12 +280,12 @@ function EmptyState({ filtered, onReset }: EmptyStateProps) {
       </div>
       <div className="space-y-1.5 max-w-xs">
         <p className="text-slate-200 font-semibold">
-          {filtered ? "No matching transactions" : "No transaction history yet"}
+          {filtered ? t.noMatching : t.noHistory}
         </p>
         <p className="text-sm text-slate-500">
           {filtered
-            ? "Try adjusting your filters or clearing the date range."
-            : "Make your first deposit to start building your history."}
+            ? t.adjustFilters
+            : t.firstDeposit}
         </p>
       </div>
       {filtered ? (
@@ -284,12 +294,12 @@ function EmptyState({ filtered, onReset }: EmptyStateProps) {
           onClick={onReset}
           className="text-sm text-sky-400 hover:text-sky-300 underline underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
         >
-          Clear all filters
+          {t.clearAllFilters}
         </button>
       ) : (
         <Link href="/dashboard/transactions?kind=deposit">
           <Button variant="primary" size="sm">
-            Make a deposit
+            {t.makeDeposit}
           </Button>
         </Link>
       )}
@@ -306,6 +316,8 @@ interface PaginationProps {
 }
 
 function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
   if (totalPages <= 1) return null;
 
   const start = (page - 1) * pageSize + 1;
@@ -314,15 +326,15 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
   return (
     <div className="flex items-center justify-between gap-4 px-1 pt-4">
       <p className="text-xs text-slate-500">
-        Showing <span className="text-slate-300">{start}–{end}</span> of{" "}
+        {t.showing} <span className="text-slate-300">{start}–{end}</span> {t.of}{" "}
         <span className="text-slate-300">{total}</span>
       </p>
-      <div className="flex items-center gap-1" role="navigation" aria-label="Pagination">
+      <div className="flex items-center gap-1" role="navigation" aria-label={t.paginationLabel}>
         <button
           type="button"
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
-          aria-label="Previous page"
+          aria-label={t.previousPage}
           className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
         >
           <ChevronLeft size={14} aria-hidden />
@@ -333,7 +345,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
             key={n}
             type="button"
             onClick={() => onPage(n)}
-            aria-label={`Page ${n}`}
+            aria-label={t.pageN.replace("{n}", String(n))}
             aria-current={n === page ? "page" : undefined}
             className={`inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
               n === page
@@ -349,7 +361,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
           type="button"
           onClick={() => onPage(page + 1)}
           disabled={page >= totalPages}
-          aria-label="Next page"
+          aria-label={t.nextPage}
           className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
         >
           <ChevronRight size={14} aria-hidden />
@@ -367,6 +379,8 @@ interface FilterBarProps {
 }
 
 function FilterBar({ filter, dispatch }: FilterBarProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
   const isFiltered =
     filter.kind !== "all" ||
     filter.status !== "all" ||
@@ -378,10 +392,10 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
       {/* Type chips */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-slate-500 font-medium mr-1 shrink-0" id="kind-filter-label">
-          Type
+          {t.type}
         </span>
         <div role="group" aria-labelledby="kind-filter-label" className="flex flex-wrap gap-1.5">
-          {KIND_CHIPS.map((chip) => (
+          {kindChips(t).map((chip) => (
             <button
               key={chip.value}
               type="button"
@@ -402,10 +416,10 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
       {/* Status chips */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-slate-500 font-medium mr-1 shrink-0" id="status-filter-label">
-          Status
+          {t.status}
         </span>
         <div role="group" aria-labelledby="status-filter-label" className="flex flex-wrap gap-1.5">
-          {STATUS_CHIPS.map((chip) => (
+          {statusChips(t).map((chip) => (
             <button
               key={chip.value}
               type="button"
@@ -425,11 +439,11 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
 
       {/* Date range */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-slate-500 font-medium shrink-0">Date range</span>
+        <span className="text-xs text-slate-500 font-medium shrink-0">{t.dateRange}</span>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label htmlFor="date-from" className="sr-only">
-              From date
+              {t.fromDate}
             </label>
             <input
               id="date-from"
@@ -437,13 +451,13 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               value={filter.dateFrom}
               onChange={(e) => dispatch({ type: "SET_DATE_FROM", value: e.target.value })}
               className="h-8 rounded-lg border border-white/15 bg-white/5 px-2.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-              aria-label="From date"
+              aria-label={t.fromDate}
             />
           </div>
-          <span className="text-slate-600 text-xs">to</span>
+          <span className="text-slate-600 text-xs">{t.to}</span>
           <div className="flex flex-col gap-0.5">
             <label htmlFor="date-to" className="sr-only">
-              To date
+              {t.toDate}
             </label>
             <input
               id="date-to"
@@ -451,7 +465,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               value={filter.dateTo}
               onChange={(e) => dispatch({ type: "SET_DATE_TO", value: e.target.value })}
               className="h-8 rounded-lg border border-white/15 bg-white/5 px-2.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-              aria-label="To date"
+              aria-label={t.toDate}
             />
           </div>
         </div>
@@ -462,7 +476,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
             onClick={() => dispatch({ type: "RESET" })}
             className="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
           >
-            Clear filters
+            {t.clearFilters}
           </button>
         )}
       </div>
@@ -479,6 +493,8 @@ function DesktopTable({
   data: TransactionHistoryPage | null;
   loading: boolean;
 }) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
   return (
     /* Spec: table with sticky header */
     <div className="hidden md:block overflow-hidden rounded-xl border border-white/8">
@@ -490,37 +506,37 @@ function DesktopTable({
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[130px]"
               >
-                Type
+                {t.type}
               </th>
               <th
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
               >
-                Description
+                {t.description}
               </th>
               <th
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[160px]"
               >
-                Date
+                {t.date}
               </th>
               <th
                 scope="col"
                 className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]"
               >
-                Amount
+                {messages.transactions.shared.amount}
               </th>
               <th
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]"
               >
-                Status
+                {t.status}
               </th>
               <th
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[140px]"
               >
-                Tx Hash
+                {t.txHash}
               </th>
             </tr>
           </thead>
@@ -536,7 +552,7 @@ function DesktopTable({
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2 text-slate-300">
                       {kindIcon(item.kind)}
-                      <span className="text-xs font-medium">{kindLabel(item.kind)}</span>
+                      <span className="text-xs font-medium">{kindLabel(item.kind, t)}</span>
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -582,6 +598,8 @@ function MobileCards({
   data: TransactionHistoryPage | null;
   loading: boolean;
 }) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
   return (
     /* Spec: card list layout on mobile */
     <div className="flex flex-col gap-3 md:hidden">
@@ -596,7 +614,7 @@ function MobileCards({
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
                 {kindIcon(item.kind)}
-                {kindLabel(item.kind)}
+                {kindLabel(item.kind, t)}
               </span>
               <StatusTag status={item.status} />
             </div>
@@ -621,7 +639,7 @@ function MobileCards({
             {/* Spec: tx hash in muted monospace */}
             {item.txHash && (
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-xs text-slate-600">Tx:</span>
+                <span className="text-xs text-slate-600">{t.tx}</span>
                 <TxHashLink txHash={item.txHash} />
               </div>
             )}
@@ -634,7 +652,14 @@ function MobileCards({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function TransactionHistory() {
+interface TransactionHistoryProps {
+  /** Render without the page <main> wrapper and header when a parent already provides them. */
+  embedded?: boolean;
+}
+
+export function TransactionHistory({ embedded = false }: TransactionHistoryProps) {
+  const { messages } = useI18n();
+  const t = messages.transactions.history;
   const [filter, dispatchFilter] = useReducer(filterReducer, INITIAL_FILTER);
   const [dataState, dispatchData] = useReducer(dataReducer, INITIAL_DATA);
   const abortRef = useRef<AbortController | null>(null);
@@ -657,14 +682,10 @@ export function TransactionHistory() {
       pageSize: String(PAGE_SIZE),
     });
 
-    fetch(`/api/transaction-history?${params.toString()}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        return res.json() as Promise<TransactionHistoryPage>;
-      })
+    apiRequest<TransactionHistoryPage>(
+      `/api/transaction-history?${params.toString()}`,
+      { signal: controller.signal, timeoutMs: 10000 },
+    )
       .then((payload) => {
         if (!controller.signal.aborted) {
           dispatchData({ type: "FETCH_SUCCESS", payload });
@@ -673,12 +694,12 @@ export function TransactionHistory() {
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         const message =
-          err instanceof Error ? err.message : "Unable to load transaction history.";
+          err instanceof Error ? err.message : t.loadError;
         dispatchData({ type: "FETCH_ERROR", message });
       });
 
     return () => controller.abort();
-  }, [filter.kind, filter.status, filter.dateFrom, filter.dateTo, filter.page]);
+  }, [filter.kind, filter.status, filter.dateFrom, filter.dateTo, filter.page, t.loadError]);
 
   const { data, loading, error } = dataState;
 
@@ -690,20 +711,22 @@ export function TransactionHistory() {
 
   const isEmpty = !loading && !error && data?.total === 0;
 
+  const Root = embedded ? "div" : "main";
+  const rootClassName = embedded ? "" : "min-h-screen bg-dark-900 pt-24 pb-16";
+
   return (
-    <main className="min-h-screen bg-dark-900 pt-24 pb-16">
+    <Root className={rootClassName}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-sky-400 mb-1">
-            Activity
-          </p>
-          <h1 className="text-2xl font-bold text-slate-100">Transaction history</h1>
-          <p className="mt-1.5 text-sm text-slate-500">
-            Full record of deposits, withdrawals, and rebalancing events. Click a
-            transaction hash to view it on the Stellar explorer.
-          </p>
-        </div>
+        {!embedded && (
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-sky-400 mb-1">
+              {t.eyebrow}
+            </p>
+            <h1 className="text-2xl font-bold text-slate-100">{t.title}</h1>
+            <p className="mt-1.5 text-sm text-slate-500">{t.intro}</p>
+          </div>
+        )}
 
         {/* Filter bar */}
         <div className="mb-6 rounded-xl border border-white/8 bg-white/3 p-4">
@@ -722,8 +745,8 @@ export function TransactionHistory() {
 
         {/* Loading indicator (accessible) */}
         {loading && (
-          <div role="status" aria-label="Loading transactions" className="sr-only">
-            Loading transaction history…
+          <div role="status" aria-label={t.loadingLabel} className="sr-only">
+            {t.loadingText}
           </div>
         )}
 
@@ -761,6 +784,6 @@ export function TransactionHistory() {
           </div>
         )}
       </div>
-    </main>
+    </Root>
   );
 }

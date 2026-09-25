@@ -4,11 +4,13 @@
 
 This repository currently avoids adding third-party analytics script tags by default.
 
-The only script injected at app root today is a small inline theme bootstrap in `src/app/layout.tsx` using `next/script` with `strategy="beforeInteractive"` to prevent a theme flash.
+The only script injected at app root today is a small inline theme bootstrap in `src/app/layout.tsx`. It is rendered as a raw `<script dangerouslySetInnerHTML>` in `<head>`, **not** via `next/script`.
+
+That is deliberate: `next/script`'s `strategy="beforeInteractive"` only guarantees the script runs before Next.js's own hydration code, not before first paint. Preventing a theme flash requires the class to be on `<html>` at paint time, which only a raw inline `<script>` in `<head>` guarantees. This exception applies to the theme bootstrap alone.
 
 ## If you need to add a third-party script
 
-Use `next/script` instead of raw `<script>` tags.
+Use `next/script` instead of raw `<script>` tags. The theme bootstrap above is the one sanctioned exception, for the paint-timing reason described there.
 
 Recommended strategies:
 

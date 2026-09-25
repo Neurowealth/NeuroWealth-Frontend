@@ -499,7 +499,8 @@
   align-items: center;
   position: sticky;
   bottom: 0;
-  padding: 14px 0 0;
+  /* #423: clear home indicator on notched iOS when sticky at bottom of scroll container */
+  padding: 14px 0 var(--sai-bottom, 0px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--sticky-bg) 34%);
 }
 
@@ -674,6 +675,6 @@
   }
 
   .actionBar {
-    padding-bottom: 8px;
+    padding-bottom: max(8px, calc(8px + var(--sai-bottom, 0px)));
   }
 }

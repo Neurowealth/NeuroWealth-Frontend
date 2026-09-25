@@ -1,5 +1,4 @@
-import SkeletonBlock from "@/components/skeletons/SkeletonBlock";
-import SkeletonActivityRow from "@/components/skeletons/SkeletonActivityRow";
+import { Skeleton, ActivityRowSkeleton } from "@/components/ui/Skeleton";
 
 export default function ActivityLoading() {
   return (
@@ -7,14 +6,14 @@ export default function ActivityLoading() {
       {/* Filter bar */}
       <div className="flex gap-2">
         {[1, 2, 3, 4].map((i) => (
-          <SkeletonBlock key={i} className="h-8 w-20 rounded-full" />
+          <Skeleton key={i} height={32} width={80} radius={999} />
         ))}
       </div>
       {/* Rows */}
       <div className="card">
-        <SkeletonBlock className="h-3.5 w-40 mb-5" />
+        <Skeleton height={14} width="40%" style={{ marginBottom: 20 }} />
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <SkeletonActivityRow key={i} />
+          <ActivityRowSkeleton key={i} />
         ))}
       </div>
     </div>

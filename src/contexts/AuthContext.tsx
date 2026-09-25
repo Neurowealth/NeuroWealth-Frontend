@@ -6,9 +6,11 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import type { AuthSession } from "@/lib/auth-adapter";
 import { getAuthAdapter } from "@/lib/auth-provider-factory";
+import { analytics } from "@/lib/analytics";
 
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +30,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Writes an unsigned, non-httpOnly session cookie so `middleware.ts` (Edge
+ * runtime) can read it without a round trip. This is a mock-auth-only
+ * shortcut — it does not prove the session is genuine, since any client-side
+ * JS can fabricate the same shape. See the AUTH_SECRET note in docs/env.md
+ * for the real signing flow this should use ahead of backend auth integration.
+ */
 function setSessionCookie(session: AuthSession) {
   if (typeof window === "undefined") return;
   const cookieValue = encodeURIComponent(
@@ -80,37 +89,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [syncFromStorage]);
 
-  const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const session = await authAdapter.signIn(email, password);
-      setUser(session.user);
-      setSessionCookie(session);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      setLoading(true);
+      try {
+        const session = await authAdapter.signIn(email, password);
+        setUser(session.user);
+        setSessionCookie(session);
+        analytics.track("auth_sign_in", { userId: session.user.id });
+      } catch (err) {
+        analytics.track("auth_sign_in_failed");
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [authAdapter],
+  );
 
-  const signUp = async (email: string, name: string, password: string) => {
-    setLoading(true);
-    try {
-      const session = await authAdapter.signUp(email, name, password);
-      setUser(session.user);
-      setSessionCookie(session);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const signUp = useCallback(
+    async (email: string, name: string, password: string) => {
+      setLoading(true);
+      try {
+        const session = await authAdapter.signUp(email, name, password);
+        setUser(session.user);
+        setSessionCookie(session);
+        analytics.track("auth_sign_up", { userId: session.user.id });
+      } catch (err) {
+        analytics.track("auth_sign_up_failed");
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [authAdapter],
+  );
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
+    analytics.track("auth_sign_out", { userId: user?.id });
     authAdapter.signOut();
     clearSessionCookie();
     setUser(null);
     router.push(SIGN_IN_PATH);
-  };
+  }, [user, authAdapter, router]);
+
+  const value = useMemo(
+    () => ({ user, loading, signIn, signUp, signOut }),
+    [user, loading, signIn, signUp, signOut],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

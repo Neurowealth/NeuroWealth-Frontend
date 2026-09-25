@@ -51,14 +51,14 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-modal flex items-center justify-center"
       aria-modal="true"
       role="dialog"
       aria-labelledby="modal-title"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity motion-reduce:transition-none"
         onClick={() => !preventClose && onClose()}
       />
 
@@ -69,14 +69,14 @@ export function Modal({
       >
         {/* Header — 16px padding */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-200 dark:border-zinc-700">
-          <h2 id="modal-title" className="text-lg font-semibold text-zinc-90dark:text-zinc-100">
+          <h2 id="modal-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             {title}
           </h2>
           {!preventClose && (
             <button
               onClick={onClose}
               aria-label="Close modal"
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors motion-reduce:transition-none"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -90,9 +90,12 @@ export function Modal({
           {children}
         </div>
 
-        {/* Footer — 16px padding */}
+        {/* Footer — 16px padding + safe-area-inset-bottom for notched devices (#423) */}
         {footer && (
-          <div className="px-4 py-4 border-t border-zinc-200 dark:border-zinc-700 flex justify-end gap-3">
+          <div
+            className="px-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 flex justify-end gap-3"
+            style={{ paddingBottom: "max(1rem, calc(1rem + var(--sai-bottom, 0px)))" }}
+          >
         {footer}
           </div>
         )}

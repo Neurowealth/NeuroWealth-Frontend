@@ -1,6 +1,7 @@
 import { HTMLAttributes } from "react";
 
-// Spec: 1px border (#1F2937), shadow 0 1px 2px rgb(0 0 0/0.2), radius 12px (rounded-xl)
+// Spec: 1px border (--color-surface-border / #1F2937), shadow var(--shadow-card), radius 12px (rounded-xl)
+// Token map: bg-gray-900 → bg-surface (#111827), border-gray-800 → border-surface-border (#1F2937)
 type CardVariant = "default" | "elevated" | "outlined";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -9,9 +10,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants: Record<CardVariant, string> = {
-  default:  "border border-gray-800 bg-gray-900",
-  elevated: "border border-gray-700 bg-gray-900 shadow-md",
-  outlined: "border-2 border-gray-700 bg-transparent",
+  default:  "border border-surface-border bg-surface",
+  elevated: "border border-surface-elevated bg-surface shadow-md",
+  outlined: "border-2 border-surface-border bg-transparent",
 };
 
 export function Card({

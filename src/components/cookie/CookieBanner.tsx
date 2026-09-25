@@ -11,7 +11,7 @@ export function CookieBanner() {
       role="dialog"
       aria-label="Cookie consent"
       aria-live="polite"
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 sm:px-6"
+      className="fixed bottom-0 left-0 right-0 z-overlay flex items-center justify-between gap-4 px-4 sm:px-6"
       style={{
         minHeight: "72px",
         maxHeight: "96px",

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { random } from '@/lib/seeded-rng';
 
 interface WalletConnectStepProps {
   onNext: () => void;
@@ -46,7 +47,7 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simulate random success/failure (90% success rate)
-      if (Math.random() > 0.1) {
+      if (random() > 0.1) {
         // Connection successful
         onNext();
       } else {
@@ -81,12 +82,21 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
             key={wallet.id}
             className={`
               relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-200
-              ${selectedWallet === wallet.id 
-                ? 'border-green-500 bg-green-500/10' 
+              ${selectedWallet === wallet.id
+                ? 'border-green-500 bg-green-500/10'
                 : 'border-white/10 bg-white/5 hover:bg-white/10'
               }
             `}
             onClick={() => !isConnecting && setSelectedWallet(wallet.id)}
+            role="button"
+            aria-pressed={selectedWallet === wallet.id}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !isConnecting) {
+                e.preventDefault();
+                setSelectedWallet(wallet.id);
+              }
+            }}
           >
             {wallet.recommended && (
               <div className="absolute top-2 right-2">
@@ -117,7 +127,7 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
       {/* Error Message */}
       {connectionError && (
         <div className="max-w-2xl mx-auto">
-          <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+          <div role="alert" className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
             <div className="flex items-center gap-2 text-red-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

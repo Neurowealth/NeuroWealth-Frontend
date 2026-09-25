@@ -14,7 +14,7 @@ import {
     validateTransactionValues,
 } from "@/lib/transactions";
 
-export function useTransactionForm(kind: TransactionKind) {
+export function useTransactionForm(kind: TransactionKind, tDomain: any) {
     const [formValues, setFormValues] = useState<TransactionFormValues>(() =>
         getDefaultTransactionValues(kind),
     );
@@ -40,7 +40,7 @@ export function useTransactionForm(kind: TransactionKind) {
     );
 
     const validate = useCallback((): boolean => {
-        const localErrors = validateTransactionValues(kind, formValues);
+        const localErrors = validateTransactionValues(kind, formValues, tDomain);
 
         if (Object.keys(localErrors).length > 0) {
             setFieldErrors(localErrors);
@@ -60,6 +60,12 @@ export function useTransactionForm(kind: TransactionKind) {
         setFieldErrors(errors);
     }, []);
 
+    // Needed to hydrate the form from a preview snapshot, which supplies a full
+    // set of arbitrary values rather than resetting to per-kind defaults.
+    const setValues = useCallback((values: TransactionFormValues) => {
+        setFormValues(values);
+    }, []);
+
     return {
         formValues,
         fieldErrors,
@@ -67,5 +73,6 @@ export function useTransactionForm(kind: TransactionKind) {
         validate,
         reset,
         setErrors,
+        setValues,
     };
 }

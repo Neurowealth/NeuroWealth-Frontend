@@ -2,7 +2,7 @@ name: Design Proposal
 description: Propose UX, UI, or visual direction for NeuroWealth Web
 title: "Design Proposal: "
 labels:
-  - design
+  - design-system
   - ux
 body:
   - type: markdown

@@ -49,13 +49,13 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-elevated text-text-muted">
         {icon}
       </div>
 
-      <h2 className="mb-2 text-xl font-semibold text-slate-100">{heading}</h2>
+      <h2 className="mb-2 text-xl font-semibold text-text-primary">{heading}</h2>
 
-      <p className="mb-6 max-w-[420px] text-sm leading-relaxed text-slate-400">
+      <p className="mb-6 max-w-[420px] text-sm leading-relaxed text-text-secondary">
         {body}
       </p>
 

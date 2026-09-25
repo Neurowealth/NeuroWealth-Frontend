@@ -1,107 +1,62 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./portfolio-dashboard.module.css";
 import {
-  ActivityItem,
-  AllocationItem,
-  ChartTone,
   PortfolioPayload,
   PortfolioScenario,
+  AllocationItem,
+  ActivityItem,
   parseScenario,
 } from "@/lib/portfolio";
 import {
+  formatApy,
   formatCurrency,
-  formatPercent,
   formatSignedCurrency,
+  formatPercent,
   formatSignedPercent,
-  formatSyncLabel,
   formatTimestamp,
+  formatSyncLabel,
 } from "@/lib/formatters";
-import { ApiRequestError, apiRequest } from "@/lib/api-client";
+import { apiRequest } from "@/lib/api-client";
 import { useSandbox, ScenarioType } from "@/contexts/SandboxContext";
 import { AllocationChart } from "./AllocationChart";
+import { useI18n } from "@/contexts/I18nContext";
+import { AppMessages } from "@/lib/i18n/messages";
+import {
+  ArrowDown,
+  ArrowUp,
+  Shuffle,
+  Sparkles,
+  PieChart,
+  Activity,
+} from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { SandboxBadge } from "@/components/ui/SandboxBadge";
+import { getApiErrorPresentation, logger } from "@/lib/logger";
+
+const toneMap: Record<string, string> = {
+  primary: "#3b82f6",
+  accent: "#10b981",
+  warning: "#f59e0b",
+  "neutral-strong": "#64748b",
+  "neutral-soft": "#94a3b8",
+};
+
+const activityLabels: Record<string, string> = {
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  rebalance: "Rebalance",
+  yield: "Yield",
+};
+
 
 type ThemeMode = "light" | "dark";
 
 function getTheme(searchParams: Pick<URLSearchParams, "get">): ThemeMode {
   return searchParams.get("theme") === "dark" ? "dark" : "light";
-}
-
-interface EmptyStateProps {
-  icon: React.ReactNode;
-  copy: string;
-  cta: string;
-  onAction: () => void;
-}
-
-interface MetricCardProps {
-  label: string;
-  value: string;
-  helper: string;
-  tone: "default" | "positive" | "negative" | "neutral";
-  mono?: boolean;
-}
-
-const toneMap: Record<ChartTone, string> = {
-  primary: "var(--chart-primary)",
-  accent: "var(--chart-accent)",
-  warning: "var(--chart-warning)",
-  "neutral-strong": "var(--chart-neutral-strong)",
-  "neutral-soft": "var(--chart-neutral-soft)",
-};
-
-const activityLabels: Record<ActivityItem["kind"], string> = {
-  deposit: "Deposit",
-  yield: "Yield",
-  rebalance: "Rebalance",
-  withdrawal: "Withdrawal",
-};
-
-function MetricCard({
-  helper,
-  label,
-  mono = false,
-  tone,
-  value,
-}: MetricCardProps) {
-  const toneClassName =
-    tone === "positive"
-      ? styles.valuePositive
-      : tone === "negative"
-        ? styles.valueNegative
-        : tone === "neutral"
-          ? styles.valueNeutral
-          : styles.valueDefault;
-
-  return (
-    <article className={`${styles.card} ${styles.metricCard}`}>
-      <p className={styles.metricLabel}>{label}</p>
-      <p
-        className={[
-          styles.metricValue,
-          toneClassName,
-          mono ? styles.metricValueMono : "",
-        ].join(" ")}
-      >
-        {value}
-      </p>
-      <p className={styles.helperText}>{helper}</p>
-    </article>
-  );
-}
-
-function EmptyState({ copy, cta, icon, onAction }: EmptyStateProps) {
-  return (
-    <div className={styles.emptyState}>
-      <div className={styles.emptyIcon}>{icon}</div>
-      <p className={styles.emptyCopy}>{copy}</p>
-      <button className={styles.emptyButton} onClick={onAction} type="button">
-        {cta}
-      </button>
-    </div>
-  );
 }
 
 function getScenario(
@@ -120,82 +75,87 @@ function mapScenarioTypeToPortfolio(scenario: ScenarioType): PortfolioScenario {
 }
 
 function getValueTone(value: number): "positive" | "negative" | "neutral" {
-  if (value > 0) {
-    return "positive";
-  }
-
-  if (value < 0) {
-    return "negative";
-  }
-
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
   return "neutral";
-}
-
-function buildDonutBackground(allocation: AllocationItem[]): string {
-  let start = 0;
-
-  const segments = allocation.map((item) => {
-    const end = start + item.share;
-    const segment = `${toneMap[item.tone]} ${start}% ${end}%`;
-    start = end;
-    return segment;
-  });
-
-  return `conic-gradient(${segments.join(", ")})`;
 }
 
 function renderActivityIcon(kind: ActivityItem["kind"]) {
   switch (kind) {
     case "deposit":
-      return <ArrowDownIcon />;
+      return <ArrowDown />;
     case "withdrawal":
-      return <ArrowUpIcon />;
+      return <ArrowUp />;
     case "rebalance":
-      return <ShuffleIcon />;
+      return <Shuffle />;
     default:
-      return <SparkIcon />;
+      return <Sparkles />;
   }
-}
-
-function renderSourceLabel(source: PortfolioPayload["source"]) {
-  if (source === "api") {
-    return "Live backend";
-  }
-
-  if (source === "fallback") {
-    return "Fallback demo";
-  }
-
-  return "Preview data";
 }
 
 function SummarySkeleton() {
   return (
     <>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <article
-          className={`${styles.card} ${styles.metricCard} ${styles.skeletonCard}`}
-          key={index}
-        >
-          <span className={styles.skeletonLine} />
-          <span className={styles.skeletonValue} />
-          <span className={`${styles.skeletonLine} ${styles.skeletonCopy}`} />
-        </article>
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className={styles.card}>
+          <Skeleton className="h-4 w-20 mb-2" />
+          <Skeleton className="h-7 w-28" />
+        </div>
       ))}
     </>
   );
 }
 
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+  mono,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  tone: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className={styles.card}>
+      <p className={styles.controlLabel}>{label}</p>
+      <p className={`${mono ? "font-mono" : ""} text-lg font-bold text-text-primary`}>{value}</p>
+      <p className="text-xs text-text-muted">{helper}</p>
+    </div>
+  );
+}
+
+function renderSourceLabel(source: PortfolioPayload["source"], t: AppMessages["dashboard"]["portfolio"]) {
+  if (source === "api") {
+    return t.liveWidgets;
+  }
+
+  if (source === "fallback") {
+    return t.emptyStates;
+  }
+
+  return "Preview data";
+}
+
 export function PortfolioDashboard() {
+  const { messages } = useI18n();
+  const t = messages.dashboard.portfolio;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getCurrentScenario, isSandboxMode } = useSandbox();
   const [portfolio, setPortfolio] = useState<PortfolioPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   const theme = getTheme(searchParams);
-  const scenario = getScenario(searchParams, mapScenarioTypeToPortfolio(getCurrentScenario("portfolio")));
+  const scenario = getScenario(
+    searchParams,
+    mapScenarioTypeToPortfolio(getCurrentScenario("portfolio")),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -207,42 +167,34 @@ export function PortfolioDashboard() {
       try {
         const payload = await apiRequest<PortfolioPayload>(
           `/api/portfolio?scenario=${scenario}`,
-          {
-          cache: "no-store",
-          signal: controller.signal,
-            timeoutMs: 12000,
-          },
+          { cache: "no-store", signal: controller.signal, timeoutMs: 12000 },
         );
-
         setPortfolio(payload);
       } catch (loadError) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const message =
-          loadError instanceof ApiRequestError || loadError instanceof Error
-            ? loadError.message
-            : "Unable to load portfolio widgets.";
-
-        setError(message);
+        if (controller.signal.aborted) return;
+        const copy = getApiErrorPresentation(loadError, {
+          description: "Unable to load portfolio widgets.",
+          actionLabel: t.retryWidgets,
+        });
+        logger.error("portfolio_fetch_failed", {
+          code: copy.code,
+          status: copy.status,
+          retryable: copy.retryable,
+        });
+        setError(copy.description);
         setPortfolio(null);
       } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
     void loadPortfolio();
-
     return () => controller.abort();
-  }, [scenario]);
+  }, [scenario, retryNonce]);
 
   function updateParam(key: "scenario" | "theme", value: string) {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set(key, value);
-
     startTransition(() => {
       router.replace(`/dashboard?${nextParams.toString()}`, { scroll: false });
     });
@@ -252,13 +204,17 @@ export function PortfolioDashboard() {
     updateParam("scenario", "live");
   }
 
+  function retryPortfolio() {
+    setRetryNonce((value) => value + 1);
+  }
+
   const summaryCards = portfolio
     ? [
         {
           label: "Total balance",
           value: formatCurrency(portfolio.summary.totalBalance),
           helper: "Across active positions and protected reserve holdings.",
-          tone: "default" as const,
+          tone: "default",
           mono: true,
         },
         {
@@ -270,7 +226,7 @@ export function PortfolioDashboard() {
         },
         {
           label: "APY",
-          value: formatPercent(portfolio.summary.apy),
+          value: formatApy(portfolio.summary.apy),
           helper: "Weighted live rate across the current strategy mix.",
           tone: getValueTone(portfolio.summary.apy),
           mono: true,
@@ -279,32 +235,39 @@ export function PortfolioDashboard() {
           label: "Strategy",
           value: portfolio.summary.strategyLabel,
           helper: portfolio.summary.strategyDescription,
-          tone: "default" as const,
+          tone: "default",
         },
       ]
     : [];
+
+  const allocationData = useMemo(() => {
+    if (!portfolio) return [];
+    return portfolio.allocation.map((item) => ({
+      name: item.label,
+      value: item.amount,
+      tone: item.tone,
+    }));
+  }, [portfolio]);
 
   return (
     <div className={styles.page}>
       <section className={styles.shell} data-theme={theme}>
         <div className={styles.content}>
+          {/* ── Top bar ── */}
           <div className={styles.topbar}>
             <div>
               <span className={styles.eyebrow}>
-                <span className={styles.eyebrowDot} />
-                Portfolio widgets
-              </span>
-              <h2 className={styles.heading}>NeuroWealth overview</h2>
+                <span className={styles.eyebrowDot} />{t.overview.split(" ")[0]} widgets</span>
+              <h2 className={styles.heading}>{t.overview}</h2>
               <p className={styles.subheading}>
-                Total balance, yield, APY, strategy, allocation, and recent
-                activity in a single review surface with measurable light and
-                dark theme parity.
+                Total balance, yield, APY, strategy, allocation, and recent activity in a single
+                review surface with measurable light and dark theme parity.
               </p>
             </div>
 
             <div className={styles.controls}>
               <div className={styles.controlCard}>
-                <p className={styles.controlLabel}>Theme preview</p>
+                <p className={styles.controlLabel}>{t.themePreview}</p>
                 <div className={styles.segmentGroup}>
                   {(["light", "dark"] as const).map((option) => (
                     <button
@@ -316,27 +279,25 @@ export function PortfolioDashboard() {
                       onClick={() => updateParam("theme", option)}
                       type="button"
                     >
-                      {option === "light" ? "Light mode" : "Dark mode"}
+                      {option === "light" ? t.lightMode : t.darkMode}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className={styles.controlCard}>
-                <p className={styles.controlLabel}>Scenario preview</p>
+                <p className={styles.controlLabel}>{t.scenarioPreview}</p>
                 <div className={styles.segmentGroup}>
                   {(
                     [
-                      { label: "Live widgets", value: "live" },
-                      { label: "Empty states", value: "empty" },
+                      { label: t.liveWidgets, value: "live" },
+                      { label: t.emptyStates, value: "empty" },
                     ] as const
                   ).map((option) => (
                     <button
                       className={[
                         styles.segmentButton,
-                        scenario === option.value
-                          ? styles.segmentButtonActive
-                          : "",
+                        scenario === option.value ? styles.segmentButtonActive : "",
                       ].join(" ")}
                       key={option.value}
                       onClick={() => updateParam("scenario", option.value)}
@@ -350,48 +311,38 @@ export function PortfolioDashboard() {
             </div>
           </div>
 
+          {/* ── Status banner ── */}
           <div className={styles.banner}>
             <div className={styles.bannerText}>
               <span className={styles.bannerTitle}>
-                {portfolio?.notice ?? "Loading portfolio widget state..."}
+                {portfolio?.notice ?? t.loadingWidget}
               </span>
               <span className={styles.bannerMeta}>
                 {portfolio
                   ? formatSyncLabel(portfolio.updatedAt)
-                  : "Syncing portfolio data"}
+                  : t.syncingData}
               </span>
             </div>
-
             <div className={styles.bannerChips}>
-              {isSandboxMode && (
-                <span className={styles.chip} style={{ backgroundColor: "#10b981", color: "white" }}>
-                  Sandbox: {scenario}
-                </span>
-              )}
-              <span className={styles.chip}>Theme: {theme}</span>
-              <span className={styles.chip}>
-                Source:{" "}
-                {portfolio ? renderSourceLabel(portfolio.source) : "Loading"}
+              {isSandboxMode && <SandboxBadge scenario={scenario} label={t.sandbox} />}
+              <span className={styles.chip}>{t.theme}: {theme}</span>
+              <span className={styles.chip}>{t.source}:{" "}
+                {portfolio ? renderSourceLabel(portfolio.source, t) : "Loading"}
               </span>
             </div>
           </div>
 
           {error && !portfolio ? (
             <div className={`${styles.card} ${styles.errorState}`}>
-              <h2 className={styles.errorTitle}>
-                Portfolio widgets unavailable
-              </h2>
+              <h2 className={styles.errorTitle}>{t.unavailableTitle}</h2>
               <p className={styles.errorCopy}>
-                {error} The dashboard can retry once connectivity to the
-                portfolio API is restored.
+                {error} {t.unavailableDesc}
               </p>
               <button
                 className={styles.emptyButton}
-                onClick={resetToLivePreview}
+                onClick={retryPortfolio}
                 type="button"
-              >
-                Retry widgets
-              </button>
+              >{t.retryWidgets}</button>
             </div>
           ) : (
             <>
@@ -409,16 +360,13 @@ export function PortfolioDashboard() {
                 <article className={`${styles.card} ${styles.panel}`}>
                   <header className={styles.panelHeader}>
                     <div>
-                      <h2 className={styles.panelTitle}>Asset allocation</h2>
-                      <p className={styles.panelMeta}>
-                        Visible deployment mix across strategy buckets and
-                        reserve capital.
-                      </p>
+                      <h2 className={styles.panelTitle}>{t.allocationTitle}</h2>
+                      <p className={styles.panelMeta}>{t.allocationDesc}</p>
                     </div>
                     {!loading && portfolio ? (
                       <span className={styles.chip}>
                         {portfolio.allocation.length} allocation
-                        {portfolio.allocation.length === 1 ? " line" : " lines"}
+                        {portfolio.allocation.length === 1 ? " " + t.line : " " + t.lines}
                       </span>
                     ) : null}
                   </header>
@@ -433,11 +381,7 @@ export function PortfolioDashboard() {
                   ) : portfolio && portfolio.allocation.length > 0 ? (
                       <div className={styles.allocationLayout}>
                         <AllocationChart 
-                          data={portfolio.allocation.map(item => ({
-                            name: item.label,
-                            value: item.amount,
-                            tone: item.tone
-                          }))}
+                          data={allocationData}
                           height={200}
                           innerRadius={60}
                           outerRadius={90}
@@ -489,9 +433,10 @@ export function PortfolioDashboard() {
                     </div>
                   ) : (
                     <EmptyState
-                      copy="No allocation yet. Add a deposit to see deployed positions and reserve coverage."
-                      cta="Load sample data"
-                      icon={<PieIcon />}
+                      icon={<PieChart />}
+                      heading={t.emptyAllocation}
+                      body={t.loadSample}
+                      ctaLabel={t.loadSample}
                       onAction={resetToLivePreview}
                     />
                   )}
@@ -500,16 +445,12 @@ export function PortfolioDashboard() {
                 <article className={`${styles.card} ${styles.panel}`}>
                   <header className={styles.panelHeader}>
                     <div>
-                      <h2 className={styles.panelTitle}>Recent activity</h2>
-                      <p className={styles.panelMeta}>
-                        Latest deposits, yield events, rebalances, and scheduled
-                        cash flows.
-                      </p>
+                      <h2 className={styles.panelTitle}>{t.activityTitle}</h2>
+                      <p className={styles.panelMeta}>{t.activityDesc}</p>
                     </div>
                     {!loading && portfolio ? (
                       <span className={styles.chip}>
-                        {portfolio.activity.length} event
-                        {portfolio.activity.length === 1 ? "" : "s"}
+                        {portfolio.activity.length} {portfolio.activity.length === 1 ? t.event : t.events}
                       </span>
                     ) : null}
                   </header>
@@ -569,7 +510,7 @@ export function PortfolioDashboard() {
                               className={`${styles.activityAmount} ${amountClassName}`}
                             >
                               {item.amount == null
-                                ? "No amount"
+                                ? t.noAmount
                                 : formatSignedCurrency(item.amount)}
                             </div>
                           </div>
@@ -578,9 +519,10 @@ export function PortfolioDashboard() {
                     </div>
                   ) : (
                     <EmptyState
-                      copy="No recent activity yet. Deposits and rebalances will appear here as soon as they happen."
-                      cta="Load sample data"
-                      icon={<ActivityIcon />}
+                      icon={<Activity />}
+                      heading={t.emptyActivity}
+                      body={t.loadSample}
+                      ctaLabel={t.loadSample}
                       onAction={resetToLivePreview}
                     />
                   )}
@@ -591,179 +533,5 @@ export function PortfolioDashboard() {
         </div>
       </section>
     </div>
-  );
-}
-
-function PieIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-    >
-      <path
-        d="M11 3a9 9 0 1 0 9 9h-9V3Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M14.5 3.7A9 9 0 0 1 20.3 9.5H14.5V3.7Z"
-        fill="currentColor"
-        opacity="0.24"
-      />
-    </svg>
-  );
-}
-
-function ActivityIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-    >
-      <path
-        d="M5 19.25h14"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7 15.75 10.2 12l2.8 2.4 4-5.15"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <circle cx="7" cy="15.75" fill="currentColor" opacity="0.24" r="1.4" />
-      <circle cx="10.2" cy="12" fill="currentColor" opacity="0.24" r="1.4" />
-      <circle cx="13" cy="14.4" fill="currentColor" opacity="0.24" r="1.4" />
-      <circle cx="17" cy="9.25" fill="currentColor" opacity="0.24" r="1.4" />
-    </svg>
-  );
-}
-
-function ArrowDownIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="20"
-      viewBox="0 0 24 24"
-      width="20"
-    >
-      <path
-        d="M12 5v14"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m6.5 13.5 5.5 5.5 5.5-5.5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function ArrowUpIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="20"
-      viewBox="0 0 24 24"
-      width="20"
-    >
-      <path
-        d="M12 19V5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M17.5 10.5 12 5 6.5 10.5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function ShuffleIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="20"
-      viewBox="0 0 24 24"
-      width="20"
-    >
-      <path
-        d="M16 4h4v4"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M4 18h3.2c1.3 0 2.5-.6 3.3-1.6L20 4"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M16 20h4v-4"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M4 6h3.2c1.3 0 2.5.6 3.3 1.6L12 9"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m14 15 1.5 1.8c.8 1 2 1.6 3.3 1.6H20"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="20"
-      viewBox="0 0 24 24"
-      width="20"
-    >
-      <path
-        d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
   );
 }

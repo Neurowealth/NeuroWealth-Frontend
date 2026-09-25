@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import { SkeletonCircle } from "@/components/ui/Skeleton";
 
 import { ComponentProps } from "react";
-import { DonutChartWrapper } from "@/components/charts/DonutChartWrapper";
+// Type-only import: keeps DonutChartWrapper (and recharts) out of the initial
+// bundle so the dynamic() import below is the sole code path that loads it.
+import type { DonutChartWrapper } from "@/components/charts/DonutChartWrapper";
 
 // Dynamically load the DonutChartWrapper with a skeleton fallback
 export const AllocationChart = dynamic<ComponentProps<typeof DonutChartWrapper>>(

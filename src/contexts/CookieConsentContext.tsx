@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { logger } from "@/lib/logger";
 export interface CookiePreferences {
   necessary: boolean;
   analytics: boolean;
@@ -31,6 +32,25 @@ interface CookieConsentContextValue {
   resetConsent: () => void;
 }
 const STORAGE_KEY = STORAGE_KEYS.COOKIE_CONSENT;
+
+const VALID_STATUSES: ConsentStatus[] = ["pending", "accepted", "rejected", "custom"];
+
+function isValidConsentState(value: unknown): value is CookieConsentState {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.status !== "string" || !VALID_STATUSES.includes(obj.status as ConsentStatus)) return false;
+  if (typeof obj.lastUpdated !== "string" && obj.lastUpdated !== null) return false;
+  const prefs = obj.preferences;
+  if (typeof prefs !== "object" || prefs === null) return false;
+  const p = prefs as Record<string, unknown>;
+  return (
+    typeof p.necessary === "boolean" &&
+    typeof p.analytics === "boolean" &&
+    typeof p.marketing === "boolean" &&
+    typeof p.personalization === "boolean"
+  );
+}
+
 const defaultPreferences: CookiePreferences = {
   necessary: true,
   analytics: false,
@@ -59,8 +79,15 @@ export function CookieConsentProvider({
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setConsentState(JSON.parse(stored));
-        setShowBanner(false);
+        const parsed: unknown = JSON.parse(stored);
+        if (isValidConsentState(parsed)) {
+          setConsentState(parsed);
+          setShowBanner(false);
+        } else {
+          logger.warn("Invalid cookie-consent shape in storage, resetting");
+          localStorage.removeItem(STORAGE_KEY);
+          setShowBanner(true);
+        }
       } else {
         setShowBanner(true);
       }

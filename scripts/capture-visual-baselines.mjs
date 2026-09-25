@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium, devices } from "playwright";
+import { chromium, devices } from "@playwright/test";
 
 const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
 const DATE_STAMP = process.env.VISUAL_BASELINE_DATE ?? "2026-03-28";
@@ -11,6 +11,19 @@ const OUTPUT_DIR = path.resolve(
   "baselines",
   DATE_STAMP,
 );
+
+// ─── Demo seed ────────────────────────────────────────────────────────────────
+// NEXT_PUBLIC_DEMO_SEED must be set in the environment of the *server* process
+// that is already running (yarn dev / yarn start) before this script is called.
+// The browser-side RNG is initialised from the inlined env var at build time,
+// so the value baked into the running server is what matters here.
+//
+// Recommended workflow:
+//   NEXT_PUBLIC_DEMO_SEED=demo-seed-2026 yarn dev
+//   yarn qa:visual-baseline
+//
+// The seed value is written into the manifest so baselines are traceable.
+const DEMO_SEED = process.env.NEXT_PUBLIC_DEMO_SEED ?? "";
 
 const DESKTOP_VIEWPORT = {
   name: "desktop-1440x900",
@@ -36,6 +49,90 @@ const MOBILE_VIEWPORT = {
     locale: "en-US",
   },
 };
+
+// Tailwind sm: breakpoint — triggers text-5xl on the hero headline
+const SM_VIEWPORT = {
+  name: "sm-640x900",
+  options: {
+    viewport: { width: 640, height: 900 },
+    isMobile: false,
+    hasTouch: false,
+    colorScheme: "dark",
+    locale: "en-US",
+  },
+};
+
+// Tailwind md: breakpoint — triggers text-6xl on the hero headline
+const MD_VIEWPORT = {
+  name: "md-768x1024",
+  options: {
+    viewport: { width: 768, height: 1024 },
+    isMobile: false,
+    hasTouch: false,
+    colorScheme: "dark",
+    locale: "en-US",
+  },
+};
+
+// Tailwind lg: breakpoint — wide tablet / small desktop
+const LG_VIEWPORT = {
+  name: "lg-1024x768",
+  options: {
+    viewport: { width: 1024, height: 768 },
+    isMobile: false,
+    hasTouch: false,
+    colorScheme: "dark",
+    locale: "en-US",
+  },
+};
+
+// All breakpoints relevant to landing hero responsive styles
+const LANDING_VIEWPORTS = [
+  MOBILE_VIEWPORT,
+  SM_VIEWPORT,
+  MD_VIEWPORT,
+  LG_VIEWPORT,
+  DESKTOP_VIEWPORT,
+];
+
+// Landing-hero-specific scenarios targeting src/features/landing/**
+const LANDING_SCENARIOS = [
+  {
+    page: "landing-hero",
+    state: "above-fold",
+    path: "/",
+    waitForText: "AI-Powered",
+  },
+  {
+    page: "landing-hero",
+    state: "stats-visible",
+    path: "/",
+    waitForText: "AI-Powered",
+    action: async (page) => {
+      // Scroll to the stats row inside the hero section
+      await page.evaluate(() => {
+        const stats = document.querySelector(".grid.grid-cols-3");
+        if (stats) stats.scrollIntoView({ behavior: "instant" });
+      });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    page: "landing-hero",
+    state: "wallet-error",
+    path: "/",
+    waitForText: "AI-Powered",
+    action: async (page) => {
+      // Trigger the Connect Wallet button without Freighter installed so the
+      // error message renders — confirms the error state is visually correct.
+      const btn = page.getByRole("button", { name: /connect wallet/i });
+      if (await btn.isVisible()) {
+        await btn.click();
+        await page.waitForTimeout(800);
+      }
+    },
+  },
+];
 
 const AUTH_SESSION = {
   user: {
@@ -399,6 +496,16 @@ async function captureScenario(browser, viewport, scenario) {
 async function main() {
   await ensureDir(OUTPUT_DIR);
 
+  if (!DEMO_SEED) {
+    console.warn(
+      "⚠  NEXT_PUBLIC_DEMO_SEED is not set. Mock chart data will be random " +
+      "and baselines may differ between runs.\n" +
+      "   Recommended: NEXT_PUBLIC_DEMO_SEED=demo-seed-2026 yarn dev, then re-run this script.",
+    );
+  } else {
+    console.log(`ℹ  Demo seed: "${DEMO_SEED}" — mock data will be deterministic.`);
+  }
+
   const browser = await chromium.launch({
     headless: true,
   });
@@ -408,6 +515,16 @@ async function main() {
   try {
     for (const scenario of scenarios) {
       for (const viewport of [DESKTOP_VIEWPORT, MOBILE_VIEWPORT]) {
+        const result = await captureScenario(browser, viewport, scenario);
+        manifest.push(result);
+        console.log(`captured ${result.relativeFile}`);
+      }
+    }
+
+    // Landing hero — capture at every Tailwind breakpoint so responsive
+    // styles (text-4xl / sm:text-5xl / md:text-6xl) are all exercised.
+    for (const scenario of LANDING_SCENARIOS) {
+      for (const viewport of LANDING_VIEWPORTS) {
         const result = await captureScenario(browser, viewport, scenario);
         manifest.push(result);
         console.log(`captured ${result.relativeFile}`);
@@ -424,6 +541,7 @@ async function main() {
       {
         capturedAt: new Date().toISOString(),
         baseUrl: BASE_URL,
+        demoSeed: DEMO_SEED || null,
         namingConvention:
           "<date>__<viewport>__<page>__<state>.png",
         scenarioCount: scenarios.length,

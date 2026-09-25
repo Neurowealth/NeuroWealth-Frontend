@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { logger } from "@/lib/logger";
 
 export type ScenarioType = "success" | "empty" | "loading" | "partial-failure" | "timeout";
-type ModuleType = "portfolio" | "history" | "transactions";
+export type ModuleType = "portfolio" | "history" | "transactions" | "notifications";
 
 interface ScenarioState {
   [key: string]: ScenarioType;
@@ -22,6 +23,7 @@ const defaultScenarios: ScenarioState = {
   portfolio: "success",
   history: "success",
   transactions: "success",
+  notifications: "success",
 };
 const SANDBOX_STORAGE_KEY = STORAGE_KEYS.SANDBOX_SCENARIOS;
 
@@ -42,7 +44,9 @@ interface SandboxProviderProps {
 export function SandboxProvider({ children }: SandboxProviderProps) {
   const [scenarios, setScenarios] = useState<ScenarioState>(defaultScenarios);
   const [isClient, setIsClient] = useState(false);
-  const isSandboxMode = process.env.NODE_ENV === "development";
+  const isSandboxMode =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_DASHBOARD_SANDBOX === "true";
 
   useEffect(() => {
     setIsClient(true);
@@ -53,7 +57,7 @@ export function SandboxProvider({ children }: SandboxProviderProps) {
         try {
           setScenarios(JSON.parse(saved));
         } catch (e) {
-          console.error("Failed to load sandbox scenarios:", e);
+          logger.error("Failed to load sandbox scenarios", e);
         }
       }
     }
@@ -66,29 +70,32 @@ export function SandboxProvider({ children }: SandboxProviderProps) {
     }
   }, [scenarios, isClient, isSandboxMode]);
 
-  const updateScenario = (module: ModuleType, scenario: ScenarioType) => {
+  const updateScenario = useCallback((module: ModuleType, scenario: ScenarioType) => {
     if (isSandboxMode) {
       setScenarios((prev) => ({ ...prev, [module]: scenario }));
     }
-  };
+  }, [isSandboxMode]);
 
-  const getCurrentScenario = (module: ModuleType): ScenarioType => {
+  const getCurrentScenario = useCallback((module: ModuleType): ScenarioType => {
     return scenarios[module] || "success";
-  };
+  }, [scenarios]);
 
-  const resetAllScenarios = () => {
+  const resetAllScenarios = useCallback(() => {
     if (isSandboxMode) {
       setScenarios(defaultScenarios);
     }
-  };
+  }, [isSandboxMode]);
 
-  const value: SandboxContextType = {
-    scenarios,
-    updateScenario,
-    getCurrentScenario,
-    resetAllScenarios,
-    isSandboxMode,
-  };
+  const value = useMemo<SandboxContextType>(
+    () => ({
+      scenarios,
+      updateScenario,
+      getCurrentScenario,
+      resetAllScenarios,
+      isSandboxMode,
+    }),
+    [scenarios, updateScenario, getCurrentScenario, resetAllScenarios, isSandboxMode]
+  );
 
   return (
     <SandboxContext.Provider value={value}>

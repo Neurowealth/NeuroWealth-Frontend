@@ -1,12 +1,25 @@
 "use client";
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { BaseChart, ChartTooltip, usePrefersReducedMotion } from "./BaseChart";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import {
+  BaseChart,
+  ChartTooltip,
+  type ChartTooltipFormatter,
+  usePrefersReducedMotion,
+} from "./BaseChart";
 import { chartTheme, chartDimensions } from "@/lib/chart-theme";
-import { ChartDataPoint } from "@/lib/mock-chart-data";
+import type { ChartDatum } from "@/lib/mock-chart-data";
 
-interface AreaChartWrapperProps {
-  data: ChartDataPoint[];
+interface AreaChartWrapperProps<T extends ChartDatum> {
+  data: T[];
   dataKey?: string;
   xAxisKey?: string;
   height?: number;
@@ -14,10 +27,11 @@ interface AreaChartWrapperProps {
   showLegend?: boolean;
   fillOpacity?: number;
   color?: string;
-  formatter?: (value: any, name: string) => [string, string];
+  formatter?: ChartTooltipFormatter;
+  "aria-label"?: string;
 }
 
-export function AreaChartWrapper({
+export function AreaChartWrapper<T extends ChartDatum = ChartDatum>({
   data,
   dataKey = "value",
   xAxisKey = "name",
@@ -27,9 +41,12 @@ export function AreaChartWrapper({
   fillOpacity = 0.3,
   color = chartTheme.colors.primary,
   formatter,
-}: AreaChartWrapperProps) {
+  "aria-label": ariaLabel,
+}: AreaChartWrapperProps<T>) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
-    <BaseChart height={height}>
+    <BaseChart height={height} aria-label={ariaLabel}>
       <AreaChart data={data} margin={chartDimensions.margin}>
         {showGrid && (
           <CartesianGrid
@@ -42,15 +59,26 @@ export function AreaChartWrapper({
           dataKey={xAxisKey}
           axisLine={chartTheme.axis.axisLine}
           tickLine={chartTheme.axis.tickLine}
-          tick={{ fontSize: chartTheme.axis.fontSize, fill: chartTheme.axis.fill }}
+          tick={{
+            fontSize: chartTheme.axis.fontSize,
+            fill: chartTheme.axis.fill,
+          }}
         />
         <YAxis
           axisLine={chartTheme.axis.axisLine}
           tickLine={chartTheme.axis.tickLine}
-          tick={{ fontSize: chartTheme.axis.fontSize, fill: chartTheme.axis.fill }}
+          tick={{
+            fontSize: chartTheme.axis.fontSize,
+            fill: chartTheme.axis.fill,
+          }}
         />
         <Tooltip content={<ChartTooltip formatter={formatter} />} />
-        {showLegend && <Legend wrapperStyle={chartTheme.legend.wrapperStyle} iconType={chartTheme.legend.iconType} />}
+        {showLegend && (
+          <Legend
+            wrapperStyle={chartTheme.legend.wrapperStyle}
+            iconType={chartTheme.legend.iconType}
+          />
+        )}
         <Area
           type="monotone"
           dataKey={dataKey}
@@ -58,6 +86,7 @@ export function AreaChartWrapper({
           fill={color}
           fillOpacity={fillOpacity}
           strokeWidth={2}
+          isAnimationActive={!prefersReducedMotion}
         />
       </AreaChart>
     </BaseChart>

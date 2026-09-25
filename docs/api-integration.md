@@ -25,6 +25,45 @@ See `docs/env.md` for complete environment variable documentation.
 
 ## API Endpoints
 
+### Request Body Limits
+
+JSON write routes enforce a 100 KB request body limit before schema validation.
+This application-level limit is intentionally below Vercel Functions' documented
+4.5 MB request/response payload cap while matching the small payloads expected by
+the transaction and strategy flows.
+
+Affected frontend routes:
+
+- `POST /api/transactions`
+- `PUT /api/strategy`
+
+Oversized requests return `413 Payload Too Large` with the standard envelope:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "PAYLOAD_TOO_LARGE",
+    "message": "Request body must not exceed 100 KB."
+  }
+}
+```
+
+Malformed JSON returns `400 Bad Request` before route-specific validation:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request body must be valid JSON.",
+    "details": {
+      "body": ["Malformed JSON payload."]
+    }
+  }
+}
+```
+
 ### 1. Portfolio Overview
 
 **Frontend Route:** `GET /api/portfolio?scenario=live`
@@ -131,13 +170,13 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "kind": "buy",
+  "kind": "deposit",
   "intent": "submit",
-  "simulation": null,
+  "simulation": "auto",
   "values": {
-    "symbol": "AAPL",
-    "quantity": 10,
-    "price": 150.00
+    "amount": "100.00",
+    "walletAddress": "GABC...XYZ",
+    "walletConnected": true
   }
 }
 ```
@@ -146,14 +185,13 @@ Accept: application/json
 
 ```typescript
 {
-  kind: "buy" | "sell" | "transfer",
-  intent: "preview" | "submit",
-  simulation?: "success" | "failure" | null,
+  kind: "deposit" | "withdrawal",
+  intent?: "quote" | "submit",
+  simulation?: "auto" | "success" | "failure",
   values: {
-    symbol: string,
-    quantity: number,
-    price: number,
-    [key: string]: any
+    amount: string,
+    walletAddress: string,
+    walletConnected: boolean,
   }
 }
 ```
@@ -166,11 +204,8 @@ Accept: application/json
   "data": {
     "pending": {
       "id": "txn_abc123",
-      "kind": "buy",
-      "symbol": "AAPL",
-      "quantity": 10,
-      "price": 150.0,
-      "total": 1500.0,
+      "kind": "deposit",
+      "amount": "100.00",
       "status": "pending",
       "createdAt": "2026-04-25T10:30:00Z"
     }
@@ -178,19 +213,16 @@ Accept: application/json
 }
 ```
 
-#### Response (Preview)
+#### Response (Quote)
 
 ```json
 {
   "success": true,
   "data": {
     "quote": {
-      "symbol": "AAPL",
-      "quantity": 10,
-      "price": 150.0,
-      "total": 1500.0,
-      "estimatedFee": 5.0,
-      "estimatedTotal": 1505.0
+      "amount": "100.00",
+      "estimatedFee": "0.50",
+      "estimatedTotal": "99.50"
     }
   }
 }
@@ -205,8 +237,8 @@ Accept: application/json
     "code": "VALIDATION_ERROR",
     "message": "Fix the highlighted fields and try again.",
     "details": {
-      "symbol": ["Symbol not found"],
-      "quantity": ["Insufficient funds"]
+      "amount": ["Amount must be greater than 0"],
+      "walletAddress": ["Invalid Stellar address"]
     }
   }
 }
@@ -221,6 +253,12 @@ Accept: application/json
 | Code                  | HTTP Status | Description                             |
 | --------------------- | ----------- | --------------------------------------- |
 | `VALIDATION_ERROR`    | 400         | Request validation failed               |
+| `UNAUTHORIZED`        | 401         | Bearer token invalid or expired         |
+| `FORBIDDEN`           | 403         | User lacks permission for resource      |
+| `NOT_FOUND`           | 404         | Resource does not exist                 |
+| `PAYLOAD_TOO_LARGE`   | 413         | Request body exceeds 100 KB limit       |
+| `RATE_LIMITED`        | 429         | Too many requests — retry after backoff |
+| `INTERNAL_ERROR`      | 500         | Internal server error                   |
 | `BACKEND_ERROR`       | 502         | Backend service error                   |
 | `SERVICE_UNAVAILABLE` | 503         | Backend service temporarily unavailable |
 
@@ -264,10 +302,10 @@ When `NEUROWEALTH_API_BASE_URL` is not set:
 
 ```bash
 # Start frontend with demo mode (no backend required)
-npm run dev
+yarn dev
 
 # Start frontend with backend integration
-NEUROWEALTH_API_BASE_URL=http://localhost:8000 npm run dev
+NEUROWEALTH_API_BASE_URL=http://localhost:8000 yarn dev
 ```
 
 ### API Testing
@@ -281,11 +319,11 @@ curl -X GET http://localhost:3000/api/portfolio?scenario=live
 # Test transaction endpoint
 curl -X POST http://localhost:3000/api/transactions \
   -H "Content-Type: application/json" \
-  -d '{"kind":"buy","intent":"preview","values":{"symbol":"AAPL","quantity":10,"price":150}}'
+  -d '{"kind":"deposit","intent":"submit","values":{"amount":"100.00","walletAddress":"GABC...XYZ","walletConnected":true}}'
 ```
 
 ## Related Issues
 
 - #167: Document NEUROWEALTH_API contract (paths, auth, error JSON) for integration
 - #131: Align cookie consent storage keys and settings page labels
-- #163: Data viz: verify chart colors against design tokens and contrast for CVD
+- #422: Data viz: verify chart colors against design tokens and contrast for CVD

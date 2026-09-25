@@ -17,15 +17,10 @@ import {
   Pencil,
 } from "lucide-react";
 import { ProfileFormSkeleton } from "@/components/ui/Skeleton";
+import { useI18n } from "@/contexts/I18nContext";
+import type { AppMessages } from "@/lib/i18n/messages";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ProfileData {
-  displayName: string;
-  locale: string;
-  timezone: string;
-  currencyFormat: string;
-}
+import { ProfileData, DEFAULT_PROFILE, getProfileAdapter } from "@/lib/profile-adapter";
 
 interface ValidationErrors {
   displayName?: string;
@@ -37,16 +32,8 @@ interface ValidationErrors {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LOCALES = [
-  { value: "en-US", label: "English (United States)" },
-  { value: "en-GB", label: "English (United Kingdom)" },
-  { value: "en-NG", label: "English (Nigeria)" },
-  { value: "fr-FR", label: "French (France)" },
-  { value: "de-DE", label: "German (Germany)" },
-  { value: "es-ES", label: "Spanish (Spain)" },
-  { value: "pt-BR", label: "Portuguese (Brazil)" },
-  { value: "ja-JP", label: "Japanese (Japan)" },
-  { value: "zh-CN", label: "Chinese (Simplified)" },
-  { value: "ar-SA", label: "Arabic (Saudi Arabia)" },
+  { value: "en", label: "English" },
+  { value: "fr", label: "Français" },
 ];
 
 const TIMEZONES = [
@@ -80,54 +67,30 @@ const CURRENCY_FORMATS = [
   { value: "CAD", label: "CAD — Canadian Dollar (CA$)" },
 ];
 
-const STORAGE_KEY = "neurowealth_profile";
-
-const DEFAULT_PROFILE: ProfileData = {
-  displayName: "",
-  locale: "en-US",
-  timezone: "UTC",
-  currencyFormat: "USD",
-};
-
-// ─── Mock API ─────────────────────────────────────────────────────────────────
-
-function mockSaveProfile(data: ProfileData): Promise<void> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Simulate occasional network errors (10% chance)
-      if (Math.random() < 0.1) {
-        reject(new Error("Network error — please try again."));
-      } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        resolve();
-      }
-    }, 800);
-  });
-}
-
-function mockLoadProfile(): ProfileData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
-  } catch {}
-  return DEFAULT_PROFILE;
+function normalizeLocale(locale: string): string {
+  if (LOCALES.some((l) => l.value === locale)) return locale;
+  const language = locale.toLowerCase().split(/[-_]/)[0];
+  return LOCALES.some((l) => l.value === language) ? language : "en";
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
-function validate(data: ProfileData): ValidationErrors {
+function validate(
+  data: ProfileData,
+  t: AppMessages["profile"],
+): ValidationErrors {
   const errors: ValidationErrors = {};
   if (!data.displayName.trim()) {
-    errors.displayName = "Display name is required.";
+    errors.displayName = t.errors.displayNameRequired;
   } else if (data.displayName.trim().length < 2) {
-    errors.displayName = "Display name must be at least 2 characters.";
+    errors.displayName = t.errors.displayNameMin;
   } else if (data.displayName.trim().length > 40) {
-    errors.displayName = "Display name must be 40 characters or fewer.";
+    errors.displayName = t.errors.displayNameMax;
   }
-  if (!data.locale) errors.locale = "Please select a locale.";
-  if (!data.timezone) errors.timezone = "Please select a timezone.";
+  if (!data.locale) errors.locale = t.errors.localeRequired;
+  if (!data.timezone) errors.timezone = t.errors.timezoneRequired;
   if (!data.currencyFormat)
-    errors.currencyFormat = "Please select a currency format.";
+    errors.currencyFormat = t.errors.currencyRequired;
   return errors;
 }
 
@@ -184,6 +147,8 @@ function Field({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const { messages } = useI18n();
+  const t = messages.profile;
   const [saved, setSaved] = useState<ProfileData>(DEFAULT_PROFILE);
   const [draft, setDraft] = useState<ProfileData>(DEFAULT_PROFILE);
   const [editing, setEditing] = useState(false);
@@ -199,7 +164,8 @@ export default function ProfilePage() {
   useEffect(() => {
     // Simulate async profile load
     const timer = setTimeout(() => {
-      const loaded = mockLoadProfile();
+      const stored = getProfileAdapter().loadProfile();
+      const loaded = { ...stored, locale: normalizeLocale(stored.locale) };
       setSaved(loaded);
       setDraft(loaded);
       setProfileLoading(false);
@@ -238,7 +204,7 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    const newErrors = validate(draft);
+    const newErrors = validate(draft, t);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
@@ -247,7 +213,7 @@ export default function ProfilePage() {
     setSaveError("");
 
     try {
-      await mockSaveProfile(draft);
+      await getProfileAdapter().saveProfile(draft);
       setSaved(draft);
       setSaveStatus("success");
       setEditing(false);
@@ -255,7 +221,7 @@ export default function ProfilePage() {
     } catch (err: unknown) {
       setSaveStatus("error");
       setSaveError(
-        err instanceof Error ? err.message : "Unknown error occurred.",
+        err instanceof Error ? err.message : t.errors.unknown,
       );
     } finally {
       setSaving(false);
@@ -307,25 +273,25 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="profile-page-title">
-              {saved.displayName || "Your Profile"}
+              {saved.displayName || t.pageTitleFallback}
             </h1>
             <p className="profile-page-subtitle">
-              Manage account details, preferences &amp; display settings
+              {t.pageSubtitle}
             </p>
           </div>
           {!editing && (
             <button className="btn-secondary" onClick={handleEdit}>
               <Pencil size={15} />
-              Edit profile
+              {t.editProfile}
             </button>
           )}
         </div>
 
         {/* ── Breadcrumb ── */}
-        <nav className="profile-breadcrumb" aria-label="breadcrumb">
-          <span>Dashboard</span>
+        <nav className="profile-breadcrumb" aria-label={t.breadcrumbLabel}>
+          <a href="/dashboard/settings" className="breadcrumb-link">{t.breadcrumbSettings}</a>
           <ChevronRight size={13} />
-          <span className="active">Profile</span>
+          <span className="active">{t.breadcrumbProfile}</span>
         </nav>
 
         {/* ── Error summary banner ── */}
@@ -334,8 +300,9 @@ export default function ProfilePage() {
             <AlertCircle size={16} />
             <div>
               <strong>
-                Please fix {errorCount} error{errorCount > 1 ? "s" : ""} before
-                saving
+                {errorCount > 1
+                  ? t.fixErrorsMany.replace("{count}", String(errorCount))
+                  : t.fixErrorsOne}
               </strong>
               <ul>
                 {Object.values(errors).map((msg, i) => (
@@ -358,24 +325,24 @@ export default function ProfilePage() {
         {saveStatus === "success" && (
           <div className="banner banner-success" role="status">
             <CheckCircle2 size={16} />
-            <span>Profile saved successfully.</span>
+            <span>{t.saveSuccess}</span>
           </div>
         )}
 
         {/* ── Card: Identity ── */}
         <SectionCard
           icon={<User size={18} />}
-          title="Identity"
-          description="How you appear across the platform"
+          title={t.identity.title}
+          description={t.identity.description}
         >
-          <Field label="Display name" error={errors.displayName}>
+          <Field label={t.identity.displayName} error={errors.displayName}>
             {editing ? (
               <input
                 className={`profile-input ${errors.displayName ? "input-error" : ""}`}
                 type="text"
                 value={draft.displayName}
                 onChange={(e) => handleChange("displayName", e.target.value)}
-                placeholder="e.g. Amara Okonkwo"
+                placeholder={t.identity.displayNamePlaceholder}
                 maxLength={40}
                 aria-invalid={!!errors.displayName}
                 aria-describedby={
@@ -385,7 +352,7 @@ export default function ProfilePage() {
             ) : (
               <p className="profile-value">
                 {saved.displayName || (
-                  <span className="placeholder-text">Not set</span>
+                  <span className="placeholder-text">{t.notSet}</span>
                 )}
               </p>
             )}
@@ -395,10 +362,10 @@ export default function ProfilePage() {
         {/* ── Card: Localisation ── */}
         <SectionCard
           icon={<Globe size={18} />}
-          title="Localisation"
-          description="Language and regional display preferences"
+          title={t.localisation.title}
+          description={t.localisation.description}
         >
-          <Field label="Locale" error={errors.locale}>
+          <Field label={t.localisation.locale} error={errors.locale}>
             {editing ? (
               <select
                 className={`profile-select ${errors.locale ? "input-error" : ""}`}
@@ -406,7 +373,7 @@ export default function ProfilePage() {
                 onChange={(e) => handleChange("locale", e.target.value)}
                 aria-invalid={!!errors.locale}
               >
-                {LOCALES.map((l) => (
+                {LOCALES.map((l: { value: string; label: string }) => (
                   <option key={l.value} value={l.value}>
                     {l.label}
                   </option>
@@ -414,7 +381,7 @@ export default function ProfilePage() {
               </select>
             ) : (
               <p className="profile-value">
-                {LOCALES.find((l) => l.value === saved.locale)?.label ||
+                {LOCALES.find((l: { value: string; label: string }) => l.value === saved.locale)?.label ||
                   saved.locale}
               </p>
             )}
@@ -424,10 +391,10 @@ export default function ProfilePage() {
         {/* ── Card: Time & Currency ── */}
         <SectionCard
           icon={<Clock size={18} />}
-          title="Time &amp; Currency"
-          description="Timezone and numeric format settings"
+          title={t.timeCurrency.title}
+          description={t.timeCurrency.description}
         >
-          <Field label="Timezone" error={errors.timezone}>
+          <Field label={t.timeCurrency.timezone} error={errors.timezone}>
             {editing ? (
               <select
                 className={`profile-select ${errors.timezone ? "input-error" : ""}`}
@@ -449,7 +416,7 @@ export default function ProfilePage() {
             )}
           </Field>
 
-          <Field label="Currency format" error={errors.currencyFormat}>
+          <Field label={t.timeCurrency.currencyFormat} error={errors.currencyFormat}>
             {editing ? (
               <select
                 className={`profile-select ${errors.currencyFormat ? "input-error" : ""}`}
@@ -469,7 +436,7 @@ export default function ProfilePage() {
                 {CURRENCY_FORMATS.find((c) => c.value === saved.currencyFormat)
                   ?.label || saved.currencyFormat}
                 <span className="currency-sample">
-                  Sample: {currencySymbols[saved.currencyFormat] ?? ""}1,234.56
+                  {t.timeCurrency.sample}: {currencySymbols[saved.currencyFormat] ?? ""}1,234.56
                 </span>
               </div>
             )}
@@ -481,10 +448,10 @@ export default function ProfilePage() {
           <div
             className="profile-action-row"
             role="group"
-            aria-label="Save or cancel changes"
+            aria-label={t.actions.groupLabel}
           >
             <span className={`dirty-indicator ${isDirty ? "visible" : ""}`}>
-              Unsaved changes
+              {t.actions.unsaved}
             </span>
             <div className="action-btns">
               <button
@@ -493,7 +460,7 @@ export default function ProfilePage() {
                 disabled={saving}
               >
                 <X size={15} />
-                Cancel
+                {t.actions.cancel}
               </button>
               <button
                 className="btn-primary"
@@ -504,12 +471,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <span className="spinner" aria-hidden="true" />
-                    Saving…
+                    {t.actions.saving}
                   </>
                 ) : (
                   <>
                     <Save size={15} />
-                    Save changes
+                    {t.actions.save}
                   </>
                 )}
               </button>
@@ -578,6 +545,12 @@ export default function ProfilePage() {
         .profile-breadcrumb .active {
           color: #38bdf8;
         }
+        .breadcrumb-link {
+          color: #475569;
+          text-decoration: none;
+          transition: color 0.15s;
+        }
+        .breadcrumb-link:hover { color: #94a3b8; }
 
         /* ── Banners ── */
         .banner {
@@ -732,6 +705,8 @@ export default function ProfilePage() {
           border: 1px solid rgba(148, 163, 184, 0.15);
           border-radius: 12px;
           padding: 14px 20px;
+          /* #423: add safe-area-inset-bottom so buttons clear the home indicator */
+          padding-bottom: max(14px, calc(14px + var(--sai-bottom, 0px)));
           display: flex;
           align-items: center;
           justify-content: space-between;

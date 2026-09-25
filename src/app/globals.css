@@ -1,22 +1,64 @@
+/**
+ * TOKEN OWNERSHIP: This file is the single source of truth for all design token values.
+ * Add new color/shadow/motion tokens here via @theme.
+ * tailwind.config.ts handles only structural concerns:
+ *   content globs, fontFamily, fontWeight, animations, keyframes,
+ *   backgroundImage, boxShadow, backdropBlur, motion, transitionTimingFunction,
+ *   plugins, darkMode.
+ */
 @import "tailwindcss";
 
 @theme {
-  --color-dark-900: #020617;
+  /* Design-system palette */
+  --color-dark-900: #0b1220;
   --color-dark-800: #0f172a;
   --color-dark-700: #1e293b;
   --color-brand-400: #38bdf8;
-  --shadow-card: 0 8px 30px rgba(2, 6, 23, 0.35);
+  --color-brand-300: #38bdf8;
+  /* App-level semantic tokens */
+  --color-app-bg: #030712;
+  --color-surface: #111827;
+  --color-surface-border: #1F2937;
+  --color-surface-elevated: #1F2937;
+  --color-primary: #0EA5E9;
+  --color-primary-hover: #0284C7;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #0EA5E9;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2);
+
+  /* Overlay stacking scale (#565) — shared z-index tiers for anything that
+   * floats above normal page content. Values are spaced out (10 apart) to
+   * leave room to insert a tier later without renumbering everything.
+   * Ascending order is intentional: later tiers must cover earlier ones. */
+  --z-index-overlay: 1000;   /* persistent fixed chrome: nav bar, cookie banner */
+  --z-index-dropdown: 1010;  /* contextual popovers: search results, notification menu */
+  --z-index-modal: 1020;     /* modal/drawer dialogs and their backdrops */
+  --z-index-toast: 1030;     /* toast notifications — must surface above open modals */
+  --z-index-dev-tool: 1040;  /* diagnostics panel — always on top for debugging */
 }
 
 :root {
   --font-sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: "Roboto Mono", "IBM Plex Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Safe-area inset tokens — require viewport-fit=cover (set in layout.tsx).
+   * Use var(--sai-bottom) anywhere a fixed/sticky element sits at the bottom
+   * of the screen so it clears the home indicator on notched iOS devices.
+   * Falls back to 0px on devices without a notch. */
+  --sai-top: env(safe-area-inset-top, 0px);
+  --sai-right: env(safe-area-inset-right, 0px);
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left: env(safe-area-inset-left, 0px);
   --positive: #10b981;
   --negative: #ef4444;
   --neutral: #94a3b8;
-  --chart-primary: #0f766e;
-  --chart-accent: #38bdf8;
-  --chart-warning: #f59e0b;
+  --chart-primary: #0284c7;
+  --chart-accent: #d55e00;
+  --chart-warning: #cc79a7;
   --chart-neutral-strong: #64748b;
   --chart-neutral-soft: #94a3b8;
   /* Motion tokens */
@@ -24,7 +66,11 @@
   --motion-duration-180: 180ms;
   --motion-duration-240: 240ms;
   --motion-easing-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* Reduced motion preference */
+  /* Skeleton shimmer tokens — consumed by Skeleton.module.css
+   * Duration 1.4 s satisfies the 1.2–1.8 s design spec requirement. */
+  --skeleton-base: rgba(30, 41, 59, 0.85);
+  --skeleton-shine: rgba(71, 85, 105, 0.55);
+  --skeleton-duration: 1.4s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -48,7 +94,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #020617;
+  background: #0b1220;
   color: #e2e8f0;
   font-family: var(--font-sans);
 }
@@ -76,6 +122,12 @@ textarea {
   border-radius: 4px;
 }
 
+/* Theme transition — 200ms smooth switch */
+html.theme-transitioning,
+html.theme-transitioning * {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease !important;
+}
+
 :where(.nav-link, .btn-ghost):focus-visible {
   outline: 2px solid #0ea5e9;
   outline-offset: 2px;
@@ -90,3 +142,17 @@ textarea {
     background-position: -200% 0;
   }
 }
+
+/**
+ * Safe-area utility classes — #423
+ * Apply to any element that must clear the home indicator / notch.
+ * These mirror what Tailwind's safe-area plugin would generate but keep us
+ * plugin-free. The var(--sai-*) tokens are defined in :root above.
+ *
+ * Usage: add class="pb-safe" (or combine: "pb-safe pt-safe") on any
+ * fixed/sticky element sitting at a screen edge.
+ */
+.pb-safe { padding-bottom: var(--sai-bottom); }
+.pt-safe { padding-top: var(--sai-top); }
+.pl-safe { padding-left: var(--sai-left); }
+.pr-safe { padding-right: var(--sai-right); }

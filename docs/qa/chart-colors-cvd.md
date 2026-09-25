@@ -1,101 +1,70 @@
-# Chart Colors & CVD Accessibility (Issue #163)
+# Chart Colors & CVD Accessibility (Issue #422)
 
-## Overview
+## Scope
 
-This document verifies that chart colors are distinguishable for common color-vision deficiency (CVD) cases and meet WCAG AA contrast standards.
+Owner: frontend data visualization.
 
-## Color Palette
+This check covers the shared chart tokens in `src/lib/chart-theme.ts`, the CVD
+utilities in `src/lib/chart-colors-cvd.ts`, the Recharts wrappers in
+`src/components/charts/*`, and the visible chart reference page at
+`/docs/charts`.
 
-### Primary Palette (CVD-Safe)
+## Approved Palette
 
-All colors tested for deuteranopia, protanopia, and tritanopia:
+The active chart tones are token-backed and must be used instead of ad hoc hex
+values.
 
-| Color  | Hex       | Use Case          | CVD Safe    |
-| ------ | --------- | ----------------- | ----------- |
-| Blue   | `#0369a1` | Primary series    | ✓ All types |
-| Orange | `#ea580c` | Secondary series  | ✓ All types |
-| Teal   | `#0d9488` | Tertiary series   | ✓ All types |
-| Purple | `#7c3aed` | Quaternary series | ✓ All types |
-| Green  | `#059669` | Quinary series    | ✓ All types |
+| Tone             | Hex       | Redundant pattern | Use case                         |
+| ---------------- | --------- | ----------------- | -------------------------------- |
+| `primary`        | `#0284c7` | Solid             | Main series and portfolio trend  |
+| `accent`         | `#d55e00` | Dash              | Secondary series and yield bars  |
+| `warning`        | `#cc79a7` | Dot               | Third series and comparisons     |
+| `neutral-strong` | `#64748b` | Long dash         | Other/inactive/supporting slices |
 
-### Contrast Ratios (vs. Dark Background #020617)
+Supporting `neutral-soft` remains available for low-emphasis UI chrome and
+labels, but it is not part of the active multi-series palette.
 
-| Color  | Contrast Ratio | WCAG AA (Text) | WCAG AA (Graphics) |
-| ------ | -------------- | -------------- | ------------------ |
-| Blue   | 8.2:1          | ✓ Pass         | ✓ Pass             |
-| Orange | 7.5:1          | ✓ Pass         | ✓ Pass             |
-| Teal   | 6.8:1          | ✓ Pass         | ✓ Pass             |
-| Purple | 7.1:1          | ✓ Pass         | ✓ Pass             |
-| Green  | 6.2:1          | ✓ Pass         | ✓ Pass             |
+## Automated Verification
 
-## Implementation
+Run:
 
-### Chart Theme Configuration
-
-Located in `src/lib/chart-theme.ts`:
-
-```typescript
-import { CVD_PALETTES } from "@/lib/chart-colors-cvd";
-
-export const chartTheme = {
-  colors: {
-    primary: CVD_PALETTES.primary.blue, // #0369a1
-    accent: CVD_PALETTES.primary.orange, // #ea580c
-    warning: CVD_PALETTES.primary.teal, // #0d9488
-    // ...
-  },
-};
+```bash
+npx tsx scripts/verify-chart-contrast.ts
 ```
 
-### CVD Color Utilities
+The script verifies:
 
-Located in `src/lib/chart-colors-cvd.ts`:
+- WCAG AA graphics contrast (`3:1`) against the dark chart surface `#111827`.
+- WCAG AA graphics contrast (`3:1`) against light chart backgrounds `#ffffff`.
+- Simulated pairwise RGB distance for protanopia, deuteranopia, and tritanopia.
+- Minimum simulated CVD pair distance of `35` for every active palette pair.
 
-- `getCVDSafeColor(index)` - Get color by index (cycles through palette)
-- `getContrastRatio(color1, color2)` - Calculate WCAG contrast ratio
-- `meetsWCAGAA(color1, color2, isText)` - Verify WCAG AA compliance
+Unit coverage lives in `src/lib/chart-colors-cvd.test.ts` and checks the same
+critical requirements during `yarn test`.
 
-## Testing Checklist
+## Manual QA
 
-### Visual QA
+1. Open `/docs/charts`.
+2. Confirm the palette swatches show sky, orange, magenta, and slate.
+3. Confirm bar examples use dashed/dotted outlines where configured.
+4. Confirm donut slices show both color and stroke-pattern differences.
+5. Verify tooltips and legends provide labels so color is not the only carrier
+   of meaning.
+6. Optional: capture the chart page and inspect it in a CVD simulator for
+   protanopia, deuteranopia, and tritanopia.
 
-- [ ] Portfolio chart displays with blue/orange/teal series
-- [ ] Activity chart uses CVD-safe colors
-- [ ] Strategy chart distinguishable in all series
-- [ ] Donut chart segments clearly differentiated
-- [ ] Line chart series easily distinguished
+## Design Notes
 
-### Accessibility Testing
-
-- [ ] Test with Coblis CVD simulator (https://www.color-blindness.com/coblis-color-blindness-simulator/)
-- [ ] Verify colors remain distinguishable in deuteranopia mode
-- [ ] Verify colors remain distinguishable in protanopia mode
-- [ ] Verify colors remain distinguishable in tritanopia mode
-
-### Browser Testing
-
-- [ ] Chrome DevTools color contrast checker
-- [ ] Firefox accessibility inspector
-- [ ] Safari accessibility features
-
-## Pattern Redundancy (Future Enhancement)
-
-For multi-series charts with >5 series, consider adding pattern/texture redundancy:
-
-- Solid fill for series 1
-- Diagonal stripes for series 2
-- Dots for series 3
-- Dashes for series 4
-- Etc.
-
-This provides additional visual distinction beyond color alone.
+- The previous palette had a blue value that missed the `3:1` graphics threshold
+  on the actual dark chart surface by a small margin.
+- Teal/green-adjacent colors can collapse under tritanopia and some red-green
+  simulations, so the third active tone uses magenta instead of teal.
+- Pattern redundancy is applied through shared stroke-dasharray tokens. This is
+  intentionally lightweight because the current wrappers mostly render
+  single-series line/bar charts and tone-based donut slices.
 
 ## References
 
-- WCAG 2.1 Color Contrast: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
-- CVD Simulator: https://www.color-blindness.com/coblis-color-blindness-simulator/
-- Accessible Colors: https://accessible-colors.com/
-
-## Related Issues
-
-- #163: Data viz: verify chart colors against design tokens and contrast for CVD
+- WCAG 2.1 Non-text Contrast: https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html
+- WCAG 2.1 Contrast Minimum: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
+- CVD simulator for optional manual review: https://www.color-blindness.com/coblis-color-blindness-simulator/
