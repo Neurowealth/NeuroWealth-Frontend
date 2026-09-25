@@ -103,7 +103,7 @@ The endpoint returns an OpenGraph image (1600×1080px) that can be:
 
 ### Caching
 
-Both endpoints export `force-dynamic`, which opts them out of Next.js static generation. They also set explicit `Cache-Control` response headers so CDNs and browsers can cache the rendered images:
+Both endpoints dynamically evaluate request parameters per request without exporting `force-dynamic`. They set explicit `Cache-Control` response headers so CDNs and browsers can cache the rendered images:
 
 | Endpoint | `Cache-Control` header |
 |---|---|

@@ -7,6 +7,7 @@ boundary catches the error, what the user sees, and how they recover.
 
 | Boundary | File | Type | Scope |
 | --- | --- | --- | --- |
+| Global root error boundary | `src/app/global-error.tsx` | Next.js `global-error.tsx` | Render-time throws above `RootLayout` or inside `ClientProviders` context providers; replaces the entire root HTML document |
 | Global React `ErrorBoundary` | `src/components/ErrorBoundary.tsx` | React class component | Entire app (wraps `<ClientProviders>` in `src/app/layout.tsx`) |
 | Root Next.js error page | `src/app/error.tsx` | Next.js `error.tsx` | All server-side errors at the root segment |
 | Dashboard error page | `src/app/dashboard/error.tsx` | Next.js `error.tsx` | All server-side throws inside `src/app/dashboard/**` |
@@ -17,6 +18,7 @@ boundary catches the error, what the user sees, and how they recover.
 
 | Route segment | Throws? | Cause | Caught by | User-visible copy | Recovery action |
 | --- | --- | --- | --- | --- | --- |
+| RootLayout / ClientProviders crash (any route) | Possible | Unhandled render throw in top-level context providers above RootLayout | `src/app/global-error.tsx` | Title: "We ran into an unexpected issue"; Description: "The page could not finish loading. Your account and funds remain safe. Try again now or return home." | Primary: "Back to home" (`href=/`); Secondary: "Try again" (calls `reset()`) |
 | `/dashboard/dev-errors/route-error` (dev only) | Yes — intentional | `throw new Error(…)` in the page component | `src/app/dashboard/error.tsx` | Title: "Dashboard unavailable"; Description: "We are having trouble loading this dashboard view right now. Your funds and wallet connection remain safe." | Primary: "Back to dashboard home" (`href=/dashboard`); Secondary: "Try again" (calls `reset()`) |
 | `/dashboard/dev-errors/boundary-error` (dev only) | Yes — on button click | `TriggerBoundaryError` sets `shouldThrow = true`, causing a render throw | Global `ErrorBoundary` in `src/app/layout.tsx` | Heading: "We hit a temporary app issue."; Body: "Try reloading this view. If the issue keeps happening, return shortly while we investigate." | "Try again" button resets `hasError` state; full reload also recovers |
 | `/dashboard/**` (all live dashboard segments) | Possible (data fetch, runtime) | Unhandled exception in a server component or async route handler | `src/app/dashboard/error.tsx` | Title: "Dashboard unavailable"; Description: "We are having trouble loading this dashboard view right now. Your funds and wallet connection remain safe." | Primary: "Back to dashboard home"; Secondary: "Try again" |

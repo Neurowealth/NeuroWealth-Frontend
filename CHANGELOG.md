@@ -40,6 +40,8 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Added a light-mode surface to the command palette while preserving the dark-mode presentation (#885)
 
 ### Fixed
+- Guard `useStorageSync` callback against editing state to prevent overwriting active user edits during background sync (#899)
+- Remove dead `setAuditService` export and clean up unused audit service bindings (#898)
 - Accessibility hardening: modal/drawer focus traps, keyboard-operable controls, navbar touch targets, Switch focus-visible ring (#595, #660, #585, #663)
 - Deposit/withdraw `aria-invalid` / `aria-describedby`, notification keyboard semantics, portfolio breakpoint alignment (#594, #523, #564)
 - Fetch recovery UX, logger/PII hardening, and API timeout documentation (#389, #390, #357–#360)
@@ -87,5 +89,5 @@ Versions are tagged in GitHub Releases and linked from this file.
 ### Process
 - Release notes remain manual Keep a Changelog entries under the single, date-free `[Unreleased]` section.
 - Release automation (release-please / Changesets) is not configured; retain the manual process until a dedicated tooling decision is made.
-- This refresh consolidates the previously duplicated dated `[Unreleased]` sections and records merged work through PR #896.
+- This refresh consolidates the previously duplicated dated `[Unreleased]` sections and records merged work through PR #899.
 - Each PR that ships user-visible changes should add an entry here; maintainers fold `[Unreleased]` into a versioned section on release.

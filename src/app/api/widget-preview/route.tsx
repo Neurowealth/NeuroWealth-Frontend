@@ -10,7 +10,6 @@ import { parseWidgetPreviewSearchParams } from "@/lib/preview-route-query";
 import { ImageResponse } from "next/og";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
-
 type ThemeMode = "light" | "dark";
 
 function getThemePalette(theme: ThemeMode) {
