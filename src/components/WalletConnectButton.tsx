@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@/contexts";
 import { NetworkMismatchWarning } from "@/components/wallet/NetworkMismatchWarning";
 import { useToast } from "@/components/notifications/ToastProvider";
@@ -59,9 +59,15 @@ export default function WalletConnectButton({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    const [modalObserver, setModalObserver] = useState<MutationObserver | null>(null);
+  // A ref, not state: this observer is an imperative DOM handle, not
+  // render-driven data. Storing it in state made the effect depend on a
+  // value it set itself, so every modal detection re-ran the whole effect
+  // (tearing down and recreating the document-wide root observer) and the
+  // cleanup closed over the previous render's (stale) observer instead of
+  // the one just created, leaking it instead of disconnecting it.
+  const modalObserverRef = useRef<MutationObserver | null>(null);
 
-    useEffect(() => {
+  useEffect(() => {
     const handleModalMutations = (modal: Element) => {
       const walker = document.createTreeWalker(modal, NodeFilter.SHOW_TEXT);
       const textNodes = [];
@@ -114,7 +120,7 @@ export default function WalletConnectButton({
               handleModalMutations(node);
               const newModalObserver = new MutationObserver(() => handleModalMutations(node));
               newModalObserver.observe(node, { childList: true, subtree: true });
-              setModalObserver(newModalObserver);
+              modalObserverRef.current = newModalObserver;
               observer.disconnect(); // Disconnect the root observer once the modal is found
               return;
             }
@@ -130,9 +136,10 @@ export default function WalletConnectButton({
 
     return () => {
       rootObserver.disconnect();
-      modalObserver?.disconnect();
+      modalObserverRef.current?.disconnect();
+      modalObserverRef.current = null;
     };
-  }, [modalObserver]);
+  }, []);
 
   const handleClick = async () => {
     setIsLoading(true);
