@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useId } from "react";
+import React, { useRef, useState, useCallback, useId, useEffect } from "react";
 import Image from "next/image";
 import { random } from "@/lib/seeded-rng";
 
@@ -75,10 +75,15 @@ export default function FileUpload({
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const abortMap = useRef<Map<string, AbortController>>(new Map());
+  const previewUrlsRef = useRef<Set<string>>(new Set());
 
   const startUpload = useCallback((file: File) => {
     const id = crypto.randomUUID();
     const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+
+    if (previewUrl) {
+      previewUrlsRef.current.add(previewUrl);
+    }
 
     if (file.size > maxSizeMB * 1024 * 1024) {
       const entry: UploadFile = {
@@ -127,10 +132,21 @@ export default function FileUpload({
   const remove = (id: string) => {
     setFiles((prev) => {
       const f = prev.find((x) => x.id === id);
-      if (f?.previewUrl) URL.revokeObjectURL(f.previewUrl);
+      if (f?.previewUrl) {
+        URL.revokeObjectURL(f.previewUrl);
+        previewUrlsRef.current.delete(f.previewUrl);
+      }
       return prev.filter((x) => x.id !== id);
     });
   };
+
+  // Cleanup: revoke all outstanding blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrlsRef.current.clear();
+    };
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

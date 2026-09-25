@@ -11,7 +11,20 @@ interface FAQItem {
   category: string;
 }
 
-const faqCategoryIds = ['gettingStarted', 'gettingStarted', 'security', 'security', 'transactions', 'transactions', 'transactions', 'assets', 'assets', 'staking', 'staking', 'support'];
+const faqCategoryIds: Record<string, string> = {
+  'connect-wallet': 'gettingStarted',
+  'what-is-neurowealth': 'gettingStarted',
+  'wallet-security': 'security',
+  'forgot-password': 'security',
+  'transaction-slow': 'transactions',
+  'gas-fees': 'transactions',
+  'check-transaction-status': 'transactions',
+  'supported-tokens': 'assets',
+  'add-custom-token': 'assets',
+  'staking-basics': 'staking',
+  'staking-rewards': 'staking',
+  'contact-support': 'support',
+};
 
 const categories = ['all', 'gettingStarted', 'security', 'transactions', 'assets', 'staking', 'support'] as const;
 
@@ -24,11 +37,11 @@ export default function FAQSection() {
 
   const faqData: FAQItem[] = useMemo(
     () =>
-      t.items.map((item, index) => ({
-        id: String(index + 1),
+      t.items.map((item) => ({
+        id: item.id,
         question: item.q,
         answer: item.a,
-        category: faqCategoryIds[index],
+        category: faqCategoryIds[item.id],
       })),
     [t.items],
   );

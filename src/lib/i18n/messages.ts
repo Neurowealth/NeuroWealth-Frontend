@@ -732,6 +732,7 @@ export interface AppMessages {
         support: string;
       };
       items: {
+        id: string;
         q: string;
         a: string;
       }[];
@@ -814,6 +815,8 @@ export interface AppMessages {
       emergencySupport: string;
       emailEmergency: string;
       issues: {
+        id: string;
+        severity: 'low' | 'medium' | 'high';
         title: string;
         description: string;
         symptoms: string[];
@@ -1601,50 +1604,62 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         },
         items: [
           {
+            id: "connect-wallet",
             q: "How do I connect my wallet to NeuroWealth?",
             a: "To connect your wallet, click the \"Connect Wallet\" button in the top navigation bar. Select your preferred wallet (Freighter, Albedo, or other Stellar wallets), approve the connection request, and your wallet will be connected to the platform.",
           },
           {
+            id: "what-is-neurowealth",
             q: "What is NeuroWealth and how does it work?",
             a: "NeuroWealth is a decentralized finance platform built on the Stellar network that allows you to manage digital assets, participate in staking, and access various DeFi services. It uses blockchain technology to ensure transparency and security.",
           },
           {
+            id: "wallet-security",
             q: "Is my wallet secure on NeuroWealth?",
             a: "Yes, NeuroWealth prioritizes security. We never store your private keys or sensitive wallet information. All transactions require your explicit approval through your connected wallet. We use industry-standard encryption and security practices.",
           },
           {
+            id: "forgot-password",
             q: "What should I do if I forget my password?",
             a: "NeuroWealth doesn't store passwords - we rely on your wallet's security. If you forget your wallet password or seed phrase, you'll need to use your wallet's recovery process. Always keep your seed phrase secure and backed up.",
           },
           {
+            id: "transaction-slow",
             q: "Why is my transaction taking so long to confirm?",
             a: "Transaction times can vary based on network congestion and gas fees. Stellar transactions typically confirm within 3-5 seconds. If your transaction is pending, check the network status and ensure you've paid sufficient fees.",
           },
           {
+            id: "gas-fees",
             q: "What are gas fees and how are they calculated?",
             a: "Gas fees are small amounts of XLM paid to network validators for processing transactions. On Stellar, fees are minimal (currently 0.00001 XLM per operation) and predictable. The total fee depends on the number of operations in your transaction.",
           },
           {
+            id: "check-transaction-status",
             q: "How do I check my transaction status?",
             a: "You can check transaction status by using a Stellar block explorer like Stellar.expert or by checking your transaction history in your wallet. Enter the transaction ID to view details including confirmation status and network confirmations.",
           },
           {
+            id: "supported-tokens",
             q: "What tokens are supported on NeuroWealth?",
             a: "NeuroWealth supports all Stellar-based tokens including XLM, USDC, EURT, and other custom tokens. You can view supported tokens in the assets section of your dashboard.",
           },
           {
+            id: "add-custom-token",
             q: "How do I add a custom token to my wallet?",
             a: "To add a custom token, go to the Assets section, click \"Add Token,\" and enter the token's contract address. The system will verify the token and add it to your portfolio if it's valid.",
           },
           {
+            id: "staking-basics",
             q: "What is staking and how do I participate?",
             a: "Staking allows you to earn rewards by locking your tokens to support network operations. Navigate to the Staking section, select the amount you want to stake, choose a validator, and confirm the transaction. Rewards are distributed automatically.",
           },
           {
+            id: "staking-rewards",
             q: "When do I receive staking rewards?",
             a: "Staking rewards are typically distributed every 24-48 hours, depending on the validator and network conditions. You can view your pending and earned rewards in the Staking section of your dashboard.",
           },
           {
+            id: "contact-support",
             q: "How can I contact customer support?",
             a: "You can reach our support team through the Contact Support form on this help page, email us at support@neurowealth.com, or join our Discord community for real-time assistance from our team and community members.",
           },
@@ -1729,6 +1744,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         emailEmergency: "Email Emergency Team",
         issues: [
           {
+            id: "transaction-stuck-pending",
+            severity: "medium",
             title: "Transaction Stuck Pending",
             description: "Your transaction is not confirming and remains in pending state.",
             symptoms: [
@@ -1750,6 +1767,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "insufficient-balance",
+            severity: "high",
             title: "Insufficient Balance Error",
             description: "Transaction failed due to insufficient balance in your wallet.",
             symptoms: [
@@ -1771,6 +1790,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "wallet-connection",
+            severity: "high",
             title: "Wallet Connection Issues",
             description: "Unable to connect or maintain connection with your wallet.",
             symptoms: [
@@ -1794,6 +1815,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "bad-sequence",
+            severity: "medium",
             title: "Transaction Failed - Bad Sequence",
             description: "Transaction failed due to sequence number mismatch.",
             symptoms: [
@@ -1815,6 +1838,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "trustline-issues",
+            severity: "medium",
             title: "Trustline Issues",
             description: "Unable to hold or transact with certain tokens due to trustline problems.",
             symptoms: [
@@ -1836,6 +1861,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "high-network-fees",
+            severity: "low",
             title: "High Network Fees",
             description: "Transaction fees are higher than expected or changing unexpectedly.",
             symptoms: [
@@ -2633,50 +2660,62 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         },
         items: [
           {
+            id: "connect-wallet",
             q: "Comment connecter mon portefeuille à NeuroWealth ?",
             a: "Pour connecter votre portefeuille, cliquez sur le bouton « Connecter le portefeuille » dans la barre de navigation supérieure. Sélectionnez le portefeuille de votre choix (Freighter, Albedo ou un autre portefeuille Stellar), approuvez la demande de connexion et votre portefeuille sera connecté à la plateforme.",
           },
           {
+            id: "what-is-neurowealth",
             q: "Qu'est-ce que NeuroWealth et comment ça fonctionne ?",
             a: "NeuroWealth est une plateforme de finance décentralisée construite sur le réseau Stellar qui vous permet de gérer des actifs numériques, de participer au staking et d'accéder à divers services DeFi. Elle s'appuie sur la technologie blockchain pour garantir transparence et sécurité.",
           },
           {
+            id: "wallet-security",
             q: "Mon portefeuille est-il sécurisé sur NeuroWealth ?",
             a: "Oui, NeuroWealth fait de la sécurité une priorité. Nous ne stockons jamais vos clés privées ni les informations sensibles de votre portefeuille. Chaque transaction nécessite votre approbation explicite via votre portefeuille connecté. Nous appliquons un chiffrement et des pratiques de sécurité conformes aux standards du secteur.",
           },
           {
+            id: "forgot-password",
             q: "Que faire si j'oublie mon mot de passe ?",
             a: "NeuroWealth ne stocke pas de mots de passe : nous nous appuyons sur la sécurité de votre portefeuille. Si vous oubliez le mot de passe ou la phrase de récupération de votre portefeuille, vous devrez utiliser la procédure de récupération de celui-ci. Conservez toujours votre phrase de récupération en lieu sûr et sauvegardée.",
           },
           {
+            id: "transaction-slow",
             q: "Pourquoi ma transaction met-elle autant de temps à être confirmée ?",
             a: "Les délais de transaction peuvent varier selon la congestion du réseau et les frais. Les transactions Stellar sont généralement confirmées en 3 à 5 secondes. Si votre transaction est en attente, vérifiez l'état du réseau et assurez-vous d'avoir payé des frais suffisants.",
           },
           {
+            id: "gas-fees",
             q: "Que sont les frais de réseau et comment sont-ils calculés ?",
             a: "Les frais de réseau sont de petits montants de XLM versés aux validateurs pour le traitement des transactions. Sur Stellar, les frais sont minimes (actuellement 0,00001 XLM par opération) et prévisibles. Le total dépend du nombre d'opérations de votre transaction.",
           },
           {
+            id: "check-transaction-status",
             q: "Comment vérifier l'état de ma transaction ?",
             a: "Vous pouvez vérifier l'état d'une transaction avec un explorateur de blocs Stellar comme Stellar.expert ou dans l'historique des transactions de votre portefeuille. Saisissez l'identifiant de la transaction pour afficher les détails, dont l'état de confirmation et les confirmations du réseau.",
           },
           {
+            id: "supported-tokens",
             q: "Quels jetons sont pris en charge sur NeuroWealth ?",
             a: "NeuroWealth prend en charge tous les jetons basés sur Stellar, notamment XLM, USDC, EURT et d'autres jetons personnalisés. Vous pouvez consulter les jetons pris en charge dans la section des actifs de votre tableau de bord.",
           },
           {
+            id: "add-custom-token",
             q: "Comment ajouter un jeton personnalisé à mon portefeuille ?",
             a: "Pour ajouter un jeton personnalisé, accédez à la section Actifs, cliquez sur « Ajouter un jeton » et saisissez l'adresse du contrat du jeton. Le système vérifiera le jeton et l'ajoutera à votre portefeuille s'il est valide.",
           },
           {
+            id: "staking-basics",
             q: "Qu'est-ce que le staking et comment y participer ?",
             a: "Le staking vous permet de gagner des récompenses en bloquant vos jetons pour soutenir le fonctionnement du réseau. Accédez à la section Staking, sélectionnez le montant à staker, choisissez un validateur et confirmez la transaction. Les récompenses sont distribuées automatiquement.",
           },
           {
+            id: "staking-rewards",
             q: "Quand vais-je recevoir mes récompenses de staking ?",
             a: "Les récompenses de staking sont généralement distribuées toutes les 24 à 48 heures, selon le validateur et l'état du réseau. Vous pouvez consulter vos récompenses en attente et acquises dans la section Staking de votre tableau de bord.",
           },
           {
+            id: "contact-support",
             q: "Comment contacter le support client ?",
             a: "Vous pouvez joindre notre équipe d'assistance via le formulaire de contact de cette page d'aide, par e-mail à support@neurowealth.com, ou en rejoignant notre communauté Discord pour une aide en temps réel de la part de notre équipe et des membres de la communauté.",
           },
@@ -2761,6 +2800,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         emailEmergency: "Écrire à l'équipe d'urgence",
         issues: [
           {
+            id: "transaction-stuck-pending",
+            severity: "medium",
             title: "Transaction bloquée en attente",
             description: "Votre transaction n'est pas confirmée et reste en attente.",
             symptoms: [
@@ -2782,6 +2823,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "insufficient-balance",
+            severity: "high",
             title: "Erreur de solde insuffisant",
             description: "La transaction a échoué en raison d'un solde insuffisant dans votre portefeuille.",
             symptoms: [
@@ -2803,6 +2846,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "wallet-connection",
+            severity: "high",
             title: "Problèmes de connexion du portefeuille",
             description: "Impossible de connecter votre portefeuille ou de maintenir la connexion.",
             symptoms: [
@@ -2826,6 +2871,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "bad-sequence",
+            severity: "medium",
             title: "Transaction échouée - Mauvaise séquence",
             description: "La transaction a échoué à cause d'un numéro de séquence incorrect.",
             symptoms: [
@@ -2847,6 +2894,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "trustline-issues",
+            severity: "medium",
             title: "Problèmes de ligne de confiance",
             description: "Impossible de détenir certains jetons ou de transiger avec eux en raison de problèmes de ligne de confiance.",
             symptoms: [
@@ -2868,6 +2917,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
           {
+            id: "high-network-fees",
+            severity: "low",
             title: "Frais de réseau élevés",
             description: "Les frais de transaction sont plus élevés que prévu ou changent de façon inattendue.",
             symptoms: [

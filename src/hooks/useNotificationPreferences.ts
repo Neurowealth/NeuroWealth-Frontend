@@ -74,22 +74,6 @@ export function useNotificationPreferences() {
         NOTIFICATION_PREFERENCES_STORAGE_KEY,
         JSON.stringify(updated),
       );
-      if (typeof window !== "undefined") {
-        try {
-          const serialized = JSON.stringify(updated);
-          const storageEvent =
-            typeof window.StorageEvent === "function"
-              ? new window.StorageEvent("storage", {
-                  key: NOTIFICATION_PREFERENCES_STORAGE_KEY,
-                  newValue: serialized,
-                })
-              : new window.Event("storage");
-          window.dispatchEvent(storageEvent);
-          window.dispatchEvent(new window.Event("notification-preferences-updated"));
-        } catch {
-          // ignore dispatch issues in non-standard test environments
-        }
-      }
       return updated;
     });
   };
