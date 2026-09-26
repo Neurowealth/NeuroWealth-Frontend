@@ -4,8 +4,10 @@ import {
   clearOnboardingState,
   isOnboardingCompleted,
   loadOnboardingState,
+  resetOnboardingState,
   saveOnboardingState
 } from './onboarding-state';
+import { STORAGE_KEYS } from './storage-keys';
 
 function createLocalStorage() {
   const store = new Map<string, string>();
@@ -59,6 +61,34 @@ describe('onboarding-state adapter', () => {
   it('clears onboarding state from localStorage', () => {
     saveOnboardingState({ completed: true, timestamp: 1680000000000 });
     clearOnboardingState();
+    assert.strictEqual(loadOnboardingState(), null);
+  });
+
+  // Regression test for issue #954 — the flow reset used to leave the
+  // step-scoped strategy/deposit records behind.
+  it('resetOnboardingState clears the flow state and the step-scoped records', () => {
+    saveOnboardingState({ completed: true, lastStep: 2, timestamp: 1680000000000 });
+    globalThis.localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, 'aggressive');
+    globalThis.localStorage.setItem(
+      STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT,
+      JSON.stringify({ amount: 250, asset: 'xlm', isFirstDeposit: true }),
+    );
+
+    resetOnboardingState();
+
+    assert.strictEqual(loadOnboardingState(), null);
+    assert.strictEqual(
+      globalThis.localStorage.getItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY),
+      null,
+    );
+    assert.strictEqual(
+      globalThis.localStorage.getItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT),
+      null,
+    );
+  });
+
+  it('resetOnboardingState is a no-op when the storage is already empty', () => {
+    assert.doesNotThrow(() => resetOnboardingState());
     assert.strictEqual(loadOnboardingState(), null);
   });
 
