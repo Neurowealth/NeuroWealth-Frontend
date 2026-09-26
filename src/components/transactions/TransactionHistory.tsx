@@ -169,6 +169,7 @@ function formatAmount(amount: number | null, kind: HistoryKind): string {
   if (amount === null) return "—";
   const abs = formatCurrency(Math.abs(amount));
   if (kind === "withdrawal" || amount < 0) return `-${abs}`;
+  if (kind === "rebalance") return abs;
   return `+${abs}`;
 }
 
@@ -495,6 +496,11 @@ function DesktopTable({
 }) {
   const { messages } = useI18n();
   const t = messages.transactions.history;
+
+  if (!loading && (!data || data.items.length === 0)) {
+    return null;
+  }
+
   return (
     /* Spec: table with sticky header */
     <div className="hidden md:block overflow-hidden rounded-xl border border-white/8">
@@ -575,13 +581,7 @@ function DesktopTable({
                   </td>
                 </tr>
               ))
-            ) : (
-              <tr>
-                <td colSpan={6}>
-                  {/* empty state rendered outside the table for better layout */}
-                </td>
-              </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
