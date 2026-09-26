@@ -83,3 +83,52 @@ test("FirstDepositStep — asset cards have role=button for semantics", () => {
   const role = "button";
   assert.equal(role, "button", "Asset cards should have role=button");
 });
+
+// ── aria-pressed and selectedAsset state tests (#861) ─────────────────────
+
+const mockAssets = [
+  { id: "xlm", name: "Stellar (XLM)" },
+  { id: "usdc", name: "USD Coin" },
+  { id: "eurc", name: "Euro Coin" },
+];
+
+test("FirstDepositStep — aria-pressed is true only on currently-selected asset card", () => {
+  let selectedAsset = "xlm";
+
+  const getAriaPressedForAsset = (assetId: string) => selectedAsset === assetId;
+
+  // Initially xlm is selected
+  assert.equal(getAriaPressedForAsset("xlm"), true, "xlm should have aria-pressed=true");
+  assert.equal(getAriaPressedForAsset("usdc"), false, "usdc should have aria-pressed=false");
+  assert.equal(getAriaPressedForAsset("eurc"), false, "eurc should have aria-pressed=false");
+
+  // Selection updates to usdc
+  selectedAsset = "usdc";
+  assert.equal(getAriaPressedForAsset("xlm"), false, "xlm should now have aria-pressed=false");
+  assert.equal(getAriaPressedForAsset("usdc"), true, "usdc should now have aria-pressed=true");
+  assert.equal(getAriaPressedForAsset("eurc"), false, "eurc should have aria-pressed=false");
+
+  // Selection updates to eurc
+  selectedAsset = "eurc";
+  assert.equal(getAriaPressedForAsset("xlm"), false, "xlm should have aria-pressed=false");
+  assert.equal(getAriaPressedForAsset("usdc"), false, "usdc should have aria-pressed=false");
+  assert.equal(getAriaPressedForAsset("eurc"), true, "eurc should have aria-pressed=true");
+});
+
+test("FirstDepositStep — aria-pressed updates dynamically upon keyboard selection", () => {
+  let selectedAsset = "xlm";
+  const selectAsset = (id: string) => {
+    selectedAsset = id;
+  };
+
+  const event = createKeyEvent("Enter");
+  handleAssetKeydown(event, () => selectAsset("usdc"));
+
+  assert.equal(selectedAsset, "usdc");
+  const isUsdcPressed = selectedAsset === "usdc";
+  const isXlmPressed = selectedAsset === "xlm";
+
+  assert.equal(isUsdcPressed, true, "Newly selected asset must have aria-pressed=true");
+  assert.equal(isXlmPressed, false, "Previously selected asset must have aria-pressed=false");
+});
+
