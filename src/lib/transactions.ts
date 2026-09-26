@@ -238,7 +238,22 @@ function generateReference(kind: TransactionKind): string {
 }
 
 export function parseTransactionKind(value: string | null): TransactionKind {
-  return value === "withdrawal" ? "withdrawal" : "deposit";
+  if (value === "withdrawal") {
+    return "withdrawal";
+  }
+  
+  if (value === "deposit") {
+    return "deposit";
+  }
+  
+  // Warn on unrecognized values to help catch typos like "withdraw" vs "withdrawal"
+  if (value !== null && value !== "") {
+    console.warn(
+      `[parseTransactionKind] Unrecognized kind value "${value}". Expected "deposit" or "withdrawal". Defaulting to "deposit".`
+    );
+  }
+  
+  return "deposit";
 }
 
 export function parsePreviewState(value: string | null): TransactionPreviewState {

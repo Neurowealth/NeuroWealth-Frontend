@@ -277,7 +277,11 @@ export default function TransactionGuidance({ onContactSupport }: TransactionGui
               {t.emergencyBody}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" className="border-red-500/40 text-red-400 hover:bg-red-500/10">
+              <Button 
+                variant="secondary" 
+                className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+                onClick={() => (globalThis.location.href = '/dashboard/help#contact')}
+              >
                 {t.emergencySupport}
               </Button>
               <Button variant="ghost" onClick={() => globalThis.open('mailto:emergency@neurowealth.com')}>
