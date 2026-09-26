@@ -156,12 +156,12 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
         className="relative w-full max-w-full overflow-hidden border border-slate-800 bg-white dark:bg-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none motion-reduce:duration-0 motion-reduce:transform-none sm:max-w-[640px] sm:rounded-xl"
       >
         <div className="flex min-h-[56px] items-center border-b border-slate-800 px-4">
-          <Search className="mr-3 h-5 w-5 shrink-0 text-slate-400" />
+          <Search className="mr-3 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400" />
           <input
             ref={inputRef}
             type="text"
             placeholder="Search routes and actions... (Cmd+K)"
-            className="flex-1 border-none bg-transparent pt-[1px] text-slate-200 outline-none placeholder:text-slate-500"
+            className="flex-1 border-none bg-transparent pt-[1px] text-slate-900 dark:text-slate-200 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -182,7 +182,7 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
           className="max-h-[300px] overflow-y-auto p-2 sm:max-h-[400px]"
         >
           {filteredCommands.length === 0 && (
-            <li className="p-4 text-center text-sm text-slate-500">
+            <li className="p-4 text-center text-sm text-slate-600 dark:text-slate-500">
               No results found for &quot;{query}&quot;
             </li>
           )}
@@ -198,12 +198,12 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
                   "flex min-h-[44px] cursor-pointer items-center rounded-md px-4 py-2 text-sm transition-colors motion-reduce:transition-none",
                   isSelected
                     ? "bg-slate-800 text-sky-400"
-                    : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200",
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200",
                 )}
                 onClick={() => command.action()}
                 onMouseEnter={() => setSelectedIndex(index)}
               >
-                <command.icon className="mr-3 h-4 w-4 shrink-0" />
+                <command.icon className="mr-3 h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
                 <span>{command.name}</span>
               </li>
             );

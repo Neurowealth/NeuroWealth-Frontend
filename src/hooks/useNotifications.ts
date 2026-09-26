@@ -4,6 +4,24 @@ import { STORAGE_KEYS } from "@/lib/storage-keys";
 
 const NOTIFICATION_STORAGE_KEY = STORAGE_KEYS.NOTIFICATIONS_LIST;
 
+function isValidNotification(item: unknown): item is Notification {
+  if (typeof item !== "object" || item === null) return false;
+  const notification = item as Record<string, unknown>;
+  return (
+    typeof notification.id === "string" &&
+    typeof notification.title === "string" &&
+    typeof notification.message === "string" &&
+    typeof notification.timestamp === "string" &&
+    typeof notification.status === "string" &&
+    typeof notification.isRead === "boolean" &&
+    (notification.action === undefined ||
+      (typeof notification.action === "object" &&
+        notification.action !== null &&
+        typeof (notification.action as Record<string, unknown>).label === "string" &&
+        typeof (notification.action as Record<string, unknown>).href === "string"))
+  );
+}
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>(() => {
     if (typeof window === "undefined") return MOCK_NOTIFICATIONS;
@@ -11,7 +29,18 @@ export function useNotifications() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : MOCK_NOTIFICATIONS;
+        if (!Array.isArray(parsed)) {
+          localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(MOCK_NOTIFICATIONS));
+          return MOCK_NOTIFICATIONS;
+        }
+        // Validate each item's shape
+        const validNotifications = parsed.filter(isValidNotification);
+        if (validNotifications.length !== parsed.length) {
+          // Some items were invalid - replace with validated set
+          localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(validNotifications));
+          return validNotifications.length > 0 ? validNotifications : MOCK_NOTIFICATIONS;
+        }
+        return validNotifications;
       } catch {
         // Malformed JSON - fallback to mock and clear corrupted storage
         localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(MOCK_NOTIFICATIONS));
