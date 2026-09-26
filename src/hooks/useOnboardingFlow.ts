@@ -27,6 +27,7 @@ export interface OnboardingFlowControls {
   handleNext: () => void;
   handleBack: () => void;
   handleSkip: () => void;
+  handleStepSkip: () => void;
   handleStepClick: (stepIndex: number) => void;
   resetFlow: () => void;
 }
@@ -92,6 +93,20 @@ export function useOnboardingFlow({
     onSkip?.();
   }
 
+  // Per-step "Skip for Now" / "Decide Later": advance past the current step
+  // without completing the whole flow. Only the final step ends onboarding.
+  function handleStepSkip() {
+    if (currentStep < totalSteps - 1) {
+      const next = currentStep + 1;
+      setCurrentStep(next);
+      persist(next);
+    } else {
+      setIsCompleted(true);
+      persist(currentStep, true);
+      onComplete?.();
+    }
+  }
+
   function handleStepClick(stepIndex: number) {
     if (stepIndex <= currentStep + 1) {
       setCurrentStep(stepIndex);
@@ -111,6 +126,7 @@ export function useOnboardingFlow({
     handleNext,
     handleBack,
     handleSkip,
+    handleStepSkip,
     handleStepClick,
     resetFlow,
   };
