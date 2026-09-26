@@ -116,13 +116,17 @@ export default function WalletConnectButton({
       for (const mutation of mutationsList) {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
           for (const node of Array.from(mutation.addedNodes)) {
-            if (node instanceof HTMLElement && (node.matches('[class*="swk"]') || node.matches('[class*="modal"]'))) {
-              handleModalMutations(node);
-              const newModalObserver = new MutationObserver(() => handleModalMutations(node));
-              newModalObserver.observe(node, { childList: true, subtree: true });
-              modalObserverRef.current = newModalObserver;
-              observer.disconnect(); // Disconnect the root observer once the modal is found
-              return;
+            if (node instanceof HTMLElement) {
+              // Check if the node itself or any descendant matches the modal selector
+              const modalElement = node.querySelector('[class*="swk"]') || node.querySelector('[class*="modal"]');
+              if (modalElement) {
+                handleModalMutations(modalElement);
+                const newModalObserver = new MutationObserver(() => handleModalMutations(modalElement));
+                newModalObserver.observe(modalElement, { childList: true, subtree: true });
+                modalObserverRef.current = newModalObserver;
+                observer.disconnect(); // Disconnect the root observer once the modal is found
+                return;
+              }
             }
           }
         }

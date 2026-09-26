@@ -2,9 +2,11 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -203,17 +205,17 @@ export function ToastProvider({
   const [limit, setLimitState] = useState(defaultLimit);
   const countRef = useRef(0);
 
-  const dismissToast = (id: string) => {
+  const dismissToast = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
-  };
+  }, []);
 
-  const setLimit = (nextLimit: number) => {
+  const setLimit = useCallback((nextLimit: number) => {
     const safeLimit = Math.min(5, Math.max(1, nextLimit));
     setLimitState(safeLimit);
     setToasts((current) => current.slice(0, safeLimit));
-  };
+  }, []);
 
-  const pushToast = ({ title, description, variant = "info", duration }: ToastInput) => {
+  const pushToast = useCallback(({ title, description, variant = "info", duration }: ToastInput) => {
     countRef.current += 1;
     const id = `${baseId}-${countRef.current}`;
     const toast: ToastRecord = {
@@ -226,10 +228,15 @@ export function ToastProvider({
 
     setToasts((current) => [toast, ...current].slice(0, limit));
     return id;
-  };
+  }, [baseId, limit]);
+
+  const contextValue = useMemo(
+    () => ({ toasts, limit, setLimit, pushToast, dismissToast }),
+    [toasts, limit, setLimit, pushToast, dismissToast],
+  );
 
   return (
-    <ToastContext.Provider value={{ toasts, limit, setLimit, pushToast, dismissToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </ToastContext.Provider>
