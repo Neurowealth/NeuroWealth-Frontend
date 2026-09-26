@@ -64,6 +64,12 @@ describe("formatters", () => {
       const result = formatSignedCurrency(0);
       assert.ok(!result.match(/[\+\-]/));
     });
+
+    it("omits the sign when a small value rounds to zero", () => {
+      const result = formatSignedCurrency(-0.004);
+      assert.ok(!result.match(/[\+\-]/));
+      assert.ok(result.includes("0.00") || result.includes("0,00"));
+    });
   });
 
   describe("formatPercent", () => {
@@ -96,6 +102,12 @@ describe("formatters", () => {
       const result = formatSignedPercent(-3.2);
       assert.match(result, /-/);
       assert.ok(result.includes("%"));
+    });
+
+    it("omits the sign when a small percent rounds to zero", () => {
+      const result = formatSignedPercent(-0.04);
+      assert.ok(!result.match(/[\+\-]/));
+      assert.ok(result.includes("0.0%") || result.includes("0,0%"));
     });
   });
 
