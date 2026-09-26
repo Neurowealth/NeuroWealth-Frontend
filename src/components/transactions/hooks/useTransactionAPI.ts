@@ -79,7 +79,7 @@ export function useTransactionAPI() {
             }));
 
             try {
-                const payload = await apiRequest<{ quote: TransactionQuote }>(
+                const payload = await apiRequest<{ quote?: TransactionQuote }>(
                     "/api/transactions",
                     {
                         method: "POST",
@@ -94,6 +94,10 @@ export function useTransactionAPI() {
                 );
 
                 setState((prev) => ({ ...prev, isSubmitting: false }));
+
+                if (!payload.quote) {
+                    return { status: "error", fieldErrors: {} };
+                }
 
                 return { status: "success", quote: payload.quote };
             } catch (error) {

@@ -333,7 +333,7 @@ export const mockStrategyService: StrategyService = {
 // ─── Transaction service ──────────────────────────────────────────────────────
 
 export interface TransactionQuoteResult {
-  quote: TransactionQuote;
+  quote: TransactionQuote | null;
   fieldErrors: TransactionFieldErrors;
 }
 
@@ -379,7 +379,7 @@ export const mockTransactionService: TransactionService = {
 
     const fieldErrors = validateTransactionValues(kind, values);
     if (Object.keys(fieldErrors).length > 0) {
-      return { quote: buildTransactionQuote(kind, values), fieldErrors };
+      return { quote: null, fieldErrors };
     }
 
     return { quote: buildTransactionQuote(kind, values), fieldErrors: {} };
