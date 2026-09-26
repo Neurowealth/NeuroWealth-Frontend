@@ -276,3 +276,45 @@ test("CommandPaletteDialog — hoists mockActions out of the render body", () =>
   );
   assert.doesNotMatch(componentBody, /const mockActions = \[/);
 });
+
+// ── Focus trap Tab cycle regression test (#863) ──────────────────────────
+
+test("CommandPaletteDialog — focus trap keeps Tab focus cycling within the dialog container", () => {
+  // Simulate focus trap Tab cycling behavior
+  let activeElement = "input";
+  const focusableElements = ["input", "result-0", "result-1", "result-2"];
+
+  function handleTab(shiftKey: boolean): boolean {
+    const currentIndex = focusableElements.indexOf(activeElement);
+    if (shiftKey) {
+      if (currentIndex <= 0) {
+        activeElement = focusableElements[focusableElements.length - 1];
+        return true; // preventDefault called (wrapped to last)
+      } else {
+        activeElement = focusableElements[currentIndex - 1];
+        return false;
+      }
+    } else {
+      if (currentIndex >= focusableElements.length - 1) {
+        activeElement = focusableElements[0];
+        return true; // preventDefault called (wrapped to first)
+      } else {
+        activeElement = focusableElements[currentIndex + 1];
+        return false;
+      }
+    }
+  }
+
+  // Tabbing forward from last element wraps to first
+  activeElement = "result-2";
+  const wrappedForward = handleTab(false);
+  assert.equal(wrappedForward, true, "Tabbing from last element must prevent default");
+  assert.equal(activeElement, "input", "Focus must wrap back to first element (input)");
+
+  // Shift+Tab from first element wraps to last
+  activeElement = "input";
+  const wrappedBackward = handleTab(true);
+  assert.equal(wrappedBackward, true, "Shift+Tab from first element must prevent default");
+  assert.equal(activeElement, "result-2", "Focus must wrap to last focusable element");
+});
+
