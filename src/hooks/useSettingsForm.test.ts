@@ -351,4 +351,69 @@ describe("useSettingsForm", () => {
     assert.deepEqual(result.current.saved, { enabled: false });
     assert.deepEqual(result.current.draft, { enabled: false });
   });
+
+  it("dispatches a real StorageEvent while editing is true and verifies in-progress draft is not clobbered (#862)", async () => {
+    localStorage.setItem("test-key", JSON.stringify({ enabled: false }));
+
+    const { result } = renderHook(() =>
+      useSettingsForm<Draft>("test-key", { enabled: false }, { auditSection: "test", loadDelayMs: 0 }),
+    );
+
+    await act(async () => {
+      await flush(0);
+    });
+
+    act(() => {
+      result.current.setEditing(true);
+      result.current.setDraft({ enabled: true });
+    });
+
+    const realStorageEvent = new StorageEvent("storage", {
+      key: "test-key",
+      oldValue: JSON.stringify({ enabled: false }),
+      newValue: JSON.stringify({ enabled: false }),
+      url: window.location.href,
+      storageArea: localStorage,
+    });
+
+    await act(async () => {
+      window.dispatchEvent(realStorageEvent);
+      await flush(0);
+    });
+
+    assert.equal(result.current.editing, true);
+    assert.deepEqual(result.current.draft, { enabled: true });
+    assert.deepEqual(result.current.saved, { enabled: false });
+  });
+
+  it("merges stored data with defaultValue so missing fields are backfilled (#864)", async () => {
+    interface MultiFieldSettings {
+      enabled: boolean;
+      theme: string;
+      newRequiredField: string;
+    }
+
+    localStorage.setItem(
+      "test-migration-key",
+      JSON.stringify({ enabled: true, theme: "dark" }),
+    );
+
+    const { result } = renderHook(() =>
+      useSettingsForm<MultiFieldSettings>(
+        "test-migration-key",
+        { enabled: false, theme: "light", newRequiredField: "default-value" },
+        { auditSection: "test", loadDelayMs: 0 },
+      ),
+    );
+
+    await act(async () => {
+      await flush(0);
+    });
+
+    assert.deepEqual(result.current.saved, {
+      enabled: true,
+      theme: "dark",
+      newRequiredField: "default-value",
+    });
+  });
 });
