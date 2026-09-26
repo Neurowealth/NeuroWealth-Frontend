@@ -1,10 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 
+// Resolve the path to the central i18n messages definition file.
 const messagesPath = path.join(process.cwd(), 'src/lib/i18n/messages.ts');
+
+// Read the existing messages file so the required interfaces and
+// translations can be updated programmatically.
 let content = fs.readFileSync(messagesPath, 'utf8');
 
-// 1. Add domain interface to AppMessages.transactions
+
+// ============================================================
+// 1. Add the transaction domain interface
+// ============================================================
+// Defines the complete type structure for the new transaction
+// domain translations, including:
+// - Transaction context and descriptions
+// - Validation messages
+// - Pending transaction states
+// - Transaction receipts
+// - Status chips
+// - Error recovery messages
+//
+// This keeps the English/French message objects type-safe and
+// ensures all transaction-related translations share the same shape.
 const domainInterface = `
     domain: {
       context: {
@@ -84,11 +102,21 @@ const domainInterface = `
       };
     };`;
 
+// Insert the new transaction domain interface after the existing
+// transaction history/loading definitions.
 content = content.replace(
   /history: \{([^}]+|(?<=\{)[^}]+(?=\}))\n      loadingText: string;\n    \};\n  \};/,
   match => match + domainInterface
 );
 
+
+// ============================================================
+// 2. English transaction domain translations
+// ============================================================
+// Provides the English copy for all transaction-related UI states.
+//
+// The functions in validation and statusChips accept dynamic values
+// such as minimum amounts and available balances.
 const enDomain = `
       domain: {
         context: {
@@ -115,6 +143,9 @@ const enDomain = `
           usuallyCompletes: "Usually completes in under 20 seconds",
           networkFee: "Network fee shown at confirmation",
         },
+
+        // Validation messages displayed when transaction input
+        // does not meet the required conditions.
         validation: {
           connectFunding: "Connect a funding wallet before submitting a deposit.",
           reconnectVault: "Reconnect your vault wallet before withdrawing funds.",
@@ -127,6 +158,9 @@ const enDomain = `
           enterDestination: "Enter a destination wallet address.",
           validStellarAddress: "Use a valid Stellar public address that starts with G.",
         },
+
+        // Messages displayed while a transaction is being processed
+        // and has not reached its final state.
         pending: {
           statusLabel: "Pending on Stellar",
           submittingDeposit: "Submitting your deposit and waiting for network confirmation.",
@@ -134,17 +168,26 @@ const enDomain = `
           feeExpired: "Network fee estimate expired before submission. Refresh the quote and try again.",
           liquidityChanged: "Treasury liquidity changed mid-flight. Retry after reviewing the updated amount.",
         },
+
+        // Messages used on the final transaction receipt after
+        // successful or failed processing.
         receipt: {
           depositConfirmed: "Deposit confirmed and added to your active strategy.",
           withdrawalConfirmed: "Withdrawal confirmed and ready for your destination wallet.",
           failed: "Transaction failed before final settlement.",
           explorerAvailable: "Explorer reference available after backend wiring",
         },
+
+        // Short status indicators displayed alongside transaction
+        // information such as wallet requirements and capacity.
         statusChips: {
           walletRequired: "Wallet required",
           depositCapacity: (amt) => \`Deposit capacity \${amt}\`,
           withdrawalCapacity: (amt) => \`Available \${amt}\`,
         },
+
+        // Recovery messages shown when a transaction cannot be
+        // completed and the user needs to retry, edit, or contact support.
         recovery: {
           networkErrorTitle: "Connection lost",
           networkErrorDesc: "Your connection to the service was interrupted. Please check your network and try again, or contact support if the problem persists.",
@@ -168,17 +211,48 @@ const enDomain = `
         },
       },`;
 
-const frDomain = enDomain.replace(/domain: \{/g, 'domain: { /* TO DO FR */'); // Keeping same for FR just to fix compilation, or pseudo translate
 
+// ============================================================
+// 3. French transaction domain fallback
+// ============================================================
+// Reuses the English transaction domain structure for French so
+// the newly introduced fields exist in both message objects.
+// The comment makes it explicit that these values still need
+// proper French translations.
+const frDomain = enDomain.replace(
+  /domain: \{/g,
+  'domain: { /* TO DO FR */'
+);
+
+
+// ============================================================
+// 4. Add the English transaction domain
+// ============================================================
+// Locate the English transaction history section and append the
+// new domain translations immediately after it.
 content = content.replace(
   /history: \{([^}]+|(?<=\{)[^}]+(?=\}))\n        loadingText: "Loading history...",\n      \},\n    \},/g,
   match => match.slice(0, -2) + enDomain + '\n    },'
 );
 
+
+// ============================================================
+// 5. Add the French transaction domain
+// ============================================================
+// Locate the French transaction history section and append the
+// transaction domain so the French message object has the same
+// structure as the English one.
 content = content.replace(
   /history: \{([^}]+|(?<=\{)[^}]+(?=\}))\n        loadingText: "Chargement de l'historique...",\n      \},\n    \},/g,
   match => match.slice(0, -2) + enDomain + '\n    },'
 );
 
+
+// ============================================================
+// 6. Write the updated messages file
+// ============================================================
+// Persist all interface and translation changes back to the
+// central i18n messages file.
 fs.writeFileSync(messagesPath, content);
+
 console.log('Modified messages.ts');

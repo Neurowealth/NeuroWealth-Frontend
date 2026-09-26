@@ -1,9 +1,30 @@
 import os
 
+
+# ============================================================
+# 1. Load the i18n messages file
+# ============================================================
+# Read the existing messages.ts file so the transaction domain
+# translations and their TypeScript type definitions can be added.
 messages_path = "src/lib/i18n/messages.ts"
+
 with open(messages_path, "r") as f:
     msg_content = f.read()
 
+
+# ============================================================
+# 2. Define the English transaction domain translations
+# ============================================================
+# Contains all user-facing transaction messages grouped by purpose:
+# - context: titles, descriptions, hints, and transaction information
+# - validation: input and wallet validation messages
+# - pending: messages shown while a transaction is processing
+# - receipt: final transaction status messages
+# - statusChips: short transaction status indicators
+# - recovery: messages and actions for recoverable transaction errors
+#
+# Dynamic messages use functions so values such as amounts can be
+# inserted at runtime.
 en_domain = """
       domain: {
         context: {
@@ -30,6 +51,9 @@ en_domain = """
           usuallyCompletes: "Usually completes in under 20 seconds",
           networkFee: "Network fee shown at confirmation",
         },
+
+        // Validation messages displayed when transaction input,
+        // wallet state, or destination details are invalid.
         validation: {
           connectFunding: "Connect a funding wallet before submitting a deposit.",
           reconnectVault: "Reconnect your vault wallet before withdrawing funds.",
@@ -42,6 +66,9 @@ en_domain = """
           enterDestination: "Enter a destination wallet address.",
           validStellarAddress: "Use a valid Stellar public address that starts with G.",
         },
+
+        // Messages shown while deposits or withdrawals are still
+        // being processed and have not reached a final state.
         pending: {
           statusLabel: "Pending on Stellar",
           submittingDeposit: "Submitting your deposit and waiting for network confirmation.",
@@ -49,17 +76,25 @@ en_domain = """
           feeExpired: "Network fee estimate expired before submission. Refresh the quote and try again.",
           liquidityChanged: "Treasury liquidity changed mid-flight. Retry after reviewing the updated amount.",
         },
+
+        // Final messages displayed on the transaction receipt after
+        // a deposit or withdrawal succeeds or fails.
         receipt: {
           depositConfirmed: "Deposit confirmed and added to your active strategy.",
           withdrawalConfirmed: "Withdrawal confirmed and ready for your destination wallet.",
           failed: "Transaction failed before final settlement.",
           explorerAvailable: "Explorer reference available after backend wiring",
         },
+
+        // Short labels used in transaction status indicators.
         statusChips: {
           walletRequired: "Wallet required",
           depositCapacity: (amt: string) => `Deposit capacity ${amt}`,
           withdrawalCapacity: (amt: string) => `Available ${amt}`,
         },
+
+        // User-facing recovery messages for network, validation,
+        // timeout, server, quota, and transaction state errors.
         recovery: {
           networkErrorTitle: "Connection lost",
           networkErrorDesc: "Your connection to the service was interrupted. Please check your network and try again, or contact support if the problem persists.",
@@ -84,17 +119,42 @@ en_domain = """
       },
 """
 
+
+# ============================================================
+# 3. Add the transaction domain to the English messages
+# ============================================================
+# Locate the existing English transaction history section and
+# append the new domain translations after the history messages.
 msg_content = msg_content.replace(
     'loadingText: "Loading history...",\n      },\n    },',
     'loadingText: "Loading history...",\n      },\n' + en_domain + '    },'
 )
 
+
+# ============================================================
+# 4. Add the transaction domain to the French messages
+# ============================================================
+# The same transaction domain structure is currently reused for
+# the French message object so both locales satisfy the same
+# TypeScript shape.
+#
+# The values can be translated into French separately without
+# changing the structure of the message object.
 msg_content = msg_content.replace(
     'loadingText: "Chargement de l\'historique...",\n      },\n    },',
     'loadingText: "Chargement de l\'historique...",\n      },\n' + en_domain + '    },'
 )
 
-# And in AppMessages type definition
+
+# ============================================================
+# 5. Define the AppMessages transaction domain type
+# ============================================================
+# This mirrors the structure of en_domain above but contains
+# TypeScript types instead of actual translated strings.
+#
+# Keeping this type aligned with the translation objects allows
+# transaction helpers and React components to access the new
+# translation keys safely.
 app_messages_domain = """
     domain: {
       context: {
@@ -175,12 +235,25 @@ app_messages_domain = """
     };
 """
 
+
+# ============================================================
+# 6. Add the domain type to AppMessages if it is missing
+# ============================================================
+# Only insert the domain interface when the file does not already
+# contain a "domain" property. This prevents the script from
+# creating duplicate TypeScript definitions if it is run again.
 if 'domain: {' not in msg_content:
     msg_content = msg_content.replace(
         'loadingText: string;\n    };\n  };\n  audit: {',
         'loadingText: string;\n    };\n' + app_messages_domain + '  };\n  audit: {'
     )
 
+
+# ============================================================
+# 7. Save the updated messages file
+# ============================================================
+# Write the modified content back to messages.ts so the new
+# transaction translations and AppMessages type are persisted.
 with open(messages_path, "w") as f:
     f.write(msg_content)
 
