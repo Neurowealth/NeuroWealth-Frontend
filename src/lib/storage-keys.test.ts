@@ -5,10 +5,10 @@ import test from "node:test";
 
 import { getStorageKey, STORAGE_KEYS } from "./storage-keys";
 
-// Regression coverage for #581: OnboardingSettings previously hardcoded raw
-// localStorage key string literals ("user-strategy", "first-deposit") instead
-// of reading them from this registry. It has since been migrated to use
-// STORAGE_KEYS directly — these tests guard against that regressing.
+// Regression coverage for #581 + #954.
+// #581: the step-scoped onboarding keys must come from this registry, never raw
+// string literals. #954: both reset entry points must go through the shared
+// reset so the flow state and the step-scoped records are cleared together.
 
 test("getStorageKey returns the registered value for onboarding keys", () => {
   assert.equal(getStorageKey("ONBOARDING_USER_STRATEGY"), "user-strategy");
@@ -16,9 +16,9 @@ test("getStorageKey returns the registered value for onboarding keys", () => {
   assert.equal(getStorageKey("ONBOARDING_STATE"), "onboarding-state");
 });
 
-test("OnboardingSettings.tsx sources its localStorage keys from STORAGE_KEYS, not string literals", () => {
+test("onboarding-state.ts sources the step-scoped keys from STORAGE_KEYS, not string literals", () => {
   const source = fs.readFileSync(
-    path.join(process.cwd(), "src/components/settings/OnboardingSettings.tsx"),
+    path.join(process.cwd(), "src/lib/onboarding-state.ts"),
     "utf8",
   );
 
@@ -28,6 +28,22 @@ test("OnboardingSettings.tsx sources its localStorage keys from STORAGE_KEYS, no
   // Guard against re-introducing the raw literals the registry replaced.
   assert.doesNotMatch(source, /localStorage\.\w+\(\s*["']user-strategy["']/);
   assert.doesNotMatch(source, /localStorage\.\w+\(\s*["']first-deposit["']/);
+});
+
+test("both onboarding reset entry points call the shared reset helper", () => {
+  const settingsSource = fs.readFileSync(
+    path.join(process.cwd(), "src/components/settings/OnboardingSettings.tsx"),
+    "utf8",
+  );
+  const flowHookSource = fs.readFileSync(
+    path.join(process.cwd(), "src/hooks/useOnboardingFlow.ts"),
+    "utf8",
+  );
+
+  // #954 — a partial clear in either path is the regression this guards.
+  assert.match(settingsSource, /resetOnboardingState\(\)/);
+  assert.match(flowHookSource, /resetOnboardingState\(\)/);
+  assert.doesNotMatch(settingsSource, /localStorage\.removeItem/);
 });
 
 test("STORAGE_KEYS values are unique — no accidental key collisions", () => {

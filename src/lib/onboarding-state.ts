@@ -65,6 +65,27 @@ export function clearOnboardingState(): void {
   storage.removeItem(STORAGE_KEY);
 }
 
+/**
+ * Clears every localStorage record the onboarding flow writes: the flow state
+ * (owned by clearOnboardingState) plus the step-scoped strategy/deposit blobs
+ * written by StrategyOverviewStep/FirstDepositStep.
+ *
+ * Both reset entry points — "Review Onboarding" in OnboardingFlow and "Reset
+ * onboarding" in OnboardingSettings — call this single helper so the two paths
+ * can no longer drift apart (see #954).
+ */
+export function resetOnboardingState(): void {
+  try {
+    clearOnboardingState();
+
+    const storage = getStorage();
+    storage?.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
+    storage?.removeItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT);
+  } catch (error) {
+    logger.error('Failed to reset onboarding state:', error);
+  }
+}
+
 export function isOnboardingCompleted(): boolean {
   return loadOnboardingState()?.completed === true;
 }

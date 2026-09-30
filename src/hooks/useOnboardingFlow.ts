@@ -5,6 +5,7 @@
 // presentation component stays free of orchestration concerns.
 
 import { useState, useEffect } from 'react';
+import { resetOnboardingState } from '@/lib/onboarding-state';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 const STORAGE_KEY = STORAGE_KEYS.ONBOARDING_STATE;
@@ -102,6 +103,9 @@ export function useOnboardingFlow({
   function resetFlow() {
     setIsCompleted(false);
     setCurrentStep(0);
+    // Shared reset so "Review Onboarding" also drops the step-scoped
+    // strategy/deposit records instead of leaving stale data behind (#954).
+    resetOnboardingState();
     persist(0, false);
   }
 
