@@ -18,8 +18,83 @@ export interface ImageCropProps {
 }
 
 const HANDLE_HIT = 12; // px hit area per spec (8–12px)
+const KEY_STEP = 0.02;
+const KEY_STEP_SHIFT = 0.08;
 
 type Handle = "nw" | "ne" | "sw" | "se";
+
+const HANDLE_LABELS: Record<Handle, string> = {
+  nw: "North-west corner, resize crop with arrow keys",
+  ne: "North-east corner, resize crop with arrow keys",
+  sw: "South-west corner, resize crop with arrow keys",
+  se: "South-east corner, resize crop with arrow keys",
+};
+
+function cropStep(shiftKey: boolean): number {
+  return shiftKey ? KEY_STEP_SHIFT : KEY_STEP;
+}
+
+function moveCropByKey(key: string, crop: CropState, step: number): CropState | null {
+  switch (key) {
+    case "ArrowLeft":
+      return { ...crop, x: crop.x - step };
+    case "ArrowRight":
+      return { ...crop, x: crop.x + step };
+    case "ArrowUp":
+      return { ...crop, y: crop.y - step };
+    case "ArrowDown":
+      return { ...crop, y: crop.y + step };
+    default:
+      return null;
+  }
+}
+
+function resizeCropByKey(
+  handle: Handle,
+  key: string,
+  crop: CropState,
+  step: number,
+  clamp: (v: number, lo: number, hi: number) => number,
+): CropState | null {
+  if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) return null;
+
+  let { x, y, size } = crop;
+  const grow =
+    (handle === "se" && (key === "ArrowRight" || key === "ArrowDown")) ||
+    (handle === "nw" && (key === "ArrowLeft" || key === "ArrowUp")) ||
+    (handle === "ne" && (key === "ArrowRight" || key === "ArrowUp")) ||
+    (handle === "sw" && (key === "ArrowLeft" || key === "ArrowDown"));
+  const delta = grow ? -step : step;
+
+  if (handle === "se") {
+    const ns = clamp(size - delta, 0.1, Math.min(1 - x, 1 - y));
+    return { x, y, size: ns };
+  }
+  if (handle === "nw") {
+    const ns = clamp(size - delta, 0.1, 1);
+    return { x: x + (size - ns), y: y + (size - ns), size: ns };
+  }
+  if (handle === "ne") {
+    const ns = clamp(size - delta, 0.1, Math.min(1 - x, 1));
+    return { x, y: y + (size - ns), size: ns };
+  }
+  if (handle === "sw") {
+    const ns = clamp(size - delta, 0.1, Math.min(1, 1 - y));
+    return { x: x + (size - ns), y, size: ns };
+  }
+  return null;
+}
+
+function isCropArrowKey(key: string): boolean {
+  return key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight";
+}
+
+function handleMaxSizePercent(h: Handle, crop: CropState): number {
+  return Math.round(Math.min(
+    h.includes("w") ? crop.x + crop.size : 1 - crop.x,
+    h.includes("n") ? crop.y + crop.size : 1 - crop.y,
+  ) * 100);
+}
 
 interface CropState {
   x: number; y: number; size: number;
@@ -54,42 +129,19 @@ export default function ImageCrop({
     onCropChange?.({ ...c });
   }, [onCropChange]);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, type: Handle | "move") => {
-    const step = e.shiftKey ? 0.05 : 0.01;
-    if (type === "move") {
-      const offsets: Record<string, [number, number]> = {
-        ArrowLeft: [-step, 0],
-        ArrowRight: [step, 0],
-        ArrowUp: [0, -step],
-        ArrowDown: [0, step],
-      };
-      const offset = offsets[e.key];
-      if (!offset) return;
-      e.preventDefault();
-      e.stopPropagation();
-      updateCrop({ ...crop, x: crop.x + offset[0], y: crop.y + offset[1] });
-      return;
-    }
-
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+  const onCropKeyDown = useCallback((
+    e: React.KeyboardEvent,
+    mode: Handle | "move",
+  ) => {
+    if (!isCropArrowKey(e.key)) return;
     e.preventDefault();
     e.stopPropagation();
-
-    const expands = e.key === "ArrowLeft" ? type.includes("w")
-      : e.key === "ArrowRight" ? type.includes("e")
-        : e.key === "ArrowUp" ? type.includes("n")
-          : type.includes("s");
-    const maxSize = Math.min(
-      type.includes("w") ? crop.x + crop.size : 1 - crop.x,
-      type.includes("n") ? crop.y + crop.size : 1 - crop.y,
-    );
-    const nextSize = clamp(crop.size + (expands ? step : -step), 0.1, maxSize);
-    updateCrop({
-      x: type.includes("w") ? crop.x + crop.size - nextSize : crop.x,
-      y: type.includes("n") ? crop.y + crop.size - nextSize : crop.y,
-      size: nextSize,
-    });
-  };
+    const step = cropStep(e.shiftKey);
+    const next = mode === "move"
+      ? moveCropByKey(e.key, crop, step)
+      : resizeCropByKey(mode, e.key, crop, step, clamp);
+    if (next) updateCrop(next);
+  }, [crop, updateCrop]);
 
   const getRelative = useCallback((e: MouseEvent | TouchEvent) => {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -205,6 +257,10 @@ export default function ImageCrop({
           <>
             {/* Bright crop region */}
             <div
+              role="group"
+              tabIndex={0}
+              aria-label="Move crop area"
+              aria-description="Use the arrow keys to move the crop area. Hold Shift to move farther."
               style={{
                 position: "absolute",
                 left, top,
@@ -214,13 +270,11 @@ export default function ImageCrop({
                 cursor: dragging === "move" ? "grabbing" : "grab",
                 outline: "1.5px solid rgba(255,255,255,0.7)",
               }}
-              role="group"
-              tabIndex={0}
-              aria-label="Move crop area"
-              aria-description="Use the arrow keys to move the crop area. Hold Shift to move farther."
               onMouseDown={(e) => onMouseDown(e, "move")}
               onTouchStart={(e) => onMouseDown(e, "move")}
-              onKeyDown={(e) => onKeyDown(e, "move")}
+              onKeyDown={(e) => onCropKeyDown(e, "move")}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.55), 0 0 0 2px #6366f1"; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.55)"; }}
             >
               {/* Grid lines */}
               {[33, 66].map((p) => (
@@ -236,18 +290,17 @@ export default function ImageCrop({
                   key={h}
                   role="slider"
                   tabIndex={0}
+                  aria-label={HANDLE_LABELS[h]}
                   aria-valuemin={10}
-                  aria-valuemax={Math.round(Math.min(
-                    h.includes("w") ? crop.x + crop.size : 1 - crop.x,
-                    h.includes("n") ? crop.y + crop.size : 1 - crop.y,
-                  ) * 100)}
+                  aria-valuemax={handleMaxSizePercent(h, crop)}
                   aria-valuenow={Math.round(crop.size * 100)}
                   aria-valuetext={`${Math.round(crop.size * 100)}% crop size`}
                   aria-orientation="horizontal"
                   onMouseDown={(e) => onMouseDown(e, h)}
                   onTouchStart={(e) => onMouseDown(e, h)}
-                  aria-label={`${h} resize handle`}
-                  onKeyDown={(e) => onKeyDown(e, h)}
+                  onKeyDown={(e) => onCropKeyDown(e, h)}
+                  onFocus={(e) => { e.currentTarget.style.outline = "2px solid #6366f1"; e.currentTarget.style.outlineOffset = "2px"; }}
+                  onBlur={(e) => { e.currentTarget.style.outline = "none"; }}
                   style={{
                     position: "absolute",
                     width: HANDLE_HIT * 2,
