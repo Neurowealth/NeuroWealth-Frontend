@@ -26,13 +26,6 @@ function getApyFormatter() {
   });
 }
 
-function getCompactFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
-}
-
 function getPreciseCurrencyFormatter() {
   return new Intl.NumberFormat(getActiveIntlLocale(), {
     style: "currency",
@@ -122,13 +115,6 @@ export function formatApy(value: number): string {
  */
 export function formatApyRange(min: number, max: number): string {
   return `${formatApy(min)}–${formatApy(max)}`;
-}
-
-/**
- * Compact number formatting (e.g. 12.3K, 1.2M) for dense widgets. Locale-aware.
- */
-export function formatCompactNumber(value: number): string {
-  return getCompactFormatter().format(value);
 }
 
 /**

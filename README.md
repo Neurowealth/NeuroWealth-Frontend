@@ -76,9 +76,16 @@ src/
 │   ├── dashboard/         # Protected dashboard shell and sub-routes
 │   │   ├── dev-errors/    # Dev-only error trigger routes (hidden in production)
 │   │   ├── portfolio/
+│   │   ├── async-states/
+│   │   ├── audit/
 │   │   ├── activity/
+│   │   ├── help/
+│   │   ├── history/
+│   │   ├── notifications/
+│   │   ├── sandbox/
 │   │   ├── strategy/
-│   │   └── settings/
+│   │   ├── settings/
+│   │   └── transactions/
 │   ├── demo/              # Dev-only demo pages and UI probes
 │   ├── docs/              # Reference docs pages and examples
 │   ├── login/             # Login entry flow and redirect handling

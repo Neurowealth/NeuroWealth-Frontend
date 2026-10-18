@@ -19,12 +19,8 @@
  * Next.js server → Real backend (NEUROWEALTH_API_BASE_URL)
  *   All proxied requests must include:
  *     Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>
- *   Use createServerApiClient() in route handlers instead of calling fetch
- *   directly so the token is attached consistently. If the backend endpoint
- *   returns its own raw JSON shape rather than this app's {success,data}
- *   envelope (or the caller needs to forward status/content-type verbatim),
- *   use createServerFetcher() instead — same auth injection, no envelope
- *   parsing.
+ *   Use createServerFetcher() in route handlers instead of calling fetch
+ *   directly so the token is attached consistently.
  *
  * ── Timeout ───────────────────────────────────────────────────────────────────
  *
@@ -190,10 +186,6 @@ function toJsonBody(body: ApiRequestOptions["body"]): BodyInit | null | undefine
  * @example — internal Next.js route (browser)
  *   const portfolio = await apiRequest<PortfolioPayload>("/api/portfolio");
  *
- * @example — server route handler calling the real backend
- *   const client = createServerApiClient();
- *   const portfolio = await client<PortfolioPayload>("/portfolio/overview");
- *
  * @example — authenticated request with explicit headers
  *   const data = await apiRequest<MyType>("/api/resource", {
  *     method: "POST",
@@ -291,13 +283,16 @@ export async function apiRequest<T>(
 }
 
 /**
- * Create a pre-configured apiRequest caller for server-side route handlers
- * that proxy to the real backend (NEUROWEALTH_API_BASE_URL).
+ * Create a pre-configured raw fetch for server-side route handlers that proxy
+ * to the real backend (NEUROWEALTH_API_BASE_URL) but need the unparsed
+ * Response — e.g. because the backend returns its own JSON shape rather than
+ * this app's {success,data} envelope, or the caller needs to forward the
+ * backend's status/content-type verbatim instead of unwrapping it.
  *
  * Automatically injects:
- *   - baseUrl  from NEUROWEALTH_API_BASE_URL
  *   - Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN> (server credential)
  *   - X-User-Identity: <userIdentity> (per-user identity from session)
+ * and resolves `path` against NEUROWEALTH_API_BASE_URL via resolveServerEndpoint.
  *
  * Trust Model:
  *   The backend receives two credentials:
@@ -313,60 +308,6 @@ export async function apiRequest<T>(
  *   - Backend can distinguish between users (per-user identity)
  *   - Backend trusts the frontend source (shared server credential)
  *   - Backend can enforce user-specific access controls
- *
- * Usage in a Next.js route handler:
- *   const client = createServerApiClient(userIdentity);
- *   if (!client) {
- *     // NEUROWEALTH_API_BASE_URL is not set — fall back to demo data
- *   } else {
- *     const data = await client<PortfolioPayload>("/portfolio/overview");
- *   }
- *
- * Returns null when NEUROWEALTH_API_BASE_URL is not configured so callers
- * can cleanly branch to demo/mock mode without checking env themselves.
- */
-export function createServerApiClient(
-  userIdentity?: string,
-): (<T>(
-  path: string,
-  options?: Omit<ApiRequestOptions, "baseUrl">,
-) => Promise<T>) | null {
-  const baseUrl = process.env.NEUROWEALTH_API_BASE_URL;
-  if (!baseUrl) return null;
-
-  const token = process.env.NEUROWEALTH_API_AUTH_TOKEN;
-
-  return function serverApiRequest<T>(
-    path: string,
-    options: Omit<ApiRequestOptions, "baseUrl"> = {},
-  ): Promise<T> {
-    const headers = new Headers(options.headers);
-    if (token && !headers.has("Authorization")) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    if (userIdentity && !headers.has("X-User-Identity")) {
-      headers.set("X-User-Identity", userIdentity);
-    }
-    return apiRequest<T>(path, { ...options, baseUrl, headers });
-  };
-}
-
-/**
- * Create a pre-configured raw fetch for server-side route handlers that proxy
- * to the real backend (NEUROWEALTH_API_BASE_URL) but need the unparsed
- * Response — e.g. because the backend returns its own JSON shape rather than
- * this app's {success,data} envelope, or the caller needs to forward the
- * backend's status/content-type verbatim instead of unwrapping it.
- *
- * Automatically injects:
- *   - Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN> (server credential)
- *   - X-User-Identity: <userIdentity> (per-user identity from session)
- * and resolves `path` against NEUROWEALTH_API_BASE_URL via resolveServerEndpoint.
- *
- * Trust Model:
- *   See createServerApiClient() documentation for the dual-credential approach.
- *   The backend receives both a shared server credential (Authorization) and
- *   a per-user identity (X-User-Identity) to enable proper authorization.
  *
  * Usage in a Next.js route handler:
  *   const fetchBackend = createServerFetcher(userIdentity);

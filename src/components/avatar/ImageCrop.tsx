@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
 
 export interface CropResult {
   x: number; // 0–1 relative coords
@@ -277,17 +278,11 @@ export default function ImageCrop({
   const size = `${crop.size * 100}%`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {/* Crop canvas */}
       <div
         ref={containerRef}
-        style={{
-          position: "relative",
-          userSelect: "none",
-          borderRadius: 8,
-          overflow: "hidden",
-          background: "#000",
-        }}
+        className="relative overflow-hidden rounded-lg bg-black select-none"
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- 
             Exception: Raw <img> required for canvas-based cropping logic (drawImage) 
@@ -298,28 +293,13 @@ export default function ImageCrop({
           alt="Crop preview"
           draggable={false}
           onLoad={() => setReady(true)}
-          style={{
-            display: "block",
-            width: "100%",
-            height: "auto",
-            opacity: 0.45,
-            pointerEvents: "none",
-          }}
+          className="block h-auto w-full opacity-45 pointer-events-none"
         />
 
         {ready && (
           <>
             {/* Visually-hidden instructions for screen readers */}
-            <div
-              id="crop-move-instructions"
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                width: 1,
-                height: 1,
-                overflow: "hidden",
-              }}
-            >
+            <div id="crop-move-instructions" className="sr-only">
               Use the arrow keys to move the crop area. Hold Shift to move
               farther.
             </div>
@@ -330,51 +310,30 @@ export default function ImageCrop({
               tabIndex={0}
               aria-label="Move crop area"
               aria-describedby="crop-move-instructions"
+              className={`absolute rounded outline-[1.5px] outline-white/70 ${
+                dragging === "move" ? "cursor-grabbing" : "cursor-grab"
+              } focus:outline-2 focus:outline-sky-500 dark:focus:outline-sky-400 focus:-outline-offset-1`}
               style={{
-                position: "absolute",
                 left,
                 top,
                 width: size,
                 height: size,
                 boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
-                borderRadius: 4,
-                cursor: dragging === "move" ? "grabbing" : "grab",
-                outline: "1.5px solid rgba(255,255,255,0.7)",
               }}
               onMouseDown={(e) => onMouseDown(e, "move")}
               onTouchStart={(e) => onMouseDown(e, "move")}
               onKeyDown={(e) => onCropKeyDown(e, "move")}
-              onFocus={(e) => {
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 9999px rgba(0,0,0,0.55), 0 0 0 2px #6366f1";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 9999px rgba(0,0,0,0.55)";
-              }}
             >
               {/* Grid lines */}
               {[33, 66].map((p) => (
                 <React.Fragment key={p}>
                   <div
-                    style={{
-                      position: "absolute",
-                      left: `${p}%`,
-                      top: 0,
-                      bottom: 0,
-                      width: "0.5px",
-                      background: "rgba(255,255,255,0.25)",
-                    }}
+                    className="absolute top-0 bottom-0 w-[0.5px] bg-white/25"
+                    style={{ left: `${p}%` }}
                   />
                   <div
-                    style={{
-                      position: "absolute",
-                      top: `${p}%`,
-                      left: 0,
-                      right: 0,
-                      height: "0.5px",
-                      background: "rgba(255,255,255,0.25)",
-                    }}
+                    className="absolute left-0 right-0 h-[0.5px] bg-white/25"
+                    style={{ top: `${p}%` }}
                   />
                 </React.Fragment>
               ))}
@@ -394,15 +353,12 @@ export default function ImageCrop({
                   onMouseDown={(e) => onMouseDown(e, h)}
                   onTouchStart={(e) => onMouseDown(e, h)}
                   onKeyDown={(e) => onCropKeyDown(e, h)}
-                  onFocus={(e) => {
-                    e.currentTarget.style.outline = "2px solid #6366f1";
-                    e.currentTarget.style.outlineOffset = "2px";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.outline = "none";
-                  }}
+                  className={`absolute z-[2] flex items-center justify-center focus:outline-none focus-visible:outline-2 focus-visible:outline-sky-500 dark:focus-visible:outline-sky-400 focus-visible:outline-offset-2 ${
+                    h === "nw" || h === "se"
+                      ? "cursor-nwse-resize"
+                      : "cursor-nesw-resize"
+                  }`}
                   style={{
-                    position: "absolute",
                     width: HANDLE_HIT * 2,
                     height: HANDLE_HIT * 2,
                     ...(h.includes("n")
@@ -411,23 +367,9 @@ export default function ImageCrop({
                     ...(h.includes("w")
                       ? { left: -HANDLE_HIT }
                       : { right: -HANDLE_HIT }),
-                    cursor:
-                      h === "nw" || h === "se" ? "nwse-resize" : "nesw-resize",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 2,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      background: "#fff",
-                      borderRadius: 2,
-                      border: "1.5px solid #6366f1",
-                    }}
-                  />
+                  <div className="h-2.5 w-2.5 rounded-[2px] border-[1.5px] border-sky-500 bg-white dark:border-sky-400 dark:bg-slate-900" />
                 </div>
               ))}
             </div>
@@ -436,47 +378,24 @@ export default function ImageCrop({
       </div>
 
       {/* Hidden canvas for output */}
-      <canvas ref={canvasRef} style={{ display: "none" }} />
+      <canvas ref={canvasRef} className="hidden" />
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+      <div className="flex justify-end gap-2">
         {onCancel && (
-          <button
-            onClick={onCancel}
-            style={{
-              fontFamily: "inherit",
-              fontSize: 13,
-              cursor: "pointer",
-              border: "0.5px solid #374151",
-              background: "transparent",
-              color: "#9ca3af",
-              borderRadius: 6,
-              padding: "6px 14px",
-              transition: "background 0.12s",
-            }}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
-        <button
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
           onClick={handleConfirm}
           disabled={!ready}
-          style={{
-            fontFamily: "inherit",
-            fontSize: 13,
-            cursor: ready ? "pointer" : "default",
-            border: "none",
-            background: "#6366f1",
-            color: "#fff",
-            borderRadius: 6,
-            padding: "6px 16px",
-            fontWeight: 500,
-            opacity: ready ? 1 : 0.5,
-            transition: "opacity 0.12s",
-          }}
         >
           Apply crop
-        </button>
+        </Button>
       </div>
     </div>
   );

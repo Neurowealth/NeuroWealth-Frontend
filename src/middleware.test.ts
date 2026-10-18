@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isSessionCookieValid } from "../middleware";
+import { isSessionCookieValid } from "./lib/api-auth";
 
 function makeCookie(token = "t", expiresOffset = 60_000) {
   const payload = { token, expiresAt: Date.now() + expiresOffset };

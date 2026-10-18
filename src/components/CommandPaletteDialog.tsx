@@ -153,9 +153,9 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
         role="dialog"
         aria-modal="true"
         aria-label="Command Palette"
-        className="relative w-full max-w-full overflow-hidden border border-slate-800 bg-white dark:bg-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none motion-reduce:duration-0 motion-reduce:transform-none sm:max-w-[640px] sm:rounded-xl"
+        className="relative w-full max-w-full overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none motion-reduce:duration-0 motion-reduce:transform-none sm:max-w-[640px] sm:rounded-xl"
       >
-        <div className="flex min-h-[56px] items-center border-b border-slate-800 px-4">
+        <div className="flex min-h-[56px] items-center border-b border-slate-200 dark:border-slate-800 px-4">
           <Search className="mr-3 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400" />
           <input
             ref={inputRef}
@@ -197,8 +197,8 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
                 className={cn(
                   "flex min-h-[44px] cursor-pointer items-center rounded-md px-4 py-2 text-sm transition-colors motion-reduce:transition-none",
                   isSelected
-                    ? "bg-slate-800 text-sky-400"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200",
+                    ? "bg-slate-100 text-sky-600 dark:bg-slate-800 dark:text-sky-400"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800/50 dark:hover:text-slate-200",
                 )}
                 onClick={() => command.action()}
                 onMouseEnter={() => setSelectedIndex(index)}

@@ -22,6 +22,7 @@ import { useSandbox } from "@/contexts/SandboxContext";
 import { SandboxBadge } from "@/components/ui/SandboxBadge";
 import { useAsyncState } from "@/hooks/useAsyncState";
 import { NotificationListSkeleton } from "@/components/ui/Skeleton";
+import { DataBoundary } from "@/components/ui/DataBoundary";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,16 @@ function NotificationInbox() {
   }, [scenario, fetchNotifications]);
 
   const simLoading = fetchState.status === "loading";
+  const simError = fetchState.status === "error" ? fetchState.error : null;
+
+  const handleRetry = () => {
+    fetchNotifications(async () => {
+      await new Promise((r) => setTimeout(r, 1000));
+      return MOCK_NOTIFICATIONS;
+    }).then(() => {
+      setItems(MOCK_NOTIFICATIONS);
+    });
+  };
 
   const markAllRead = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })));
   const markRead = (id: string) => setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
@@ -146,7 +157,7 @@ function NotificationInbox() {
           )}
         </div>
         {isSandboxMode && <SandboxBadge scenario={scenario} />}
-        {scenario === "success" && unreadCount > 0 && (
+        {scenario === "success" && unreadCount > 0 && !simLoading && !simError && (
           <button
             onClick={markAllRead}
             className="text-xs text-sky-400 hover:text-sky-300 transition-colors"
@@ -156,33 +167,35 @@ function NotificationInbox() {
         )}
       </div>
 
-      {simLoading && <NotificationListSkeleton items={4} />}
-
-      {!simLoading && scenario === "empty" && (
-        <EmptyState
-          icon={<BellOff className="h-8 w-8" aria-hidden="true" />}
-          heading="No notifications yet"
-          body="You're all caught up. New alerts for deposits, yield payouts, security events, and portfolio changes will appear here."
-          ctaLabel="Manage notification settings"
-          ctaHref="/dashboard/settings/notifications"
-        />
-      )}
-
-      {!simLoading && scenario === "partial-failure" && (
-        <>
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="text-sm text-amber-300">Some notifications could not be loaded. Showing partial results.</p>
+      <DataBoundary
+        loading={simLoading}
+        error={simError}
+        onRetry={handleRetry}
+        skeleton={<NotificationListSkeleton items={4} />}
+        label="notifications"
+      >
+        {scenario === "empty" ? (
+          <EmptyState
+            icon={<BellOff className="h-8 w-8" aria-hidden="true" />}
+            heading="No notifications yet"
+            body="You're all caught up. New alerts for deposits, yield payouts, security events, and portfolio changes will appear here."
+            ctaLabel="Manage notification settings"
+            ctaHref="/dashboard/settings/notifications"
+          />
+        ) : scenario === "partial-failure" ? (
+          <>
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+              <p className="text-sm text-amber-300">Some notifications could not be loaded. Showing partial results.</p>
+            </div>
+            {items.slice(0, 2).map((n) => <NotificationRow key={n.id} item={n} onRead={markRead} />)}
+          </>
+        ) : (
+          <div className="space-y-2" role="list" aria-label="Notifications">
+            {items.map((n) => <NotificationRow key={n.id} item={n} onRead={markRead} />)}
           </div>
-          {items.slice(0, 2).map((n) => <NotificationRow key={n.id} item={n} onRead={markRead} />)}
-        </>
-      )}
-
-      {!simLoading && (scenario === "success" || scenario === "timeout") && (
-        <div className="space-y-2" role="list" aria-label="Notifications">
-          {items.map((n) => <NotificationRow key={n.id} item={n} onRead={markRead} />)}
-        </div>
-      )}
+        )}
+      </DataBoundary>
     </div>
   );
 }

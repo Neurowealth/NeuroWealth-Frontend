@@ -20,6 +20,7 @@ export * from "./Tooltip";
 export { Drawer } from "./Drawer";
 export { DataTable } from "./DataTable";
 export type { DataTableColumn, DataTableProps } from "./DataTable";
+export { DataBoundary } from "./DataBoundary";
 // Skeleton loading components
 export {
   Skeleton,

@@ -56,12 +56,12 @@ export function WalletStatusBadge({
 
   return (
     <div
-      className="rounded-lg border border-surface-border bg-surface p-3 space-y-2"
+      className={`rounded-lg border border-surface-border bg-surface ${sizeClasses[size]} space-y-2`}
       data-qa="wallet-status-badge"
     >
       {/* Wallet Connection Status */}
       <div className="flex items-center gap-2">
-        <CheckCircleIcon className="w-4 h-4 text-success" />
+        <CheckCircleIcon className={`${iconSizeClasses[size]} text-success`} />
         <div className="flex-1">
           <p className="text-xs text-text-muted font-medium uppercase">
             Wallet
@@ -74,7 +74,9 @@ export function WalletStatusBadge({
 
       {/* Public Key / Address */}
       <div className="flex items-start gap-2 pt-2 border-t border-surface-border">
-        <WalletIcon className="w-4 h-4 text-text-secondary mt-0.5 flex-shrink-0" />
+        <WalletIcon
+          className={`${iconSizeClasses[size]} text-text-secondary mt-0.5 flex-shrink-0`}
+        />
         <div className="flex-1 min-w-0">
           <p className="text-xs text-text-muted font-medium uppercase">
             Address
@@ -94,9 +96,9 @@ export function WalletStatusBadge({
           }`}
         >
           {networkStatus.hasMismatch ? (
-            <WarningIcon className="w-4 h-4" />
+            <WarningIcon className={`${iconSizeClasses[size]}`} />
           ) : (
-            <CheckCircleIcon className="w-4 h-4" />
+            <CheckCircleIcon className={`${iconSizeClasses[size]}`} />
           )}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium uppercase">Network</p>

@@ -9,7 +9,6 @@ import {
   formatCurrencyPrecise,
   formatApy,
   formatApyRange,
-  formatCompactNumber,
   formatCompactCurrency,
   formatTimestamp,
   formatSyncLabel,
@@ -175,25 +174,6 @@ describe("formatters", () => {
       const result = formatApyRange(4.25, 4.25);
       assert.ok(result.includes("–"));
       assert.ok(result.includes("4.25") || result.includes("4,25"));
-    });
-  });
-
-  describe("formatCompactNumber", () => {
-    it("compacts large numbers", () => {
-      const result = formatCompactNumber(12300);
-      // Compact formatting should produce something like "12.3K"
-      assert.ok(result.length <= 6);
-    });
-
-    it("handles millions", () => {
-      const result = formatCompactNumber(1200000);
-      // Should be compact (e.g., "1.2M")
-      assert.ok(result.length <= 6);
-    });
-
-    it("formats small numbers without compacting", () => {
-      const result = formatCompactNumber(500);
-      assert.ok(result.includes("500") || result.length <= 5);
     });
   });
 
