@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+
+const source = readFileSync(
+  new URL("./EmptyState.tsx", import.meta.url),
+  "utf8",
+);
 
 interface EmptyStateProps {
   icon?: boolean;
@@ -61,11 +67,6 @@ test("EmptyState — empty heading edge case is allowed", () => {
 });
 
 test("EmptyState — renders CTA link with Next Link instead of a plain anchor tag", () => {
-  const { readFileSync } = require("node:fs");
-  const source = readFileSync(
-    new URL("./EmptyState.tsx", import.meta.url),
-    "utf8",
-  );
   assert.match(source, /import Link from "next\/link";/);
   assert.match(source, /<Link href=\{ctaHref\}>/);
   assert.doesNotMatch(source, /<a href=\{ctaHref\}>/);
