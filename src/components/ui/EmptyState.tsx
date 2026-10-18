@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "./Button";
@@ -60,11 +61,11 @@ export function EmptyState({
       </p>
 
       {ctaLabel && ctaHref && (
-        <a href={ctaHref}>
+        <Link href={ctaHref}>
           <Button variant="primary" size="md">
             {ctaLabel}
           </Button>
-        </a>
+        </Link>
       )}
 
       {ctaLabel && onAction && !ctaHref && (

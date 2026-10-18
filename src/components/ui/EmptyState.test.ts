@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+
+const source = readFileSync(
+  new URL("./EmptyState.tsx", import.meta.url),
+  "utf8",
+);
 
 interface EmptyStateProps {
   icon?: boolean;
@@ -58,4 +64,10 @@ test("EmptyState — no CTA when only ctaLabel but no href/action", () => {
 test("EmptyState — empty heading edge case is allowed", () => {
   const props: EmptyStateProps = { heading: "", body: "Some body" };
   assert.equal(props.heading, "");
+});
+
+test("EmptyState — renders CTA link with Next Link instead of a plain anchor tag", () => {
+  assert.match(source, /import Link from "next\/link";/);
+  assert.match(source, /<Link href=\{ctaHref\}>/);
+  assert.doesNotMatch(source, /<a href=\{ctaHref\}>/);
 });
