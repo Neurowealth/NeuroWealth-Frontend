@@ -164,6 +164,14 @@ export interface AppMessages {
       emptyActivity: string;
       noAmount: string;
     };
+dashboard: {
+  notFound: {
+    title: "Dashboard page not found",
+    desc: "The dashboard page you're looking for doesn't exist or has been removed. Try navigating using the menu or go back to the main dashboard.",
+    backDashboard: "Back to dashboard",
+    goPortfolio: "Go to portfolio"
+  }
+},
 
   };
   settings: {
