@@ -164,6 +164,11 @@ export interface AppMessages {
       emptyActivity: string;
       noAmount: string;
     };
+    notFound: {
+      title: string;
+      description: string;
+      backButton: string;
+      };
   };
   settings: {
     index: {
