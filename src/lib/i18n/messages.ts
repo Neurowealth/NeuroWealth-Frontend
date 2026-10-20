@@ -281,6 +281,7 @@ export interface AppMessages {
         desc: string;
       };
       actions: {
+        groupLabel: string;
         edit: string;
         unsaved: string;
         noPending: string;
@@ -879,6 +880,9 @@ export interface AppMessages {
     emailDigest: string;
     push: string;
   };
+  toast: {
+    categories: Record<"success" | "info" | "warning" | "error", string>;
+  };
   globalSearch: {
     label: string;
     placeholder: string;
@@ -1291,6 +1295,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "High-risk account events may be missed until you re-enable security coverage.",
         },
         actions: {
+          groupLabel: "Notification settings actions",
           edit: "Edit Preferences",
           unsaved: "Unsaved changes",
           noPending: "No pending changes",
@@ -2095,6 +2100,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       emailDigest: "Email Digest",
       push: "Push Notifications",
     },
+    toast: {
+      categories: {
+        success: "Success",
+        info: "Info",
+        warning: "Warning",
+        error: "Error",
+      },
+    },
     globalSearch: {
       label: "Global search",
       placeholder: "Search pages, actions, or records",
@@ -2502,6 +2515,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "Les événements de compte à haut risque peuvent être manqués jusqu'à ce que vous réactiviez la couverture de sécurité.",
         },
         actions: {
+          groupLabel: "Actions des paramètres de notification",
           edit: "Modifier les préférences",
           unsaved: "Modifications non enregistrées",
           noPending: "Aucune modification en attente",
@@ -3305,6 +3319,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       inApp: "Notifications in-app",
       emailDigest: "Résumé par e-mail",
       push: "Notifications push",
+    },
+    toast: {
+      categories: {
+        success: "Succès",
+        info: "Information",
+        warning: "Avertissement",
+        error: "Erreur",
+      },
     },
     globalSearch: {
       label: "Recherche globale",

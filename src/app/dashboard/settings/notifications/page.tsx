@@ -276,7 +276,7 @@ export default function NotificationsSettingsPage() {
           className="sticky bottom-6 z-overlay flex flex-col gap-3 rounded-2xl border border-slate-700/60 bg-slate-950/90 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur md:flex-row md:items-center md:justify-between"
           style={{ paddingBottom: "max(1rem, calc(1rem + var(--sai-bottom, 0px)))" }}
           role="group"
-          aria-label="Notification settings actions"
+          aria-label={t.actions.groupLabel}
         >
           <div className="flex items-center gap-2 text-sm text-amber-300">
             <AlertCircle className="h-4 w-4" />
