@@ -36,6 +36,13 @@ describe("ImageCrop keyboard controls", () => {
     assert.ok(Math.abs(Number.parseFloat((moveRegion as HTMLElement).style.width) - 82) < 0.01);
   });
 
+  it("provides at least 44px hit area for corner resize handles to support touch", () => {
+    const { handle } = setup();
+    const se = handle(/south-east corner/i);
+    assert.equal(se.style.width, "44px");
+    assert.equal(se.style.height, "44px");
+  });
+
   function setup() {
     const view = render(<ImageCrop src="test-image.jpg" />);
     fireEvent.load(view.getByAltText("Crop preview"));
