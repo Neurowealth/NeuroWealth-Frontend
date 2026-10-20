@@ -7,6 +7,7 @@ import Pagination from "./Pagination";
 import EmptyStateCompact from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { formatNumber } from "@/lib/formatters";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Strategy {
   id: string;
@@ -133,6 +134,8 @@ export default function StrategyList() {
   const [page, setPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const itemsPerPage = 6;
+  const { messages } = useI18n();
+  const t = messages;
 
   // Build filter options with counts
   const filterOptions: FilterOption[] = useMemo(() => {
@@ -149,66 +152,66 @@ export default function StrategyList() {
     return [
       {
         id: "risk-low",
-        label: "Low Risk",
+        label: t.strategyList.filters.lowRisk,
         group: "risk",
         count: riskCounts.low,
       },
       {
         id: "risk-medium",
-        label: "Medium Risk",
+        label: t.strategyList.filters.mediumRisk,
         group: "risk",
         count: riskCounts.medium,
       },
       {
         id: "risk-high",
-        label: "High Risk",
+        label: t.strategyList.filters.highRisk,
         group: "risk",
         count: riskCounts.high,
       },
       {
         id: "cat-growth",
-        label: "Growth",
+        label: t.strategyList.filters.growth,
         group: "category",
         count: categoryCounts.growth,
       },
       {
         id: "cat-income",
-        label: "Income",
+        label: t.strategyList.filters.income,
         group: "category",
         count: categoryCounts.income,
       },
       {
         id: "cat-balanced",
-        label: "Balanced",
+        label: t.strategyList.filters.balanced,
         group: "category",
         count: categoryCounts.balanced,
       },
       {
         id: "cat-defensive",
-        label: "Defensive",
+        label: t.strategyList.filters.defensive,
         group: "category",
         count: categoryCounts.defensive,
       },
       {
         id: "status-active",
-        label: "Active",
+        label: t.strategyList.filters.active,
         group: "status",
         count: statusCounts.active,
       },
       {
         id: "status-paused",
-        label: "Paused",
+        label: t.strategyList.filters.paused,
         group: "status",
         count: statusCounts.paused,
       },
       {
         id: "status-archived",
-        label: "Archived",
+        label: t.strategyList.filters.archived,
         group: "status",
         count: statusCounts.archived,
       },
     ];
-  }, []);
+  }, [t]);
 
   // Filter strategies based on selected chips
   const filtered = useMemo(() => {
@@ -249,10 +252,10 @@ export default function StrategyList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="m-0 text-base font-medium text-slate-900 dark:text-slate-50">
-          Investment Strategies
+          {t.strategyList.title}
         </h2>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {totalItems} results
+          {totalItems} {t.strategyList.results}
         </span>
       </div>
 
@@ -298,7 +301,7 @@ export default function StrategyList() {
             <div className="flex justify-between border-t border-slate-200 pt-2.5 dark:border-slate-800">
               <div>
                 <p className="m-0 text-[10px] font-medium text-slate-500 dark:text-slate-500">
-                  RETURN
+                  {t.strategyList.statReturn}
                 </p>
                 <p className="mt-0.5 mb-0 text-sm font-semibold text-emerald-600 dark:text-emerald-500">
                   {strategy.returnRate.toFixed(1)}%
@@ -306,7 +309,7 @@ export default function StrategyList() {
               </div>
               <div className="text-right">
                 <p className="m-0 text-[10px] font-medium text-slate-500 dark:text-slate-500">
-                  PARTICIPANTS
+                  {t.strategyList.statParticipants}
                 </p>
                 <p className="mt-0.5 mb-0 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                   {formatNumber(strategy.participants)}
@@ -320,7 +323,7 @@ export default function StrategyList() {
       {items.length === 0 && (
         <EmptyStateCompact
           icon={SearchX}
-          title="No strategies match the selected filters."
+          title={t.strategyList.noResults}
         />
       )}
 

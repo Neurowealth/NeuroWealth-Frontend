@@ -166,9 +166,19 @@ export interface AppMessages {
     };
   };
   settings: {
+    nav: {
+      sidebarLabel: string;
+      navigationLabel: string;
+      title: string;
+      preferences: string;
+      security: string;
+      notifications: string;
+      privacy: string;
+    };
     index: {
       title: string;
       subtitle: string;
+      onboardingTitle: string;
       appearance: {
         title: string;
         themeTitle: string;
@@ -317,6 +327,14 @@ export interface AppMessages {
         warning: string;
         changeAction: string;
       };
+      passwordStrength: {
+        tooShort: string;
+        weak: string;
+        medium: string;
+        strong: string;
+        strengthLabel: string;
+        minCharsHint: string;
+      };
       twoFactor: {
         title: string;
         desc: string;
@@ -389,6 +407,9 @@ export interface AppMessages {
         balanced: { title: string; riskLabel: string; description: string; primaryAction: string };
         growth: { title: string; riskLabel: string; description: string; primaryAction: string };
       };
+      loadError: string;
+      saveError: string;
+      retry: string;
     };
     onboarding: {
       title: string;
@@ -1180,9 +1201,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       },
     },
     settings: {
+      nav: {
+        sidebarLabel: "Settings sidebar",
+        navigationLabel: "Settings navigation",
+        title: "Settings",
+        preferences: "Preferences",
+        security: "Security",
+        notifications: "Notifications",
+        privacy: "Privacy",
+      },
       index: {
         title: "Settings",
         subtitle: "Manage your account preferences and connected wallet.",
+        onboardingTitle: "Onboarding",
         appearance: {
           title: "Appearance",
           themeTitle: "Theme",
@@ -1331,6 +1362,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           warning: "Your password is over 90 days old. Consider updating it.",
           changeAction: "Change password",
         },
+        passwordStrength: {
+          tooShort: "Too short (min 8 chars)",
+          weak: "Weak",
+          medium: "Medium",
+          strong: "Strong",
+          strengthLabel: "Strength:",
+          minCharsHint: "Must be at least 8 characters",
+        },
         twoFactor: {
           title: "Two-Factor Authentication",
           desc: "Add an extra layer of security to your account.",
@@ -1418,6 +1457,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             primaryAction: "Select Growth",
           },
         },
+        loadError: "Unable to load your saved strategy. You can still pick one below.",
+        saveError: "Failed to save strategy. Please try again.",
+        retry: "Retry",
       },
       onboarding: {
         title: "Onboarding Settings",
@@ -2400,9 +2442,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       },
     },
     settings: {
+      nav: {
+        sidebarLabel: "Barre latérale des paramètres",
+        navigationLabel: "Navigation des paramètres",
+        title: "Paramètres",
+        preferences: "Préférences",
+        security: "Sécurité",
+        notifications: "Notifications",
+        privacy: "Confidentialité",
+      },
       index: {
         title: "Paramètres",
         subtitle: "Gérez les préférences de votre compte et votre portefeuille connecté.",
+        onboardingTitle: "Configuration initiale",
         appearance: {
           title: "Apparence",
           themeTitle: "Thème",
@@ -2551,6 +2603,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           warning: "Votre mot de passe date de plus de 90 jours. Pensez à le mettre à jour.",
           changeAction: "Changer le mot de passe",
         },
+        passwordStrength: {
+          tooShort: "Trop court (min 8 caractères)",
+          weak: "Faible",
+          medium: "Moyen",
+          strong: "Fort",
+          strengthLabel: "Force :",
+          minCharsHint: "Doit contenir au moins 8 caractères",
+        },
         twoFactor: {
           title: "Authentification à deux facteurs",
           desc: "Ajoutez une couche de sécurité supplémentaire à votre compte.",
@@ -2638,6 +2698,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             primaryAction: "Choisir Croissance",
           },
         },
+        loadError: "Impossible de charger votre stratégie enregistrée. Vous pouvez tout de même en choisir une ci-dessous.",
+        saveError: "Échec de l'enregistrement de la stratégie. Veuillez réessayer.",
+        retry: "Réessayer",
       },
       onboarding: {
         title: "Paramètres d'intégration",

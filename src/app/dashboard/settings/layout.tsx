@@ -1,38 +1,43 @@
+"use client";
+
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { messages } = useI18n();
+  const t = messages.settings;
   return (
     <ProtectedRoute>
       <Navbar />
       <div className="settings-layout">
-        <aside className="settings-sidebar" aria-label="Settings sidebar">
-          <nav className="settings-nav" aria-label="Settings navigation">
-            <h2 className="settings-nav-title">Settings</h2>
+        <aside className="settings-sidebar" aria-label={t.nav.sidebarLabel}>
+          <nav className="settings-nav" aria-label={t.nav.navigationLabel}>
+            <h2 className="settings-nav-title">{t.nav.title}</h2>
             <ul className="settings-nav-list">
               <li>
                 <Link href="/dashboard/settings/preferences" className="settings-nav-link">
-                  Preferences
+                  {t.nav.preferences}
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard/settings/security" className="settings-nav-link">
-                  Security
+                  {t.nav.security}
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard/settings/notifications" className="settings-nav-link">
-                  Notifications
+                  {t.nav.notifications}
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard/settings/privacy" className="settings-nav-link">
-                  Privacy
+                  {t.nav.privacy}
                 </Link>
               </li>
             </ul>

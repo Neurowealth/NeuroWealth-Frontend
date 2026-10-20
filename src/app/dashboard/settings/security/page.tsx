@@ -56,7 +56,7 @@ export default function SecurityPage() {
     return <SettingsSectionSkeleton rows={3} />;
   }
 
-  const getPasswordStrength = (pass: string) => {
+  const getPasswordStrength = (pass: string, labels: typeof t.passwordStrength) => {
     if (!pass) return { score: 0, label: "", color: "" };
     let score = 0;
     if (pass.length >= 8) score++;
@@ -65,18 +65,18 @@ export default function SecurityPage() {
     if (/[^A-Za-z0-9]/.test(pass)) score++;
 
     if (pass.length < 8) {
-      return { score: 1, label: "Too short (min 8 chars)", color: "#f43f5e" };
+      return { score: 1, label: labels.tooShort, color: "#f43f5e" };
     }
     if (score <= 2) {
-      return { score: 2, label: "Weak", color: "#fbbf24" };
+      return { score: 2, label: labels.weak, color: "#fbbf24" };
     }
     if (score === 3) {
-      return { score: 3, label: "Medium", color: "#38bdf8" };
+      return { score: 3, label: labels.medium, color: "#38bdf8" };
     }
-    return { score: 4, label: "Strong", color: "#34d399" };
+    return { score: 4, label: labels.strong, color: "#34d399" };
   };
 
-  const passwordStrength = getPasswordStrength(newPassword);
+  const passwordStrength = getPasswordStrength(newPassword, t.passwordStrength);
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) return;
@@ -303,13 +303,13 @@ export default function SecurityPage() {
           {newPassword && (
             <div className="mt-2 text-xs">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-slate-400">Strength:</span>
+                <span className="text-slate-400">{t.passwordStrength.strengthLabel}</span>
                 <span style={{ color: passwordStrength.color, fontWeight: 600 }}>
                   {passwordStrength.label}
                 </span>
               </div>
               {newPassword.length < 8 && (
-                <p style={{ color: "#f43f5e", marginTop: 4 }}>Must be at least 8 characters</p>
+                <p style={{ color: "#f43f5e", marginTop: 4 }}>{t.passwordStrength.minCharsHint}</p>
               )}
             </div>
           )}

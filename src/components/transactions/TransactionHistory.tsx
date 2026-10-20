@@ -145,11 +145,11 @@ function statusLabel(status: HistoryStatus, t: HistoryMessages): string {
 function kindIcon(kind: HistoryKind) {
   switch (kind) {
     case "deposit":
-      return <ArrowDownCircle size={16} className="text-emerald-400 shrink-0" aria-hidden />;
+      return <ArrowDownCircle size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />;
     case "withdrawal":
-      return <ArrowUpCircle size={16} className="text-sky-400 shrink-0" aria-hidden />;
+      return <ArrowUpCircle size={16} className="text-sky-600 dark:text-sky-400 shrink-0" aria-hidden />;
     case "rebalance":
-      return <RefreshCw size={16} className="text-amber-400 shrink-0" aria-hidden />;
+      return <RefreshCw size={16} className="text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />;
   }
 }
 
@@ -173,10 +173,10 @@ function formatAmount(amount: number | null, kind: HistoryKind): string {
 }
 
 function amountColor(amount: number | null, kind: HistoryKind): string {
-  if (amount === null) return "text-slate-500";
-  if (kind === "deposit") return "text-emerald-400";
-  if (kind === "withdrawal") return "text-red-400";
-  return "text-slate-400";
+  if (amount === null) return "text-slate-400 dark:text-slate-500";
+  if (kind === "deposit") return "text-emerald-600 dark:text-emerald-400";
+  if (kind === "withdrawal") return "text-red-600 dark:text-red-400";
+  return "text-slate-600 dark:text-slate-400";
 }
 
 function truncateHash(hash: string): string {
@@ -204,14 +204,14 @@ interface TxHashLinkProps {
 
 function TxHashLink({ txHash }: TxHashLinkProps) {
   if (!txHash) {
-    return <span className="text-slate-600 text-xs font-mono">—</span>;
+    return <span className="text-slate-400 dark:text-slate-600 text-xs font-mono">—</span>;
   }
   return (
     <a
       href={`${EXPLORER_BASE}/${txHash}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 font-mono text-xs text-slate-500 hover:text-sky-400 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
+      className="inline-flex items-center gap-1 font-mono text-xs text-slate-500 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
       title={txHash}
     >
       {truncateHash(txHash)}
@@ -228,7 +228,7 @@ function SkeletonRows({ count }: { count: number }) {
           {Array.from({ length: 6 }).map((__, j) => (
             <td key={j} className="px-4 py-3">
               <span
-                className="block h-3.5 rounded bg-white/5 animate-pulse"
+                className="block h-3.5 rounded bg-slate-200 dark:bg-white/5 animate-pulse"
                 style={{ width: j === 1 ? "70%" : j === 2 ? "50%" : "60%" }}
               />
             </td>
@@ -245,18 +245,18 @@ function SkeletonCards({ count }: { count: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-white/5 bg-white/3 p-4 space-y-3 animate-pulse"
+          className="rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/3 p-4 space-y-3 animate-pulse"
           aria-hidden
         >
           <div className="flex justify-between">
-            <span className="h-3 w-24 rounded bg-white/5 block" />
-            <span className="h-5 w-16 rounded-full bg-white/5 block" />
+            <span className="h-3 w-24 rounded bg-slate-200 dark:bg-white/5 block" />
+            <span className="h-5 w-16 rounded-full bg-slate-200 dark:bg-white/5 block" />
           </div>
-          <span className="h-4 w-48 rounded bg-white/5 block" />
-          <span className="h-3 w-36 rounded bg-white/5 block" />
+          <span className="h-4 w-48 rounded bg-slate-200 dark:bg-white/5 block" />
+          <span className="h-3 w-36 rounded bg-slate-200 dark:bg-white/5 block" />
           <div className="flex justify-between pt-1">
-            <span className="h-3 w-28 rounded bg-white/5 block" />
-            <span className="h-4 w-20 rounded bg-white/5 block" />
+            <span className="h-3 w-28 rounded bg-slate-200 dark:bg-white/5 block" />
+            <span className="h-4 w-20 rounded bg-slate-200 dark:bg-white/5 block" />
           </div>
         </div>
       ))}
@@ -282,9 +282,9 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
 
   return (
     <div className="flex items-center justify-between gap-4 px-1 pt-4">
-      <p className="text-xs text-slate-500">
-        {t.showing} <span className="text-slate-300">{start}–{end}</span> {t.of}{" "}
-        <span className="text-slate-300">{total}</span>
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        {t.showing} <span className="text-slate-700 dark:text-slate-300">{start}–{end}</span> {t.of}{" "}
+        <span className="text-slate-700 dark:text-slate-300">{total}</span>
       </p>
       <div className="flex items-center gap-1" role="navigation" aria-label={t.paginationLabel}>
         <button
@@ -292,7 +292,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
           aria-label={t.previousPage}
-          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
         >
           <ChevronLeft size={14} aria-hidden />
         </button>
@@ -307,7 +307,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
             className={`inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
               n === page
                 ? "bg-sky-500 text-white font-semibold"
-                : "border border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                : "border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
             }`}
           >
             {n}
@@ -319,7 +319,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }: PaginationPro
           onClick={() => onPage(page + 1)}
           disabled={page >= totalPages}
           aria-label={t.nextPage}
-          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
         >
           <ChevronRight size={14} aria-hidden />
         </button>
@@ -348,7 +348,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
     <div className="space-y-3">
       {/* Type chips */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-slate-500 font-medium mr-1 shrink-0" id="kind-filter-label">
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mr-1 shrink-0" id="kind-filter-label">
           {t.type}
         </span>
         <div role="group" aria-labelledby="kind-filter-label" className="flex flex-wrap gap-1.5">
@@ -361,7 +361,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
                 filter.kind === chip.value
                   ? "bg-sky-500 border-sky-500 text-white"
-                  : "border-white/15 text-slate-400 hover:text-white hover:border-white/30 bg-transparent"
+                  : "border-slate-200 dark:border-white/15 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/30 bg-transparent"
               }`}
             >
               {chip.label}
@@ -372,7 +372,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
 
       {/* Status chips */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-slate-500 font-medium mr-1 shrink-0" id="status-filter-label">
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mr-1 shrink-0" id="status-filter-label">
           {t.status}
         </span>
         <div role="group" aria-labelledby="status-filter-label" className="flex flex-wrap gap-1.5">
@@ -385,7 +385,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
                 filter.status === chip.value
                   ? "bg-sky-500 border-sky-500 text-white"
-                  : "border-white/15 text-slate-400 hover:text-white hover:border-white/30 bg-transparent"
+                  : "border-slate-200 dark:border-white/15 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/30 bg-transparent"
               }`}
             >
               {chip.label}
@@ -396,7 +396,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
 
       {/* Date range */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-slate-500 font-medium shrink-0">{t.dateRange}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">{t.dateRange}</span>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label htmlFor="date-from" className="sr-only">
@@ -407,11 +407,11 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               type="date"
               value={filter.dateFrom}
               onChange={(e) => dispatch({ type: "SET_DATE_FROM", value: e.target.value })}
-              className="h-8 rounded-lg border border-white/15 bg-white/5 px-2.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+              className="h-8 rounded-lg border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-2.5 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
               aria-label={t.fromDate}
             />
           </div>
-          <span className="text-slate-600 text-xs">{t.to}</span>
+          <span className="text-slate-400 dark:text-slate-600 text-xs">{t.to}</span>
           <div className="flex flex-col gap-0.5">
             <label htmlFor="date-to" className="sr-only">
               {t.toDate}
@@ -421,7 +421,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
               type="date"
               value={filter.dateTo}
               onChange={(e) => dispatch({ type: "SET_DATE_TO", value: e.target.value })}
-              className="h-8 rounded-lg border border-white/15 bg-white/5 px-2.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+              className="h-8 rounded-lg border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-2.5 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
               aria-label={t.toDate}
             />
           </div>
@@ -431,7 +431,7 @@ function FilterBar({ filter, dispatch }: FilterBarProps) {
           <button
             type="button"
             onClick={() => dispatch({ type: "RESET" })}
-            className="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
+            className="text-xs text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 rounded"
           >
             {t.clearFilters}
           </button>
@@ -459,70 +459,70 @@ function DesktopTable({
 
   return (
     /* Spec: table with sticky header */
-    <div className="hidden md:block overflow-hidden rounded-xl border border-white/8">
+    <div className="hidden md:block overflow-hidden rounded-xl border border-slate-200 dark:border-white/8">
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10 bg-slate-900 border-b border-white/8">
+          <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-white/8">
             <tr>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[130px]"
+                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[130px]"
               >
                 {t.type}
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
               >
                 {t.description}
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[160px]"
+                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[160px]"
               >
                 {t.date}
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-[120px]"
+                className="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[120px]"
               >
                 {messages.transactions.shared.amount}
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[100px]"
+                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[100px]"
               >
                 {t.status}
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[140px]"
+                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[140px]"
               >
                 {t.txHash}
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {loading ? (
               <SkeletonRows count={PAGE_SIZE} />
             ) : data && data.items.length > 0 ? (
               data.items.map((item) => (
                 <tr
                   key={item.id}
-                  className="hover:bg-white/3 transition-colors"
+                  className="hover:bg-slate-50 dark:hover:bg-white/3 transition-colors"
                 >
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-2 text-slate-300">
+                    <span className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       {kindIcon(item.kind)}
                       <span className="text-xs font-medium">{kindLabel(item.kind, t)}</span>
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-slate-200 text-sm leading-snug">{item.title}</p>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-snug">{item.detail}</p>
+                    <p className="text-slate-800 dark:text-slate-200 text-sm leading-snug">{item.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{item.detail}</p>
                   </td>
                   {/* Spec: timestamp in muted monospace */}
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {formatTimestamp(item.occurredAt)}
                   </td>
                   <td className={`px-4 py-3 text-right font-mono text-sm font-semibold ${amountColor(item.amount, item.kind)}`}>
@@ -565,10 +565,10 @@ function MobileCards({
         data.items.map((item) => (
           <article
             key={item.id}
-            className="rounded-xl border border-white/8 bg-white/3 p-4 space-y-2.5"
+            className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/3 p-4 space-y-2.5"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
                 {kindIcon(item.kind)}
                 {kindLabel(item.kind, t)}
               </span>
@@ -576,13 +576,13 @@ function MobileCards({
             </div>
 
             <div>
-              <p className="text-sm font-medium text-slate-200 leading-snug">{item.title}</p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-snug">{item.detail}</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">{item.title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{item.detail}</p>
             </div>
 
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-white/5">
               {/* Spec: timestamp in muted monospace */}
-              <span className="font-mono text-xs text-slate-500">
+              <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
                 {formatTimestamp(item.occurredAt)}
               </span>
               <span
@@ -595,7 +595,7 @@ function MobileCards({
             {/* Spec: tx hash in muted monospace */}
             {item.txHash && (
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-xs text-slate-600">{t.tx}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-600">{t.tx}</span>
                 <TxHashLink txHash={item.txHash} />
               </div>
             )}
@@ -668,7 +668,7 @@ export function TransactionHistory({ embedded = false }: TransactionHistoryProps
   const isEmpty = !loading && !error && data?.total === 0;
 
   const Root = embedded ? "div" : "main";
-  const rootClassName = embedded ? "" : "min-h-screen bg-dark-900 pt-24 pb-16";
+  const rootClassName = embedded ? "" : "min-h-screen bg-slate-50 dark:bg-dark-900 pt-24 pb-16";
 
   return (
     <Root className={rootClassName}>
@@ -679,13 +679,13 @@ export function TransactionHistory({ embedded = false }: TransactionHistoryProps
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-400 mb-1">
               {t.eyebrow}
             </p>
-            <h1 className="text-2xl font-bold text-slate-100">{t.title}</h1>
-            <p className="mt-1.5 text-sm text-slate-500">{t.intro}</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t.title}</h1>
+            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{t.intro}</p>
           </div>
         )}
 
         {/* Filter bar */}
-        <div className="mb-6 rounded-xl border border-white/8 bg-white/3 p-4">
+        <div className="mb-6 rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/3 p-4">
           <FilterBar filter={filter} dispatch={dispatchFilter} />
         </div>
 
@@ -693,7 +693,7 @@ export function TransactionHistory({ embedded = false }: TransactionHistoryProps
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+            className="mb-4 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
           >
             {error}
           </div>
@@ -705,7 +705,7 @@ export function TransactionHistory({ embedded = false }: TransactionHistoryProps
             <div role="status" aria-live="polite" aria-label="Loading transactions" className="sr-only">
               Loading transaction historyâ€¦
             </div>
-            <Loader2 size={14} className="text-slate-600 animate-spin" aria-hidden />
+            <Loader2 size={14} className="text-slate-400 dark:text-slate-600 animate-spin" aria-hidden />
           </div>
         )}
         {/* Desktop table */}

@@ -152,7 +152,7 @@ function SettingsContent() {
       </SettingsSection>
 
       <section aria-labelledby="section-onboarding">
-        <h2 id="section-onboarding" className="sr-only">Onboarding</h2>
+        <h2 id="section-onboarding" className="sr-only">{t.onboardingTitle}</h2>
         <OnboardingSettings />
       </section>
     </div>

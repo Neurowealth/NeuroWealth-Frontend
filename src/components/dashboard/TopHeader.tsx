@@ -10,6 +10,7 @@ import { getUserInitials } from "@/lib/user";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function TopHeader() {
   const pathname = usePathname();
@@ -18,6 +19,8 @@ export default function TopHeader() {
   const { unreadCount } = useNotifications();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const { messages } = useI18n();
+  const t = messages;
 
   useOnClickOutside(notificationsRef, () => setIsNotificationsOpen(false));
 
@@ -50,7 +53,7 @@ export default function TopHeader() {
         <div className="relative" ref={notificationsRef}>
           <button
             className="btn-ghost relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
-            aria-label="Notifications"
+            aria-label={t.topHeader.notificationsAriaLabel}
             aria-haspopup="dialog"
             aria-expanded={isNotificationsOpen}
             onClick={() => setIsNotificationsOpen((open) => !open)}
