@@ -1,17 +1,23 @@
+"use client";
+
 import { ServerCrash } from "lucide-react";
 import { ErrorPage } from "@/components/ui/ErrorPage";
+import { useI18n } from "@/contexts/I18nContext";
 
 export const dynamic = "force-dynamic";
 
 export default function ServerErrorPage() {
+  const { messages } = useI18n();
+  const t = messages.errors.serverError;
+
   return (
     <ErrorPage
       statusCode={500}
-      title="Something went wrong"
-      description="We ran into an unexpected server error. Your account and funds remain safe. Try again or return home while we look into it."
+      title={t.title}
+      description={t.description}
       icon={<ServerCrash size={32} />}
-      primaryAction={{ label: "Back to home", href: "/" }}
-      secondaryAction={{ label: "Go to dashboard", href: "/dashboard" }}
+      primaryAction={{ label: t.backToHome, href: "/" }}
+      secondaryAction={{ label: t.goToDashboard, href: "/dashboard" }}
     />
   );
 }

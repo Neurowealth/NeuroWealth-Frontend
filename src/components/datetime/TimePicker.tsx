@@ -9,6 +9,8 @@ import React, {
   useId,
 } from "react";
 
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+
 export interface TimeValue {
   hours: number;
   minutes: number;
@@ -72,6 +74,7 @@ export default function TimePicker({
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listboxId = useId();
   const optionId = (i: number) => `${listboxId}-option-${i}`;
@@ -99,6 +102,9 @@ export default function TimePicker({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Focus-trap the dialog panel while open
+  useFocusTrap(dialogRef, open);
 
   // Reset the active option whenever the picker opens or the filtered list changes
   useEffect(() => {
@@ -193,6 +199,7 @@ export default function TimePicker({
 
       {open && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-label="Time picker"
           className="z-dropdown"

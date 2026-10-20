@@ -47,6 +47,26 @@ export interface AppMessages {
     edit: string;
     open: string;
   };
+  errors: {
+    notFound: {
+      title: string;
+      description: string;
+      backToDashboard: string;
+      goToPortfolio: string;
+    };
+    unauthorized: {
+      title: string;
+      description: string;
+      signIn: string;
+      backToHome: string;
+    };
+    serverError: {
+      title: string;
+      description: string;
+      backToHome: string;
+      goToDashboard: string;
+    };
+  };
   navbar: {
     features: string;
     howItWorks: string;
@@ -988,6 +1008,26 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       cancel: "Cancel",
       edit: "Edit",
       open: "Open",
+    },
+    errors: {
+      notFound: {
+        title: "Dashboard page not found",
+        description: "The dashboard page you're looking for doesn't exist or has been removed. Try navigating using the menu or go back to the main dashboard.",
+        backToDashboard: "Back to dashboard",
+        goToPortfolio: "Go to portfolio",
+      },
+      unauthorized: {
+        title: "Authentication required",
+        description: "You need to sign in to access this page. Please connect your wallet or sign in to continue.",
+        signIn: "Sign in",
+        backToHome: "Back to home",
+      },
+      serverError: {
+        title: "Something went wrong",
+        description: "We ran into an unexpected server error. Your account and funds remain safe. Try again or return home while we look into it.",
+        backToHome: "Back to home",
+        goToDashboard: "Go to dashboard",
+      },
     },
     navbar: {
       features: "Features",
@@ -2258,6 +2298,26 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       cancel: "Annuler",
       edit: "Modifier",
       open: "Ouvrir",
+    },
+    errors: {
+      notFound: {
+        title: "Page de tableau de bord introuvable",
+        description: "La page de tableau de bord que vous recherchez n'existe pas ou a été supprimée. Essayez de naviguer en utilisant le menu ou revenez au tableau de bord principal.",
+        backToDashboard: "Retour au tableau de bord",
+        goToPortfolio: "Aller au portefeuille",
+      },
+      unauthorized: {
+        title: "Authentification requise",
+        description: "Vous devez vous connecter pour accéder à cette page. Veuillez connecter votre portefeuille ou vous connecter pour continuer.",
+        signIn: "Se connecter",
+        backToHome: "Retour à l'accueil",
+      },
+      serverError: {
+        title: "Une erreur s'est produite",
+        description: "Nous avons rencontré une erreur serveur inattendue. Votre compte et vos fonds restent en sécurité. Réessayez ou retournez à l'accueil pendant que nous examinons le problème.",
+        backToHome: "Retour à l'accueil",
+        goToDashboard: "Aller au tableau de bord",
+      },
     },
     navbar: {
       features: "Fonctionnalités",
