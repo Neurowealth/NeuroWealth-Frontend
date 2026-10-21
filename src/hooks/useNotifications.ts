@@ -1,9 +1,27 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Notification, MOCK_NOTIFICATIONS } from "@/lib/mock-notifications";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { useStorageSync } from "@/hooks/useStorageSync";
 
 const NOTIFICATION_STORAGE_KEY = STORAGE_KEYS.NOTIFICATIONS_LIST;
+
+/**
+ * Same-tab change signal (#1091). The `storage` event only reaches *other*
+ * tabs, so every mounted useNotifications instance (TopHeader, NotificationCenter,
+ * NotificationToggle) would otherwise keep its own stale copy until remount.
+ */
+const NOTIFICATIONS_CHANGED_EVENT = "nw:notifications-changed";
+
+function persistNotifications(notifications: Notification[]) {
+  const serialized = JSON.stringify(notifications);
+  localStorage.setItem(NOTIFICATION_STORAGE_KEY, serialized);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new window.CustomEvent<string>(NOTIFICATIONS_CHANGED_EVENT, { detail: serialized }),
+    );
+  }
+}
 
 function isValidNotification(item: unknown): item is Notification {
   if (typeof item !== "object" || item === null) return false;
@@ -73,23 +91,44 @@ export function useNotifications() {
 
   useStorageSync(NOTIFICATION_STORAGE_KEY, syncNotifications);
 
+  // Stay in step with other instances in this tab — same-tab writes never
+  // produce a `storage` event, so the writer broadcasts instead.
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleSameTabChange = (event: Event) => {
+      const { detail } = event as CustomEvent<string>;
+      if (typeof detail !== "string") {
+        return;
+      }
+      syncNotifications(detail);
+    };
+
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, handleSameTabChange);
+    return () =>
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, handleSameTabChange);
+  }, [syncNotifications]);
+
   const markAsRead = (id: string) => {
     const updated = notifications.map((n) =>
       n.id === id ? { ...n, isRead: true } : n
     );
     setNotifications(updated);
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(updated));
+    persistNotifications(updated);
   };
 
   const markAllAsRead = () => {
     const updated = notifications.map((n) => ({ ...n, isRead: true }));
     setNotifications(updated);
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(updated));
+    persistNotifications(updated);
   };
 
   const clearNotifications = () => {
-    setNotifications([]);
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify([]));
+    const updated: Notification[] = [];
+    setNotifications(updated);
+    persistNotifications(updated);
   };
 
   return {
