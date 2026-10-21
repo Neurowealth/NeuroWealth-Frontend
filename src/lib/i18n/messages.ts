@@ -164,6 +164,33 @@ export interface AppMessages {
       emptyActivity: string;
       noAmount: string;
     };
+    overview: {
+      heading: string;
+      totalBalance: string;
+      totalYieldEarned: string;
+      currentApy: string;
+      activeStrategy: string;
+      usdcAcrossStrategies: string;
+      allTime: string;
+      sevenDayAverage: string;
+      tapToChangeStrategy: string;
+      noFundsDeposited: string;
+      none: string;
+      deposit: string;
+      withdraw: string;
+      connectWalletPrompt: string;
+      assetAllocation: string;
+      noAllocationData: string;
+      depositFundsAllocation: string;
+      recentActivity: string;
+      noActivityYet: string;
+      transactionsWillAppear: string;
+      strategies: {
+        conservative: string;
+        balanced: string;
+        growth: string;
+      };
+    };
   };
   settings: {
     nav: {
@@ -889,6 +916,43 @@ export interface AppMessages {
       errorTransactionFailed: string;
       errorGeneric: string;
     };
+    strategyOverview: {
+      title: string;
+      description: string;
+      recommended: string;
+      riskSuffix: string;
+      expectedPrefix: string;
+      infoTitle: string;
+      infoDescription: string;
+      continueButton: string;
+      savingButton: string;
+      skipButton: string;
+      footerPrompt: string;
+      quizLink: string;
+      strategies: {
+        conservative: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+        balanced: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+        aggressive: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+      };
+    };
   };
   notificationPreferences: {
     categoriesHeading: string;
@@ -962,6 +1026,14 @@ export interface AppMessages {
     collapseSidebar: string;
     expandSidebar: string;
     userFallback: string;
+  };
+  cookieBanner: {
+    ariaLabel: string;
+    message: string;
+    privacyPolicy: string;
+    options: string;
+    reject: string;
+    acceptAll: string;
   };
 }
 
@@ -1234,6 +1306,33 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "event",
         emptyActivity: "No recent activity yet. Deposits and rebalances will appear here as soon as they happen.",
         noAmount: "No amount",
+      },
+      overview: {
+        heading: "Portfolio summary",
+        totalBalance: "Total Balance",
+        totalYieldEarned: "Total Yield Earned",
+        currentApy: "Current APY",
+        activeStrategy: "Active Strategy",
+        usdcAcrossStrategies: "USDC across all strategies",
+        allTime: "All time",
+        sevenDayAverage: "7-day average",
+        tapToChangeStrategy: "Tap to change strategy",
+        noFundsDeposited: "No funds deposited yet",
+        none: "None",
+        deposit: "Deposit",
+        withdraw: "Withdraw",
+        connectWalletPrompt: "Connect your Freighter wallet to deposit funds.",
+        assetAllocation: "Asset Allocation",
+        noAllocationData: "No allocation data",
+        depositFundsAllocation: "Deposit funds to see your asset allocation.",
+        recentActivity: "Recent Activity",
+        noActivityYet: "No activity yet",
+        transactionsWillAppear: "Your transactions will appear here.",
+        strategies: {
+          conservative: "Conservative",
+          balanced: "Balanced",
+          growth: "Growth",
+        },
       },
     },
     settings: {
@@ -2166,6 +2265,43 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         errorTransactionFailed: "Transaction failed. Please try again.",
         errorGeneric: "Deposit failed",
       },
+      strategyOverview: {
+        title: "Choose Your Investment Strategy",
+        description: "Select a strategy that matches your risk tolerance and financial goals. You can change this anytime.",
+        recommended: "Recommended",
+        riskSuffix: "Risk",
+        expectedPrefix: "Expected:",
+        infoTitle: "Strategy Information",
+        infoDescription: "Your chosen strategy will determine how your funds are allocated across different assets. You can adjust your strategy or switch to a different one at any time from your dashboard.",
+        continueButton: "Continue with Strategy",
+        savingButton: "Saving...",
+        skipButton: "Decide Later",
+        footerPrompt: "Not sure which strategy to choose?",
+        quizLink: "Take our risk assessment quiz",
+        strategies: {
+          conservative: {
+            name: "Conservative",
+            description: "Lower risk, steady returns",
+            risk: "Low",
+            expectedReturn: "5-8% annually",
+            features: ["Stable assets", "Low volatility", "Capital preservation"],
+          },
+          balanced: {
+            name: "Balanced",
+            description: "Moderate risk with growth potential",
+            risk: "Medium",
+            expectedReturn: "8-15% annually",
+            features: ["Diversified portfolio", "Regular rebalancing", "Growth & income"],
+          },
+          aggressive: {
+            name: "Aggressive",
+            description: "Higher risk for maximum returns",
+            risk: "High",
+            expectedReturn: "15-25% annually",
+            features: ["High-growth assets", "Active management", "Maximum upside"],
+          },
+        },
+      },
     },
     notificationPreferences: {
       categoriesHeading: "Categories",
@@ -2239,6 +2375,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       collapseSidebar: "Collapse sidebar",
       expandSidebar: "Expand sidebar",
       userFallback: "User",
+    },
+    cookieBanner: {
+      ariaLabel: "Cookie consent",
+      message: "We use cookies to personalise your experience.",
+      privacyPolicy: "Privacy policy",
+      options: "Options",
+      reject: "Reject",
+      acceptAll: "Accept all",
     },
   },
   fr: {
@@ -2506,6 +2650,33 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "événement",
         emptyActivity: "Aucune activité récente. Les dépôts et rééquilibrages apparaîtront ici dès qu'ils se produiront.",
         noAmount: "Aucun montant",
+      },
+      overview: {
+        heading: "Résumé du portefeuille",
+        totalBalance: "Solde total",
+        totalYieldEarned: "Rendement total gagné",
+        currentApy: "APY actuel",
+        activeStrategy: "Stratégie active",
+        usdcAcrossStrategies: "USDC sur toutes les stratégies",
+        allTime: "Depuis le début",
+        sevenDayAverage: "Moyenne sur 7 jours",
+        tapToChangeStrategy: "Appuyez pour modifier la stratégie",
+        noFundsDeposited: "Aucun fonds déposé pour le moment",
+        none: "Aucune",
+        deposit: "Déposer",
+        withdraw: "Retirer",
+        connectWalletPrompt: "Connectez votre portefeuille Freighter pour déposer des fonds.",
+        assetAllocation: "Allocation d'actifs",
+        noAllocationData: "Aucune donnée d'allocation",
+        depositFundsAllocation: "Déposez des fonds pour voir votre allocation d'actifs.",
+        recentActivity: "Activité récente",
+        noActivityYet: "Aucune activité pour l'instant",
+        transactionsWillAppear: "Vos transactions apparaîtront ici.",
+        strategies: {
+          conservative: "Conservatrice",
+          balanced: "Équilibrée",
+          growth: "Croissance",
+        },
       },
     },
     settings: {
@@ -3438,6 +3609,43 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         errorTransactionFailed: "Échec de la transaction. Veuillez réessayer.",
         errorGeneric: "Échec du dépôt",
       },
+      strategyOverview: {
+        title: "Choisissez votre stratégie d'investissement",
+        description: "Sélectionnez une stratégie qui correspond à votre tolérance au risque et à vos objectifs financiers. Vous pouvez modifier cela à tout moment.",
+        recommended: "Recommandé",
+        riskSuffix: "Risque",
+        expectedPrefix: "Attendu :",
+        infoTitle: "Informations sur la stratégie",
+        infoDescription: "La stratégie choisie déterminera la répartition de vos fonds entre différents actifs. Vous pouvez ajuster ou changer de stratégie à tout moment depuis votre tableau de bord.",
+        continueButton: "Continuer avec la stratégie",
+        savingButton: "Enregistrement...",
+        skipButton: "Décider plus tard",
+        footerPrompt: "Vous hésitez sur la stratégie à choisir ?",
+        quizLink: "Passez notre quiz d'évaluation du risque",
+        strategies: {
+          conservative: {
+            name: "Conservatrice",
+            description: "Risque plus faible, rendements réguliers",
+            risk: "Faible",
+            expectedReturn: "5-8 % par an",
+            features: ["Actifs stables", "Faible volatilité", "Préservation du capital"],
+          },
+          balanced: {
+            name: "Équilibrée",
+            description: "Risque modéré avec potentiel de croissance",
+            risk: "Moyen",
+            expectedReturn: "8-15 % par an",
+            features: ["Portefeuille diversifié", "Rééquilibrage régulier", "Croissance et revenu"],
+          },
+          aggressive: {
+            name: "Agressive",
+            description: "Risque plus élevé pour des rendements maximaux",
+            risk: "Élevé",
+            expectedReturn: "15-25 % par an",
+            features: ["Actifs à forte croissance", "Gestion active", "Potentiel maximal"],
+          },
+        },
+      },
     },
     notificationPreferences: {
       categoriesHeading: "Catégories",
@@ -3511,6 +3719,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       collapseSidebar: "Réduire la barre latérale",
       expandSidebar: "Développer la barre latérale",
       userFallback: "Utilisateur",
+    },
+    cookieBanner: {
+      ariaLabel: "Consentement aux cookies",
+      message: "Nous utilisons des cookies pour personnaliser votre expérience.",
+      privacyPolicy: "Politique de confidentialité",
+      options: "Options",
+      reject: "Refuser",
+      acceptAll: "Tout accepter",
     },
   },
 };

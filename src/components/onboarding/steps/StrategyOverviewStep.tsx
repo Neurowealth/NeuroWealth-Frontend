@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { logger } from '@/lib/logger';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface StrategyOverviewStepProps {
   onNext: () => void;
@@ -12,45 +13,48 @@ interface StrategyOverviewStepProps {
   onBack?: () => void;
 }
 
-const strategies = [
-  {
-    id: 'conservative',
-    name: 'Conservative',
-    description: 'Lower risk, steady returns',
-    risk: 'Low',
-    expectedReturn: '5-8% annually',
-    features: ['Stable assets', 'Low volatility', 'Capital preservation'],
-    recommended: false
-  },
-  {
-    id: 'balanced',
-    name: 'Balanced',
-    description: 'Moderate risk with growth potential',
-    risk: 'Medium',
-    expectedReturn: '8-15% annually',
-    features: ['Diversified portfolio', 'Regular rebalancing', 'Growth & income'],
-    recommended: true
-  },
-  {
-    id: 'aggressive',
-    name: 'Aggressive',
-    description: 'Higher risk for maximum returns',
-    risk: 'High',
-    expectedReturn: '15-25% annually',
-    features: ['High-growth assets', 'Active management', 'Maximum upside'],
-    recommended: false
-  }
-];
-
-const riskColors = {
-  Low: 'bg-green-500/20 text-green-400 border-green-500/30',
-  Medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  High: 'bg-red-500/20 text-red-400 border-red-500/30'
+const getRiskColor = (id: string) => {
+  if (id === 'conservative') return 'bg-green-500/20 text-green-400 border-green-500/30';
+  if (id === 'balanced') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+  return 'bg-red-500/20 text-red-400 border-red-500/30';
 };
 
 export default function StrategyOverviewStep({ onNext, onSkip, onBack }: StrategyOverviewStepProps) {
+  const { messages } = useI18n();
+  const t = messages?.onboardingSteps?.strategyOverview;
+
   const [selectedStrategy, setSelectedStrategy] = useState<string>('balanced');
   const [isSaving, setIsSaving] = useState(false);
+
+  const strategies = [
+    {
+      id: 'conservative',
+      name: t?.strategies?.conservative?.name ?? 'Conservative',
+      description: t?.strategies?.conservative?.description ?? 'Lower risk, steady returns',
+      risk: t?.strategies?.conservative?.risk ?? 'Low',
+      expectedReturn: t?.strategies?.conservative?.expectedReturn ?? '5-8% annually',
+      features: t?.strategies?.conservative?.features ?? ['Stable assets', 'Low volatility', 'Capital preservation'],
+      recommended: false
+    },
+    {
+      id: 'balanced',
+      name: t?.strategies?.balanced?.name ?? 'Balanced',
+      description: t?.strategies?.balanced?.description ?? 'Moderate risk with growth potential',
+      risk: t?.strategies?.balanced?.risk ?? 'Medium',
+      expectedReturn: t?.strategies?.balanced?.expectedReturn ?? '8-15% annually',
+      features: t?.strategies?.balanced?.features ?? ['Diversified portfolio', 'Regular rebalancing', 'Growth & income'],
+      recommended: true
+    },
+    {
+      id: 'aggressive',
+      name: t?.strategies?.aggressive?.name ?? 'Aggressive',
+      description: t?.strategies?.aggressive?.description ?? 'Higher risk for maximum returns',
+      risk: t?.strategies?.aggressive?.risk ?? 'High',
+      expectedReturn: t?.strategies?.aggressive?.expectedReturn ?? '15-25% annually',
+      features: t?.strategies?.aggressive?.features ?? ['High-growth assets', 'Active management', 'Maximum upside'],
+      recommended: false
+    }
+  ];
 
   const handleContinue = async () => {
     setIsSaving(true);
@@ -79,9 +83,11 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Choose Your Investment Strategy</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">
+          {t?.title ?? 'Choose Your Investment Strategy'}
+        </h2>
         <p className="text-slate-400 max-w-md mx-auto">
-          Select a strategy that matches your risk tolerance and financial goals. You can change this anytime.
+          {t?.description ?? 'Select a strategy that matches your risk tolerance and financial goals. You can change this anytime.'}
         </p>
       </div>
 
@@ -111,7 +117,7 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
             {strategy.recommended && (
               <div className="absolute top-3 right-3">
                 <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">
-                  Recommended
+                  {t?.recommended ?? 'Recommended'}
                 </span>
               </div>
             )}
@@ -120,15 +126,15 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-lg font-semibold text-white">{strategy.name}</h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded border ${riskColors[strategy.risk as keyof typeof riskColors]}`}>
-                    {strategy.risk} Risk
+                  <span className={`px-2 py-1 text-xs font-medium rounded border ${getRiskColor(strategy.id)}`}>
+                    {strategy.risk} {t?.riskSuffix ?? 'Risk'}
                   </span>
                 </div>
                 <p className="text-slate-400 mb-3">{strategy.description}</p>
                 
                 <div className="mb-3">
                   <span className="text-sm font-medium text-green-400">
-                    Expected: {strategy.expectedReturn}
+                    {t?.expectedPrefix ?? 'Expected:'} {strategy.expectedReturn}
                   </span>
                 </div>
                 
@@ -164,10 +170,11 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-white mb-1">Strategy Information</h4>
+              <h4 className="font-medium text-white mb-1">
+                {t?.infoTitle ?? 'Strategy Information'}
+              </h4>
               <p className="text-sm text-slate-300">
-                Your chosen strategy will determine how your funds are allocated across different assets. 
-                You can adjust your strategy or switch to a different one at any time from your dashboard.
+                {t?.infoDescription ?? 'Your chosen strategy will determine how your funds are allocated across different assets. You can adjust your strategy or switch to a different one at any time from your dashboard.'}
               </p>
             </div>
           </div>
@@ -184,24 +191,24 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
           {isSaving ? (
             <span className="flex items-center gap-2">
               <Spinner />
-              Saving...
+              {t?.savingButton ?? 'Saving...'}
             </span>
           ) : (
-            'Continue with Strategy'
+            t?.continueButton ?? 'Continue with Strategy'
           )}
         </Button>
         
         <Button variant="secondary" onClick={onSkip}>
-          Decide Later
+          {t?.skipButton ?? 'Decide Later'}
         </Button>
       </div>
 
       {/* Additional Info */}
       <div className="text-center max-w-4xl mx-auto">
         <p className="text-sm text-slate-400">
-          Not sure which strategy to choose?{' '}
+          {t?.footerPrompt ?? 'Not sure which strategy to choose?'}{' '}
           <button className="text-green-400 hover:text-green-300 underline">
-            Take our risk assessment quiz
+            {t?.quizLink ?? 'Take our risk assessment quiz'}
           </button>
         </p>
       </div>

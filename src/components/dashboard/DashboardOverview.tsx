@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 import EmptyState from "@/components/ui/EmptyState";
 import { FormattedCurrency, FormattedPercent } from "@/components/ui/FormattedValue";
+import { useI18n } from "@/contexts/I18nContext";
 
 // ── Placeholder / mock data ───────────────────────────────────────────────────
 // Replace with real API calls (Issue 10) once the backend is wired.
@@ -123,11 +124,13 @@ function TransactionRow({ tx }: { tx: Transaction }) {
 export default function DashboardOverview() {
   const [summary] = useState<PortfolioSummary | null>(MOCK_SUMMARY);
   const [transactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+  const { messages } = useI18n();
+  const t = messages?.dashboard?.overview;
 
   const strategyLabels: Record<string, string> = {
-    conservative: "Conservative",
-    balanced: "Balanced",
-    growth: "Growth",
+    conservative: t?.strategies?.conservative ?? "Conservative",
+    balanced: t?.strategies?.balanced ?? "Balanced",
+    growth: t?.strategies?.growth ?? "Growth",
   };
 
   return (
@@ -135,37 +138,37 @@ export default function DashboardOverview() {
       {/* ── Stat cards ── */}
       <section aria-labelledby="stats-heading">
         <h2 id="stats-heading" className="sr-only">
-          Portfolio summary
+          {t?.heading ?? "Portfolio summary"}
         </h2>
         {summary ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
-              label="Total Balance"
+              label={t?.totalBalance ?? "Total Balance"}
               value={
                 <FormattedCurrency value={summary.totalBalance} colorBySign={false} />
               }
-              subtext="USDC across all strategies"
+              subtext={t?.usdcAcrossStrategies ?? "USDC across all strategies"}
               icon={Wallet}
               accent="text-primary"
             />
             <StatCard
-              label="Total Yield Earned"
+              label={t?.totalYieldEarned ?? "Total Yield Earned"}
               value={<FormattedCurrency value={summary.totalYield} signed />}
-              subtext="All time"
+              subtext={t?.allTime ?? "All time"}
               icon={TrendingUp}
               accent="text-success"
             />
             <StatCard
-              label="Current APY"
+              label={t?.currentApy ?? "Current APY"}
               value={<FormattedPercent value={summary.currentApy} apy colorBySign={false} />}
-              subtext="7-day average"
+              subtext={t?.sevenDayAverage ?? "7-day average"}
               icon={Percent}
               accent="text-warning"
             />
             <StatCard
-              label="Active Strategy"
+              label={t?.activeStrategy ?? "Active Strategy"}
               value={strategyLabels[summary.strategy] ?? "—"}
-              subtext="Tap to change strategy"
+              subtext={t?.tapToChangeStrategy ?? "Tap to change strategy"}
               icon={BarChart2}
               accent="text-info"
             />
@@ -173,19 +176,17 @@ export default function DashboardOverview() {
         ) : (
           // Empty state for stats
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {(
-              [
-                { label: "Total Balance", value: formatCurrency(0), icon: Wallet },
-                { label: "Total Yield Earned", value: formatCurrency(0), icon: TrendingUp },
-                { label: "Current APY", value: "—", icon: Percent },
-                { label: "Active Strategy", value: "None", icon: BarChart2 },
-              ] as const
-            ).map(({ label, value, icon }) => (
+            {[
+              { label: t?.totalBalance ?? "Total Balance", value: formatCurrency(0), icon: Wallet },
+              { label: t?.totalYieldEarned ?? "Total Yield Earned", value: formatCurrency(0), icon: TrendingUp },
+              { label: t?.currentApy ?? "Current APY", value: "—", icon: Percent },
+              { label: t?.activeStrategy ?? "Active Strategy", value: t?.none ?? "None", icon: BarChart2 },
+            ].map(({ label, value, icon }) => (
               <StatCard
                 key={label}
                 label={label}
                 value={value}
-                subtext="No funds deposited yet"
+                subtext={t?.noFundsDeposited ?? "No funds deposited yet"}
                 icon={icon}
               />
             ))}
@@ -201,18 +202,18 @@ export default function DashboardOverview() {
         <div className="flex flex-wrap gap-3">
           <button className="btn-primary flex items-center gap-2 text-sm" disabled>
             <ArrowDownLeft className="w-4 h-4" aria-hidden="true" />
-            Deposit
+            {t?.deposit ?? "Deposit"}
           </button>
           <button
             className="btn-ghost flex items-center gap-2 text-sm border border-surface-border"
             disabled
           >
             <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-            Withdraw
+            {t?.withdraw ?? "Withdraw"}
           </button>
         </div>
         <p className="mt-2 text-xs text-text-muted">
-          Connect your Freighter wallet to deposit funds. (Issue 9)
+          {t?.connectWalletPrompt ?? "Connect your Freighter wallet to deposit funds. (Issue 9)"}
         </p>
       </section>
 
@@ -224,7 +225,7 @@ export default function DashboardOverview() {
           className="card"
         >
           <h2 id="allocation-heading" className="text-sm font-semibold text-text-primary mb-4">
-            Asset Allocation
+            {t?.assetAllocation ?? "Asset Allocation"}
           </h2>
           {summary ? (
             <div className="space-y-3">
@@ -256,8 +257,8 @@ export default function DashboardOverview() {
           ) : (
             <EmptyState
               icon={BarChart2}
-              title="No allocation data"
-              description="Deposit funds to see your asset allocation."
+              title={t?.noAllocationData ?? "No allocation data"}
+              description={t?.depositFundsAllocation ?? "Deposit funds to see your asset allocation."}
             />
           )}
         </section>
@@ -268,7 +269,7 @@ export default function DashboardOverview() {
           className="card"
         >
           <h2 id="activity-heading" className="text-sm font-semibold text-text-primary mb-4">
-            Recent Activity
+            {t?.recentActivity ?? "Recent Activity"}
           </h2>
           {transactions.length > 0 ? (
             <div>
@@ -279,8 +280,8 @@ export default function DashboardOverview() {
           ) : (
             <EmptyState
               icon={Clock}
-              title="No activity yet"
-              description="Your transactions will appear here."
+              title={t?.noActivityYet ?? "No activity yet"}
+              description={t?.transactionsWillAppear ?? "Your transactions will appear here."}
             />
           )}
         </section>
