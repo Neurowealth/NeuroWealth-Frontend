@@ -163,6 +163,19 @@ export interface AppMessages {
       event: string;
       emptyActivity: string;
       noAmount: string;
+      activityKindDeposit: string;
+      activityKindWithdrawal: string;
+      activityKindRebalance: string;
+      activityKindYield: string;
+      previewData: string;
+      unableToLoad: string;
+      summaryTotalBalance: string;
+      summaryTotalBalanceHelper: string;
+      summaryTotalYield: string;
+      summaryTotalYieldHelper: string;
+      summaryApy: string;
+      summaryApyHelper: string;
+      summaryStrategy: string;
     };
   };
   settings: {
@@ -1234,6 +1247,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "event",
         emptyActivity: "No recent activity yet. Deposits and rebalances will appear here as soon as they happen.",
         noAmount: "No amount",
+        activityKindDeposit: "Deposit",
+        activityKindWithdrawal: "Withdrawal",
+        activityKindRebalance: "Rebalance",
+        activityKindYield: "Yield",
+        previewData: "Preview data",
+        unableToLoad: "Unable to load portfolio widgets.",
+        summaryTotalBalance: "Total balance",
+        summaryTotalBalanceHelper: "Across active positions and protected reserve holdings.",
+        summaryTotalYield: "Total yield",
+        summaryTotalYieldHelper: "Net earnings since your first deployed deposit.",
+        summaryApy: "APY",
+        summaryApyHelper: "Weighted live rate across the current strategy mix.",
+        summaryStrategy: "Strategy",
       },
     },
     settings: {
@@ -2506,6 +2532,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "événement",
         emptyActivity: "Aucune activité récente. Les dépôts et rééquilibrages apparaîtront ici dès qu'ils se produiront.",
         noAmount: "Aucun montant",
+        activityKindDeposit: "Dépôt",
+        activityKindWithdrawal: "Retrait",
+        activityKindRebalance: "Rééquilibrage",
+        activityKindYield: "Rendement",
+        previewData: "Données d'aperçu",
+        unableToLoad: "Impossible de charger les widgets du portefeuille.",
+        summaryTotalBalance: "Solde total",
+        summaryTotalBalanceHelper: "Positions actives et réserves protégées confondues.",
+        summaryTotalYield: "Rendement total",
+        summaryTotalYieldHelper: "Gains nets depuis votre premier dépôt déployé.",
+        summaryApy: "APY",
+        summaryApyHelper: "Taux pondéré en direct sur la composition de stratégie actuelle.",
+        summaryStrategy: "Stratégie",
       },
     },
     settings: {
