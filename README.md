@@ -134,7 +134,7 @@ The frontend supports two runtime modes controlled by **server-only** env vars (
 | Transactions | `POST /api/transactions` | `POST {NEUROWEALTH_TRANSACTIONS_PATH}` (default `/transactions`) |
 | Strategy | `GET/PUT /api/strategy` | `GET/PUT {NEUROWEALTH_STRATEGY_PATH}` (default `/strategy/preference`) |
 
-Browser → Next.js requests authenticate via the httpOnly session cookie (`nw_session`).
+Browser → Next.js requests authenticate via the non-httpOnly session cookie (`nw_session`).
 Next.js → backend requests require the Bearer token — never expose it to the client bundle.
 
 ### Headers
@@ -192,7 +192,7 @@ ClientProviders
 1. **Authentication**:
    - User signs in via `/login` → `AuthContext.signIn()` → `mock-auth.ts` creates session
    - Session stored in `localStorage` (key: `SESSION_STORAGE_KEY`)
-   - Session mirrored to httpOnly cookie (key: `SESSION_COOKIE_NAME`) for middleware
+   - Session mirrored to non-httpOnly cookie (key: `SESSION_COOKIE_NAME`) for middleware
    - Middleware (`middleware.ts`) reads cookie to redirect unauth users
    - Sign-in on other tabs triggers `storage` event → all tabs sync
 
@@ -202,7 +202,7 @@ ClientProviders
    - `useWallet()` hook provides wallet state and account info
 
 3. **API requests**:
-   - Browser → Next.js `/api/*` routes: authenticated via httpOnly cookie (no extra header needed)
+   - Browser → Next.js `/api/*` routes: authenticated via non-httpOnly cookie (no extra header needed)
    - Next.js → Real backend: use `createServerFetcher()` in route handlers to inject Bearer token (from `NEUROWEALTH_API_AUTH_TOKEN` env)
    - All responses must conform to the standard envelope (see NEUROWEALTH_API.md)
    - Demo mode (no backend): all `/api/*` routes return mock data

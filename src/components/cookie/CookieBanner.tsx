@@ -1,15 +1,19 @@
 "use client";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { ShieldCheck } from "lucide-react";
 
 export function CookieBanner() {
   const { showBanner, acceptAll, rejectAll, openModal } = useCookieConsent();
+  const { messages } = useI18n();
+  const t = messages?.cookieBanner;
+
   if (!showBanner) return null;
 
   return (
     <div
       role="region"
-      aria-label="Cookie consent"
+      aria-label={t?.ariaLabel ?? "Cookie consent"}
       aria-live="polite"
       className="fixed bottom-0 left-0 right-0 z-overlay flex items-center justify-between gap-4 px-4 sm:px-6"
       style={{
@@ -26,9 +30,9 @@ export function CookieBanner() {
       <div className="flex items-center gap-3 min-w-0">
         <ShieldCheck size={18} style={{ color: "#22d3ee", flexShrink: 0 }} />
         <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }} className="truncate">
-          We use cookies to personalise your experience.{" "}
+          {t?.message ?? "We use cookies to personalise your experience."}{" "}
           <button onClick={openModal} style={{ color: "#22d3ee", textDecoration: "underline", textUnderlineOffset: "2px", background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
-            Privacy policy
+            {t?.privacyPolicy ?? "Privacy policy"}
           </button>
         </p>
       </div>
@@ -37,19 +41,19 @@ export function CookieBanner() {
           style={{ minHeight: "44px", minWidth: "44px", padding: "0 14px", fontSize: "13px", color: "rgba(255,255,255,0.55)", background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", cursor: "pointer", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)"; e.currentTarget.style.color = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}>
-          Options
+          {t?.options ?? "Options"}
         </button>
         <button onClick={rejectAll}
           style={{ minHeight: "44px", minWidth: "44px", padding: "0 14px", fontSize: "13px", color: "rgba(255,255,255,0.55)", background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", cursor: "pointer", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"; e.currentTarget.style.color = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}>
-          Reject
+          {t?.reject ?? "Reject"}
         </button>
         <button onClick={acceptAll}
           style={{ minHeight: "44px", minWidth: "44px", padding: "0 18px", fontSize: "13px", fontWeight: 600, color: "#020917", background: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)", border: "none", borderRadius: "8px", cursor: "pointer", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
           onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
-          Accept all
+          {t?.acceptAll ?? "Accept all"}
         </button>
       </div>
     </div>
