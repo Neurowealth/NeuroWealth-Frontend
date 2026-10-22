@@ -18,7 +18,7 @@ export interface ImageCropProps {
   onCancel?: () => void;
 }
 
-const HANDLE_HIT = 12; // px hit area per spec (8–12px)
+const HANDLE_HIT = 22; // 44px touch target minimum (22px radius from corner)
 const KEY_STEP = 0.02;
 const KEY_STEP_SHIFT = 0.08;
 

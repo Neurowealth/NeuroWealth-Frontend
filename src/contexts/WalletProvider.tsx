@@ -48,7 +48,7 @@ export interface PaymentOptions {
   secret?: string;
 }
 
-interface WalletContextState {
+export interface WalletContextState {
   connected: boolean;
   isRestoring: boolean;
   publicKey?: string;
@@ -75,7 +75,7 @@ interface WalletProviderProps {
   network?: string;
 }
 
-const WalletContext = createContext<WalletContextState | undefined>(undefined);
+export const WalletContext = createContext<WalletContextState | undefined>(undefined);
 
 const WalletConfigContext = createContext<WalletConfigContextState | undefined>(undefined);
 
