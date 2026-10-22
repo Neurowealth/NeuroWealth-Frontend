@@ -180,3 +180,60 @@ describe("useOnboardingFlow persistence", () => {
     assert.equal(result.current.currentStep, 1);
   });
 });
+
+// #954 — resetFlow (the "Review Onboarding" action) used to reset only
+// currentStep/isCompleted, leaving the strategy and deposit records written by
+// StrategyOverviewStep/FirstDepositStep behind. It must now clear them via the
+// same shared reset OnboardingSettings uses.
+describe("useOnboardingFlow resetFlow", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("clears the step-scoped strategy and deposit records", () => {
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, "balanced");
+    localStorage.setItem(
+      STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT,
+      JSON.stringify({ amount: "250", submittedAt: 1 }),
+    );
+
+    const { result } = renderHook(() => useOnboardingFlow({ totalSteps: 3 }));
+
+    act(() => {
+      result.current.resetFlow();
+    });
+
+    assert.equal(localStorage.getItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY), null);
+    assert.equal(localStorage.getItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT), null);
+  });
+
+  it("resets a completed flow back to step 0 and keeps it restartable", () => {
+    saveOnboardingState({ completed: true, lastStep: 2, timestamp: 1 });
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, "balanced");
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT, JSON.stringify({ amount: "250" }));
+
+    const { result } = renderHook(() => useOnboardingFlow({ totalSteps: 3 }));
+    assert.equal(result.current.isCompleted, true);
+
+    act(() => {
+      result.current.resetFlow();
+    });
+
+    assert.equal(result.current.currentStep, 0);
+    assert.equal(result.current.isCompleted, false);
+
+    const persisted = readPersisted();
+    assert.equal(persisted?.lastStep, 0);
+    assert.equal(persisted?.completed, false);
+    assert.equal(localStorage.getItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY), null);
+    assert.equal(localStorage.getItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT), null);
+
+    // The restart must still work: advancing re-persists step 1 as incomplete.
+    act(() => {
+      result.current.handleNext();
+    });
+    assert.equal(result.current.currentStep, 1);
+    assert.equal(readPersisted()?.lastStep, 1);
+    assert.equal(readPersisted()?.completed, false);
+  });
+});

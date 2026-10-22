@@ -5,7 +5,11 @@
 // presentation component stays free of orchestration concerns.
 
 import { useState, useEffect } from 'react';
-import { loadOnboardingState, saveOnboardingState } from '@/lib/onboarding-state';
+import {
+  loadOnboardingState,
+  resetOnboardingState,
+  saveOnboardingState,
+} from '@/lib/onboarding-state';
 
 interface UseOnboardingFlowOptions {
   totalSteps: number;
@@ -89,6 +93,11 @@ export function useOnboardingFlow({
   }
 
   function resetFlow() {
+    // "Review Onboarding" restarts the flow from scratch, so clear the
+    // step-scoped strategy/deposit records too — not just the flow progress
+    // (#954). Shared with OnboardingSettings' reset button via
+    // resetOnboardingState so both paths clear the same keys.
+    resetOnboardingState();
     setIsCompleted(false);
     setCurrentStep(0);
     persist(0, false);
