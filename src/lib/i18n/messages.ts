@@ -963,6 +963,12 @@ export interface AppMessages {
     expandSidebar: string;
     userFallback: string;
   };
+  notFound: {
+    title: string;
+    description: string;
+    primaryAction: string;
+    secondaryAction: string;
+  };
 }
 
 export const localeToIntl: Record<AppLocale, string> = {
@@ -2240,6 +2246,13 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       expandSidebar: "Expand sidebar",
       userFallback: "User",
     },
+    notFound: {
+      title: "Page not found",
+      description:
+        "The page you're looking for doesn't exist or may have been moved. Check the URL or head back to the dashboard.",
+      primaryAction: "Back to home",
+      secondaryAction: "Go to dashboard",
+    },
   },
   fr: {
     locale: {
@@ -3511,6 +3524,13 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       collapseSidebar: "Réduire la barre latérale",
       expandSidebar: "Développer la barre latérale",
       userFallback: "Utilisateur",
+    },
+    notFound: {
+      title: "Page introuvable",
+      description:
+        "La page que vous recherchez n'existe pas ou a peut-être été déplacée. Vérifiez l'URL ou retournez au tableau de bord.",
+      primaryAction: "Retour à l'accueil",
+      secondaryAction: "Aller au tableau de bord",
     },
   },
 };

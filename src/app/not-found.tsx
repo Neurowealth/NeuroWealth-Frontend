@@ -1,15 +1,21 @@
+"use client";
+
 import { FileQuestion } from "lucide-react";
 import { ErrorPage } from "@/components/ui/ErrorPage";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function NotFound() {
+  const { messages } = useI18n();
+  const m = messages.notFound;
+
   return (
     <ErrorPage
       statusCode={404}
-      title="Page not found"
-      description="The page you're looking for doesn't exist or may have been moved. Check the URL or head back to the dashboard."
+      title={m.title}
+      description={m.description}
       icon={<FileQuestion size={32} />}
-      primaryAction={{ label: "Back to home", href: "/" }}
-      secondaryAction={{ label: "Go to dashboard", href: "/dashboard" }}
+      primaryAction={{ label: m.primaryAction, href: "/" }}
+      secondaryAction={{ label: m.secondaryAction, href: "/dashboard" }}
     />
   );
 }
