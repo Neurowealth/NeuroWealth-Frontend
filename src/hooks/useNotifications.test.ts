@@ -236,4 +236,77 @@ describe("useNotifications", () => {
 
     assert.equal(result.current.notifications.length, before);
   });
+
+  // #1091 — same-tab instances (TopHeader + NotificationCenter) each hold their
+  // own copy and never receive a `storage` event for writes made in this tab.
+  describe("same-tab instance sync (#1091)", () => {
+    it("propagates markAllAsRead from one instance to another without a remount", () => {
+      const header = renderHook(() => useNotifications());
+      const center = renderHook(() => useNotifications());
+
+      assert.ok(header.result.current.unreadCount > 0);
+      assert.ok(center.result.current.unreadCount > 0);
+
+      act(() => {
+        center.result.current.markAllAsRead();
+      });
+
+      assert.equal(center.result.current.unreadCount, 0);
+      assert.equal(header.result.current.unreadCount, 0);
+
+      center.unmount();
+      header.unmount();
+    });
+
+    it("propagates markAsRead from one instance to another", () => {
+      const header = renderHook(() => useNotifications());
+      const center = renderHook(() => useNotifications());
+
+      const targetId = center.result.current.notifications.find((n) => !n.isRead)?.id;
+      assert.ok(targetId);
+      const unreadBefore = header.result.current.unreadCount;
+
+      act(() => {
+        center.result.current.markAsRead(targetId);
+      });
+
+      assert.equal(header.result.current.unreadCount, unreadBefore - 1);
+
+      center.unmount();
+      header.unmount();
+    });
+
+    it("propagates clearNotifications from one instance to another", () => {
+      const header = renderHook(() => useNotifications());
+      const center = renderHook(() => useNotifications());
+
+      act(() => {
+        center.result.current.clearNotifications();
+      });
+
+      assert.equal(header.result.current.notifications.length, 0);
+      assert.equal(header.result.current.unreadCount, 0);
+
+      center.unmount();
+      header.unmount();
+    });
+
+    it("propagates updates in both directions between instances", () => {
+      const header = renderHook(() => useNotifications());
+      const center = renderHook(() => useNotifications());
+
+      act(() => {
+        header.result.current.markAllAsRead();
+      });
+      assert.equal(center.result.current.unreadCount, 0);
+
+      act(() => {
+        center.result.current.clearNotifications();
+      });
+      assert.equal(header.result.current.notifications.length, 0);
+
+      center.unmount();
+      header.unmount();
+    });
+  });
 });

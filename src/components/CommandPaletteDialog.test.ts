@@ -321,9 +321,9 @@ test("CommandPaletteDialog — focus trap keeps Tab focus cycling within the dia
 });
 
 
-// ── Light/dark contrast classes on the rendered dialog (#1050) ───────────
+// ── Light/dark contrast classes on the rendered dialog (#1050, #1094) ────
 
-test("CommandPaletteDialog — rendered input, list items and icons carry their light/dark class pairs", async () => {
+test("CommandPaletteDialog — rendered dialog, divider, options and icons carry their light/dark class pairs", async () => {
   // react-dom feature-detects the DOM when it first loads, so it (via
   // @testing-library/react) is imported only after jsdom globals exist.
   setupDomGlobals();
@@ -362,7 +362,22 @@ test("CommandPaletteDialog — rendered input, list items and icons carry their 
     const dialog = view.getByRole("dialog", { name: "Command Palette" });
     hasClasses(dialog, ["bg-white", "dark:bg-slate-900"], "dialog");
 
+    // #1094 — the outer border was only asserted for its dark value, so a
+    // missing light-mode counterpart went unnoticed.
+    hasClasses(
+      dialog,
+      ["border", "border-slate-200", "dark:border-slate-800"],
+      "dialog border",
+    );
+
     const input = view.getByPlaceholderText(/Search routes and actions/);
+
+    // #1094 — the search-row divider was not covered by the pair assertions.
+    hasClasses(
+      input.parentElement!,
+      ["border-b", "border-slate-200", "dark:border-slate-800"],
+      "search row divider",
+    );
     hasClasses(
       input,
       [
@@ -380,8 +395,17 @@ test("CommandPaletteDialog — rendered input, list items and icons carry their 
     const options = view.getAllByRole("option");
     assert.ok(options.length > 1, "expected at least two commands to render");
 
-    // The first option is selected; the rest use the unselected light/dark pair.
+    // The first option is selected by default; the rest use the unselected light/dark pair.
     assert.equal(options[0].getAttribute("aria-selected"), "true");
+
+    // #1094 — the selected/first-option highlight must not be dark-only, since
+    // it is the row every light-mode user sees highlighted on open.
+    hasClasses(
+      options[0],
+      ["bg-slate-100", "text-sky-600", "dark:bg-slate-800", "dark:text-sky-400"],
+      "selected option",
+    );
+
     const unselected = options[1];
     hasClasses(
       unselected,
