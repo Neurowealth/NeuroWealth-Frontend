@@ -40,7 +40,7 @@ export function useOnboardingFlow({
     if (saved.completed) {
       setIsCompleted(true);
     } else if (typeof saved.lastStep === 'number') {
-      setCurrentStep(saved.lastStep);
+      setCurrentStep(Math.min(Math.max(saved.lastStep, 0), totalSteps - 1));
     }
   }, []);
 

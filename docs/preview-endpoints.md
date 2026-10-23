@@ -101,6 +101,13 @@ The endpoint returns an OpenGraph image (1600×1080px) that can be:
 
 ## Usage Notes
 
+### Rate Limiting
+
+Each endpoint allows up to **30 requests per minute per IP address**. Requests
+are limited separately for each endpoint. When the limit is exceeded, the
+endpoint returns **429 Too Many Requests** with a `Retry-After` header whose
+value is the number of seconds to wait before retrying.
+
 ### Caching
 
 Both endpoints dynamically evaluate request parameters per request without exporting `force-dynamic`. They set explicit `Cache-Control` response headers so CDNs and browsers can cache the rendered images:
@@ -132,6 +139,8 @@ Preview endpoints can be embedded in `<meta og:image>` tags for dynamic Open Gra
 You can test preview endpoints directly in your browser or with curl:
 
 ```bash
+# Each endpoint allows 30 requests per minute per IP. If you receive a 429,
+# wait for the number of seconds in the Retry-After response header.
 # View transaction preview
 curl -v "http://localhost:3000/api/transaction-preview?kind=deposit&preview=confirm&theme=dark"
 
@@ -139,4 +148,4 @@ curl -v "http://localhost:3000/api/transaction-preview?kind=deposit&preview=conf
 curl -v "http://localhost:3000/api/widget-preview?theme=dark"
 ```
 
-The endpoint will return the image with appropriate Content-Type headers for direct viewing or embedding.
+The endpoint will return the image with appropriate Content-Type headers for direct viewing or embedding. Avoid sending more than 30 requests per minute to the same endpoint from one IP.
