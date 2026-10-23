@@ -4,10 +4,6 @@ import { useCookieConsent, CookiePreferences } from "@/contexts/CookieConsentCon
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, ShieldCheck, BarChart2, Megaphone, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
-const CYAN = "#22d3ee";
-const CYAN_DIM = "rgba(34,211,238,0.6)";
-const BORDER_SUBTLE = "rgba(255,255,255,0.07)";
-
 const COOKIE_GROUPS = [
   { key: "necessary" as keyof CookiePreferences, icon: <ShieldCheck size={16} />, label: "Strictly Necessary", description: "Essential for the website to function. Includes session management, security tokens, and load balancing.", required: true },
   { key: "analytics" as keyof CookiePreferences, icon: <BarChart2 size={16} />, label: "Analytics", description: "Helps us understand how visitors interact with NeuroWealth via anonymised usage data. No personal info stored." },
@@ -50,63 +46,55 @@ export function PrivacyModal() {
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-modal flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Privacy preferences">
-      <div onClick={closeModal} style={{ position: "absolute", inset: 0, background: "rgba(2, 6, 18, 0.8)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }} />
-      <div className="relative w-full sm:max-w-lg flex flex-col" style={{ background: "rgba(4, 10, 22, 0.98)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: "16px", boxShadow: "0 0 0 1px rgba(34,211,238,0.05), 0 24px 64px rgba(0,0,0,0.8)", maxHeight: "90vh", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderBottom: `1px solid ${BORDER_SUBTLE}`, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <ShieldCheck size={20} style={{ color: CYAN }} />
+      <div onClick={closeModal} className="absolute inset-0 bg-slate-900/60 backdrop-blur-lg dark:bg-slate-950/80" />
+      <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-cyan-600/20 bg-white shadow-2xl shadow-slate-900/30 sm:max-w-lg dark:border-cyan-300/15 dark:bg-slate-950 dark:shadow-black/80">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-[18px] dark:border-white/[0.07]">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck size={20} className="text-cyan-600 dark:text-cyan-300" />
             <div>
-              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#fff", margin: 0 }}>Privacy Preferences</h2>
-              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.38)", margin: "2px 0 0" }}>Manage how NeuroWealth uses your data</p>
+              <h2 className="m-0 text-[15px] font-semibold text-slate-900 dark:text-white">Privacy Preferences</h2>
+              <p className="mb-0 mt-0.5 text-[11px] text-slate-500 dark:text-white/40">Manage how NeuroWealth uses your data</p>
             </div>
           </div>
-          <button onClick={closeModal} aria-label="Close" style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer", borderRadius: "8px" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; e.currentTarget.style.background = "transparent"; }}>
+          <button onClick={closeModal} aria-label="Close" className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white">
             <X size={16} />
           </button>
         </div>
-        <div style={{ overflowY: "auto", flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.12)", borderRadius: "10px", padding: "10px 14px", marginBottom: "4px" }}>
-            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.45)", lineHeight: 1.6, margin: 0 }}>We respect your privacy. Strictly necessary cookies are always active.{" "}<a href="/privacy" style={{ color: CYAN, textDecoration: "underline", textUnderlineOffset: "2px" }}>Read our full Privacy Policy →</a></p>
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-5 py-4">
+          <div className="mb-1 rounded-[10px] border border-cyan-600/20 bg-cyan-50 px-3.5 py-2.5 dark:border-cyan-300/15 dark:bg-cyan-300/[0.05]">
+            <p className="m-0 text-xs leading-relaxed text-slate-600 dark:text-white/50">We respect your privacy. Strictly necessary cookies are always active.{" "}<a href="/privacy" className="text-cyan-700 underline underline-offset-2 dark:text-cyan-300">Read our full Privacy Policy →</a></p>
           </div>
           {COOKIE_GROUPS.map((g) => {
             const isOn = localPrefs[g.key];
             const isEx = expanded === g.key;
             return (
-              <div key={g.key} style={{ background: "rgba(255,255,255,0.025)", border: `1px solid ${BORDER_SUBTLE}`, borderRadius: "10px", overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px" }}>
-                  <button onClick={() => setExpanded(isEx ? null : g.key)} style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer", borderRadius: "6px", flexShrink: 0 }}>
+              <div key={g.key} className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 dark:border-white/[0.07] dark:bg-white/[0.025]">
+                <div className="flex items-center gap-2 px-3.5 py-2">
+                  <button onClick={() => setExpanded(isEx ? null : g.key)} className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white">
                     {isEx ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, cursor: "pointer" }} onClick={() => setExpanded(isEx ? null : g.key)}>
-                    <span style={{ color: CYAN_DIM }}>{g.icon}</span>
+                  <div className="flex flex-1 cursor-pointer items-center gap-2.5" onClick={() => setExpanded(isEx ? null : g.key)}>
+                    <span className="text-cyan-600 dark:text-cyan-300/60">{g.icon}</span>
                     <div>
-                      <p style={{ fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.88)", margin: 0 }}>{g.label}</p>
-                      {g.required && <span style={{ fontSize: "9px", color: CYAN_DIM, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>Always active</span>}
+                      <p className="m-0 text-[13px] font-medium text-slate-800 dark:text-white/90">{g.label}</p>
+                      {g.required && <span className="text-[9px] font-semibold uppercase tracking-[0.07em] text-cyan-700 dark:text-cyan-300/60">Always active</span>}
                     </div>
                   </div>
-                  <button role="switch" aria-checked={isOn} aria-label={`Toggle ${g.label}`} onClick={() => toggle(g.key)} disabled={g.required} style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: g.required ? "not-allowed" : "pointer", flexShrink: 0 }}>
-                    <div style={{ width: "40px", height: "22px", borderRadius: "11px", position: "relative", transition: "background 0.2s", background: isOn ? CYAN : g.required ? "rgba(34,211,238,0.25)" : "rgba(255,255,255,0.1)" }}>
-                      <span style={{ position: "absolute", top: "3px", left: "3px", width: "16px", height: "16px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.3)", transition: "transform 0.2s", transform: isOn ? "translateX(18px)" : "translateX(0)", display: "block" }} />
+                  <button role="switch" aria-checked={isOn} aria-label={`Toggle ${g.label}`} onClick={() => toggle(g.key)} disabled={g.required} className="flex h-11 w-11 shrink-0 items-center justify-center border-0 bg-transparent disabled:cursor-not-allowed enabled:cursor-pointer">
+                    <div className={`relative h-[22px] w-10 rounded-[11px] transition-colors ${isOn ? "bg-cyan-500" : g.required ? "bg-cyan-600/25 dark:bg-cyan-300/25" : "bg-slate-300 dark:bg-white/10"}`}>
+                      <span className={`absolute left-[3px] top-[3px] block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${isOn ? "translate-x-[18px]" : "translate-x-0"}`} />
                     </div>
                   </button>
                 </div>
-                {isEx && <div style={{ padding: "0 14px 14px", borderTop: `1px solid ${BORDER_SUBTLE}` }}><p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: 1.6, paddingTop: "12px", margin: 0 }}>{g.description}</p></div>}
+                {isEx && <div className="border-t border-slate-200 px-3.5 pb-3.5 dark:border-white/[0.07]"><p className="m-0 pt-3 text-xs leading-relaxed text-slate-600 dark:text-white/40">{g.description}</p></div>}
               </div>
             );
           })}
         </div>
-        <div style={{ display: "flex", gap: "8px", padding: "14px 20px", borderTop: `1px solid ${BORDER_SUBTLE}`, flexShrink: 0 }}>
-          <button onClick={rejectAll} style={{ flex: 1, height: "44px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, cursor: "pointer", background: "transparent", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.45)" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.28)"; e.currentTarget.style.color = "rgba(255,255,255,0.75)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}>Reject all</button>
-          <button onClick={() => savePreferences(localPrefs)} style={{ flex: 1, height: "44px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, cursor: "pointer", background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.3)", color: CYAN }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,211,238,0.18)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(34,211,238,0.1)"; }}>Save Preferences</button>
-          <button onClick={acceptAll} style={{ flex: 1, height: "44px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)", border: "none", color: "#020917" }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>Accept all</button>
+        <div className="flex shrink-0 gap-2 border-t border-slate-200 px-5 py-3.5 dark:border-white/[0.07]">
+          <button onClick={rejectAll} className="h-11 flex-1 cursor-pointer rounded-[10px] border border-slate-300 bg-transparent text-[13px] font-medium text-slate-600 transition-colors hover:border-slate-500 hover:text-slate-900 dark:border-white/15 dark:text-white/50 dark:hover:border-white/30 dark:hover:text-white/80">Reject all</button>
+          <button onClick={() => savePreferences(localPrefs)} className="h-11 flex-1 cursor-pointer rounded-[10px] border border-cyan-600/30 bg-cyan-50 text-[13px] font-medium text-cyan-700 transition-colors hover:bg-cyan-100 dark:border-cyan-300/30 dark:bg-cyan-300/10 dark:text-cyan-300 dark:hover:bg-cyan-300/[0.18]">Save Preferences</button>
+          <button onClick={acceptAll} className="h-11 flex-1 cursor-pointer rounded-[10px] border-0 bg-gradient-to-br from-cyan-400 to-cyan-500 text-[13px] font-semibold text-slate-950 transition-opacity hover:opacity-[0.85]">Accept all</button>
         </div>
       </div>
     </div>

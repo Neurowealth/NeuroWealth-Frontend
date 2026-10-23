@@ -338,6 +338,7 @@ export interface AppMessages {
         desc: string;
       };
       actions: {
+        groupLabel: string;
         edit: string;
         unsaved: string;
         noPending: string;
@@ -984,38 +985,8 @@ export interface AppMessages {
     emailDigest: string;
     push: string;
   };
-  notifications: {
-    title: string;
-    preferencesTitle: string;
-    regionAriaLabel: string;
-    openPreferencesAriaLabel: string;
-    backToListAriaLabel: string;
-    empty: string;
-    loadMore: string;
-    markAllAsRead: string;
-    unreadAriaLabel: string;
-  };
-  topHeader: {
-    notificationsAriaLabel: string;
-  };
-  strategyList: {
-    title: string;
-    results: string;
-    noResults: string;
-    statReturn: string;
-    statParticipants: string;
-    filters: {
-      lowRisk: string;
-      mediumRisk: string;
-      highRisk: string;
-      growth: string;
-      income: string;
-      balanced: string;
-      defensive: string;
-      active: string;
-      paused: string;
-      archived: string;
-    };
+  toast: {
+    categories: Record<"success" | "info" | "warning" | "error", string>;
   };
   globalSearch: {
     label: string;
@@ -1501,6 +1472,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "High-risk account events may be missed until you re-enable security coverage.",
         },
         actions: {
+          groupLabel: "Notification settings actions",
           edit: "Edit Preferences",
           unsaved: "Unsaved changes",
           noPending: "No pending changes",
@@ -2353,37 +2325,12 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       emailDigest: "Email Digest",
       push: "Push Notifications",
     },
-    notifications: {
-      title: "Notifications",
-      preferencesTitle: "Preferences",
-      regionAriaLabel: "Notifications",
-      openPreferencesAriaLabel: "Open notification preferences",
-      backToListAriaLabel: "Back to notification list",
-      empty: "No notifications yet.",
-      loadMore: "Load More",
-      markAllAsRead: "Mark all as read",
-      unreadAriaLabel: "{{count}} unread",
-    },
-    topHeader: {
-      notificationsAriaLabel: "Notifications",
-    },
-    strategyList: {
-      title: "Investment Strategies",
-      results: "results",
-      noResults: "No strategies match the selected filters.",
-      statReturn: "RETURN",
-      statParticipants: "PARTICIPANTS",
-      filters: {
-        lowRisk: "Low Risk",
-        mediumRisk: "Medium Risk",
-        highRisk: "High Risk",
-        growth: "Growth",
-        income: "Income",
-        balanced: "Balanced",
-        defensive: "Defensive",
-        active: "Active",
-        paused: "Paused",
-        archived: "Archived",
+    toast: {
+      categories: {
+        success: "Success",
+        info: "Info",
+        warning: "Warning",
+        error: "Error",
       },
     },
     globalSearch: {
@@ -2865,6 +2812,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "Les événements de compte à haut risque peuvent être manqués jusqu'à ce que vous réactiviez la couverture de sécurité.",
         },
         actions: {
+          groupLabel: "Actions des paramètres de notification",
           edit: "Modifier les préférences",
           unsaved: "Modifications non enregistrées",
           noPending: "Aucune modification en attente",
@@ -3717,37 +3665,12 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       emailDigest: "Résumé par e-mail",
       push: "Notifications push",
     },
-    notifications: {
-      title: "Notifications",
-      preferencesTitle: "Préférences",
-      regionAriaLabel: "Notifications",
-      openPreferencesAriaLabel: "Ouvrir les préférences de notification",
-      backToListAriaLabel: "Retour à la liste de notifications",
-      empty: "Aucune notification pour le moment.",
-      loadMore: "Charger plus",
-      markAllAsRead: "Tout marquer comme lu",
-      unreadAriaLabel: "{{count}} non lues",
-    },
-    topHeader: {
-      notificationsAriaLabel: "Notifications",
-    },
-    strategyList: {
-      title: "Stratégies d'investissement",
-      results: "résultats",
-      noResults: "Aucune stratégie ne correspond aux filtres sélectionnés.",
-      statReturn: "RENDEMENT",
-      statParticipants: "PARTICIPANTS",
-      filters: {
-        lowRisk: "Risque faible",
-        mediumRisk: "Risque moyen",
-        highRisk: "Risque élevé",
-        growth: "Croissance",
-        income: "Revenu",
-        balanced: "Équilibré",
-        defensive: "Défensif",
-        active: "Actif",
-        paused: "En pause",
-        archived: "Archivé",
+    toast: {
+      categories: {
+        success: "Succès",
+        info: "Information",
+        warning: "Avertissement",
+        error: "Erreur",
       },
     },
     globalSearch: {
