@@ -1,0 +1,27 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "Abidoyesimze-patch-1",
+    "cleanup/2026-07-audit",
+    "fix/954-onboarding-reset-flow",
+    "fix/954-reset-onboarding-flow-storage",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "Abidoyesimze-patch-1": "main",
+    "cleanup/2026-07-audit": "main",
+    "fix/954-onboarding-reset-flow": "main",
+    "fix/954-reset-onboarding-flow-storage": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "Abidoyesimze-patch-1",
+    "cleanup/2026-07-audit",
+    "fix/954-onboarding-reset-flow",
+    "fix/954-reset-onboarding-flow-storage",
+    "origin"
+  ]
+}
