@@ -148,6 +148,11 @@ export interface AppMessages {
       deltaYield: string;
       deltaApy: string;
       eventLog: string;
+      controlsLabel: string;
+      streamStatusLabel: string;
+      startStreamLabel: string;
+      stopStreamLabel: string;
+      resetStreamLabel: string;
       status: {
         live: string;
         paused: string;
@@ -1324,6 +1329,11 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         deltaYield: "Δ Yield",
         deltaApy: "Δ APY",
         eventLog: "Event log",
+        controlsLabel: "Stream controls",
+        streamStatusLabel: "Stream status: {{status}}",
+        startStreamLabel: "Start stream",
+        stopStreamLabel: "Stop stream",
+        resetStreamLabel: "Reset stream",
         status: {
           live: "Live",
           paused: "Paused",
@@ -2701,6 +2711,11 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         deltaYield: "Δ Rendement",
         deltaApy: "Δ APY",
         eventLog: "Journal des événements",
+        controlsLabel: "Commandes du flux",
+        streamStatusLabel: "État du flux : {{status}}",
+        startStreamLabel: "Démarrer le flux",
+        stopStreamLabel: "Arrêter le flux",
+        resetStreamLabel: "Réinitialiser le flux",
         status: {
           live: "En direct",
           paused: "En pause",
