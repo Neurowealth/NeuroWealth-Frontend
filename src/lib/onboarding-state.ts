@@ -58,6 +58,26 @@ export function clearOnboardingState(): void {
   storage.removeItem(STORAGE_KEY);
 }
 
+/**
+ * Clear every key written during onboarding: the flow progress plus the
+ * step-scoped strategy / first-deposit records (#954).
+ *
+ * Both reset entry points — `useOnboardingFlow().resetFlow` ("Review
+ * Onboarding") and the OnboardingSettings reset button — call this single
+ * function so the two reset paths cannot drift apart again.
+ */
+export function resetOnboardingState(): void {
+  clearOnboardingState();
+
+  const storage = getStorage();
+  if (!storage) {
+    return;
+  }
+
+  storage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
+  storage.removeItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT);
+}
+
 export function isOnboardingCompleted(): boolean {
   return loadOnboardingState()?.completed === true;
 }
