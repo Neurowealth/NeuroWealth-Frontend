@@ -33,6 +33,10 @@ export function setupDomGlobals() {
   Object.defineProperty(globalThis, "Node", { value: dom.window.Node, writable: true, configurable: true });
   Object.defineProperty(globalThis, "localStorage", { value: dom.window.localStorage, writable: true, configurable: true });
   Object.defineProperty(globalThis, "StorageEvent", { value: dom.window.StorageEvent, writable: true, configurable: true });
+  // Node has its own native Event global distinct from jsdom's; without this
+  // override, `new Event(...)` constructs a cross-realm instance that jsdom
+  // elements reject on dispatchEvent ("parameter 1 is not of type 'Event'").
+  Object.defineProperty(globalThis, "Event", { value: dom.window.Event, writable: true, configurable: true });
   Object.defineProperty(globalThis, "MutationObserver", {
     value: dom.window.MutationObserver ||
       class { observe() {} disconnect() {} takeRecords() { return []; } },
