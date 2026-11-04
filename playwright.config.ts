@@ -63,7 +63,7 @@ export default defineConfig({
     webServer: {
       command:
         "mkdir -p .next/standalone/public .next/standalone/.next/static && " +
-        "cp -r public/. .next/standalone/public/ && " +
+        "([ -d public ] && cp -r public/. .next/standalone/public/ || true) && " +
         "cp -r .next/static/. .next/standalone/.next/static/ && " +
         "node .next/standalone/server.js",
       url: baseURL,
