@@ -117,9 +117,19 @@ export function requireAuth(
     if (origin !== expectedOrigin || fetchSite === "cross-site") {
       // TEMP DIAGNOSTIC, remove once resolved. next.config.mjs's
       // removeConsole strips ALL console.* calls (no exclude configured),
-      // so throwing is the only way to get this logged by Next.js's own
-      // (never-stripped) exception reporter.
-      throw new Error(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}`);
+      // so use process.stdout.write directly instead, which the transform
+      // doesn't touch.
+      process.stdout.write(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}\n`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "Cross-origin requests are not allowed.",
+          },
+        },
+        { status: 403 },
+      );
     }
   }
 
