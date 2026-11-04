@@ -64,26 +64,54 @@ async function sameOriginStatus(headers: Record<string, string>): Promise<number
 
 test("requireSameOrigin allows a matching Origin", async () => {
   assert.equal(
-    await sameOriginStatus({ origin: "https://app.example.com", "sec-fetch-site": "same-origin" }),
+    await sameOriginStatus({
+      origin: "https://app.example.com",
+      host: "app.example.com",
+      "sec-fetch-site": "same-origin",
+    }),
     null,
   );
 });
 
 test("requireSameOrigin rejects a mismatched Origin", async () => {
-  assert.equal(await sameOriginStatus({ origin: "https://evil.example" }), 403);
+  assert.equal(
+    await sameOriginStatus({ origin: "https://evil.example", host: "app.example.com" }),
+    403,
+  );
 });
 
 test("requireSameOrigin rejects Sec-Fetch-Site: cross-site", async () => {
   assert.equal(
-    await sameOriginStatus({ origin: "https://app.example.com", "sec-fetch-site": "cross-site" }),
+    await sameOriginStatus({
+      origin: "https://app.example.com",
+      host: "app.example.com",
+      "sec-fetch-site": "cross-site",
+    }),
     403,
   );
 });
 
 test("requireSameOrigin fails closed when Origin and Sec-Fetch-Site are both absent", async () => {
-  assert.equal(await sameOriginStatus({}), 403);
+  assert.equal(await sameOriginStatus({ host: "app.example.com" }), 403);
 });
 
 test("requireSameOrigin rejects a missing Origin even with Sec-Fetch-Site: same-origin", async () => {
-  assert.equal(await sameOriginStatus({ "sec-fetch-site": "same-origin" }), 403);
+  assert.equal(
+    await sameOriginStatus({ host: "app.example.com", "sec-fetch-site": "same-origin" }),
+    403,
+  );
+});
+
+test("requireSameOrigin allows a matching Origin regardless of request.nextUrl's own host (#standalone-server)", async () => {
+  // Regression: request.nextUrl.origin reflects the server's bind address
+  // under the standalone server (e.g. 0.0.0.0), not the Host header the
+  // browser actually sent — the check must key off Host, not nextUrl.
+  assert.equal(
+    await sameOriginStatus({
+      origin: "http://localhost:3000",
+      host: "localhost:3000",
+      "sec-fetch-site": "same-origin",
+    }),
+    null,
+  );
 });
