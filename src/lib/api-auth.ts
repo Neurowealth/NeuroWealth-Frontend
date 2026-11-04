@@ -115,6 +115,8 @@ export function requireAuth(
     // Browsers always send Origin on POST/PUT/PATCH/DELETE, which are the only
     // methods that opt into this check.
     if (origin !== expectedOrigin || fetchSite === "cross-site") {
+      // eslint-disable-next-line no-console -- TEMP DIAGNOSTIC, remove once resolved
+      console.log(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}`);
       return NextResponse.json(
         {
           success: false,
