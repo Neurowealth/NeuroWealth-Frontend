@@ -116,10 +116,10 @@ export function requireAuth(
     // methods that opt into this check.
     if (origin !== expectedOrigin || fetchSite === "cross-site") {
       // TEMP DIAGNOSTIC, remove once resolved. next.config.mjs's
-      // removeConsole strips ALL console.* calls (no exclude configured),
-      // so use process.stdout.write directly instead, which the transform
-      // doesn't touch.
-      process.stdout.write(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}\n`);
+      // removeConsole strips ALL console.* calls, and Playwright's
+      // webServer ignores stdout by default (only pipes stderr), so use
+      // process.stderr.write directly to bypass both.
+      process.stderr.write(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}\n`);
       return NextResponse.json(
         {
           success: false,
