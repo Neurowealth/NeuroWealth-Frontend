@@ -27,7 +27,11 @@ function makeGetRequest(cookieValue?: string, authenticated = true): NextRequest
 }
 
 function makePutRequest(body: unknown, authenticated = true): NextRequest {
-  const headers = new Headers({ "Content-Type": "application/json", Origin: "http://localhost:3000" });
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    Origin: "http://localhost:3000",
+    Host: "localhost:3000",
+  });
   if (authenticated) {
     headers.set("Cookie", `nw_session=${VALID_SESSION_COOKIE}`);
   }
@@ -105,6 +109,7 @@ test("PUT /api/strategy returns 400 for malformed JSON", async () => {
       "Content-Type": "application/json",
       Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
       Origin: "http://localhost:3000",
+      Host: "localhost:3000",
     },
     body: "not-json",
   });
@@ -127,6 +132,7 @@ test("PUT /api/strategy returns 413 for oversized JSON body", async () => {
       "Content-Length": String(MAX_BODY_BYTES + 1),
       Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
       Origin: "http://localhost:3000",
+      Host: "localhost:3000",
     },
     body: "{}",
   });
