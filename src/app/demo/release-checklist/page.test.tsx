@@ -1,13 +1,15 @@
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 // Must be imported before `@testing-library/user-event` — see jsdom-setup.ts.
 import "@/test-utils/jsdom-setup";
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ReleaseChecklistPage from "./page";
 
 Object.assign(globalThis, { React });
+
+afterEach(cleanup);
 
 describe("ReleaseChecklistPage", () => {
   describe("item status updates", () => {

@@ -63,11 +63,11 @@ test("StrategyList cards have no inline styles and pair light/dark colors", asyn
     assert.equal(card!.querySelector("[style]"), null, "card content should not use inline styles");
     assert.equal(card!.getAttribute("style"), null, "card should not use inline styles");
     assert.match(card!.className, /\bbg-white\b/);
-    assert.match(card!.className, /\bdark:bg-gray-900\b/);
+    assert.match(card!.className, /\bdark:bg-slate-900\b/);
 
     const title = card!.querySelector("h3")!;
     assert.match(title.className, /\btext-slate-900\b/);
-    assert.match(title.className, /\bdark:text-gray-50\b/);
+    assert.match(title.className, /\bdark:text-slate-50\b/);
   }
 
   act(() => root.unmount());
