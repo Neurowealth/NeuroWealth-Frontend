@@ -69,7 +69,7 @@ function EventLog({ events, t }: { events: StreamEvent[], t: AppMessages["dashbo
 
   return (
     <ol
-      aria-label="Realtime event log"
+      aria-label={t.eventLog}
       className="space-y-1.5 max-h-48 overflow-y-auto pr-1"
     >
       {events.map((ev) => (
@@ -155,7 +155,7 @@ export function RealtimeDashboard() {
     <div className="space-y-6">
       {/* ── Realtime controls banner ── */}
       <section
-        aria-label="Realtime stream controls"
+        aria-label={t.simulatedStream}
         className="rounded-xl border border-white/10 bg-slate-900/80 p-4"
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -169,7 +169,7 @@ export function RealtimeDashboard() {
                 <span className="text-sm font-semibold text-slate-100">{t.simulatedStream}</span>
                 <span
                   className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-slate-300"
-                  aria-label={`Stream status: ${statusLabel(status, t)}`}
+                  aria-label={t.streamStatusLabel.replace("{{status}}", statusLabel(status, t))}
                 >
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${statusDot(status)}`}
@@ -183,35 +183,35 @@ export function RealtimeDashboard() {
           </div>
 
           {/* Right: controls */}
-          <div className="flex items-center gap-2" role="group" aria-label="Stream controls">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t.controlsLabel}>
             <button
               type="button"
               onClick={start}
               disabled={status === "running"}
-              aria-label="{t.start} stream"
+              aria-label={t.startStreamLabel}
               className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
             >
               <Play size={12} aria-hidden />
-              Start
+              {t.start}
             </button>
             <button
               type="button"
               onClick={stop}
               disabled={status !== "running"}
-              aria-label="{t.stop} stream"
+              aria-label={t.stopStreamLabel}
               className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
             >
               <Square size={12} aria-hidden />
-              Stop
+              {t.stop}
             </button>
             <button
               type="button"
               onClick={reset}
-              aria-label="{t.reset} stream"
+              aria-label={t.resetStreamLabel}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
             >
               <RotateCcw size={12} aria-hidden />
-              Reset
+              {t.reset}
             </button>
           </div>
         </div>
