@@ -47,6 +47,21 @@ export function setupDomGlobals() {
     configurable: true,
   });
   Object.defineProperty(globalThis, "getComputedStyle", { value: dom.window.getComputedStyle, writable: true, configurable: true });
+  // jsdom does not implement matchMedia (it requires a layout engine), so
+  // code relying on it (e.g. ThemeProvider's system-theme detection) throws
+  // without this stub.
+  const matchMediaStub = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  });
+  Object.defineProperty(dom.window, "matchMedia", { value: matchMediaStub, writable: true, configurable: true });
+  Object.defineProperty(globalThis, "matchMedia", { value: matchMediaStub, writable: true, configurable: true });
   Object.defineProperty(globalThis, "requestAnimationFrame", {
     value: (cb: FrameRequestCallback) => setTimeout(cb, 0),
     writable: true,

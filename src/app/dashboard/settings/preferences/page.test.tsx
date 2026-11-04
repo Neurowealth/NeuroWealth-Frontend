@@ -4,16 +4,22 @@ import React, { type ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setupDomGlobals } from "@/test-setup";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { ThemeProvider } from "@/contexts/ThemeProvider";
 
 setupDomGlobals();
 (globalThis as typeof globalThis & { React?: typeof React }).React = React;
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+function Providers({ children }: { children: ReactNode }) {
+  return React.createElement(I18nProvider, null, React.createElement(ThemeProvider, null, children));
+}
+
 function mount(ui: ReactNode): { root: Root; container: HTMLDivElement } {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  act(() => root.render(ui));
+  act(() => root.render(React.createElement(Providers, null, ui)));
   return { root, container };
 }
 

@@ -4,6 +4,7 @@ import React, { type ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setupDomGlobals } from "@/test-setup";
+import { I18nProvider } from "@/contexts/I18nContext";
 
 setupDomGlobals();
 (globalThis as typeof globalThis & { React?: typeof React }).React = React;
@@ -13,7 +14,7 @@ function mount(ui: ReactNode): { root: Root; container: HTMLDivElement } {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  act(() => root.render(ui));
+  act(() => root.render(React.createElement(I18nProvider, null, ui)));
   return { root, container };
 }
 

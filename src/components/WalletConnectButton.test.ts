@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { setupDomGlobals } from "@/test-setup";
 import { findSwkModal } from "./WalletConnectButton";
+
+setupDomGlobals();
 
 test("findSwkModal — finds matching element directly or as a descendant", () => {
   // Test direct match on element itself

@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+// Must be imported before `@testing-library/user-event` — see jsdom-setup.ts.
+import "@/test-utils/jsdom-setup";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OnboardingFlow from "./OnboardingFlow";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
-import { setupDomGlobals } from "../../test-setup";
-
-setupDomGlobals();
 
 // #953 — the per-step skip button is wired to handleStepSkip, while the bottom
 // "Skip All" button keeps completing the whole flow via handleSkip.
