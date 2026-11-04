@@ -115,19 +115,11 @@ export function requireAuth(
     // Browsers always send Origin on POST/PUT/PATCH/DELETE, which are the only
     // methods that opt into this check.
     if (origin !== expectedOrigin || fetchSite === "cross-site") {
-      // TEMP DIAGNOSTIC, remove once resolved. console.error because
-      // next.config.mjs strips console.log in production builds.
-      console.error(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}`);
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "FORBIDDEN",
-            message: "Cross-origin requests are not allowed.",
-          },
-        },
-        { status: 403 },
-      );
+      // TEMP DIAGNOSTIC, remove once resolved. next.config.mjs's
+      // removeConsole strips ALL console.* calls (no exclude configured),
+      // so throwing is the only way to get this logged by Next.js's own
+      // (never-stripped) exception reporter.
+      throw new Error(`[diag requireSameOrigin] origin=${origin} expectedOrigin=${expectedOrigin} fetchSite=${fetchSite} host=${request.headers.get("host")} xfh=${request.headers.get("x-forwarded-host")} xfp=${request.headers.get("x-forwarded-proto")}`);
     }
   }
 
