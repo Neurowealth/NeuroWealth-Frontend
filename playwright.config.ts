@@ -52,10 +52,20 @@ export default defineConfig({
     },
   ],
 
-  /* In CI, start the production server before running tests */
+  /* In CI, start the production server before running tests.
+   * next.config.mjs sets `output: "standalone"`, under which `next start`
+   * (yarn start) doesn't serve the app correctly — Next.js itself warns
+   * "next start does not work with output: standalone" and recommends
+   * running the generated server.js directly. public/ and .next/static
+   * aren't included in the standalone output automatically, so they're
+   * copied in first, mirroring what the Dockerfile does for production. */
   ...(isCI && {
     webServer: {
-      command: "yarn start",
+      command:
+        "mkdir -p .next/standalone/public .next/standalone/.next/static && " +
+        "cp -r public/. .next/standalone/public/ && " +
+        "cp -r .next/static/. .next/standalone/.next/static/ && " +
+        "node .next/standalone/server.js",
       url: baseURL,
       reuseExistingServer: false,
       timeout: 60_000,
