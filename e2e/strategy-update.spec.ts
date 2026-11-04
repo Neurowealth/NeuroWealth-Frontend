@@ -45,7 +45,15 @@ test.describe("Strategy update", () => {
     const selectBalanced = page.getByRole("button", { name: "Select Balanced" });
     if (await selectBalanced.isVisible()) {
       await selectBalanced.click();
-      await page.getByRole("button", { name: "Confirm" }).click();
+      const [putResponse] = await Promise.all([
+        page.waitForResponse(
+          (res) => res.url().includes("/api/strategy") && res.request().method() === "PUT",
+        ),
+        page.getByRole("button", { name: "Confirm" }).click(),
+      ]);
+      // TEMP DIAGNOSTIC: surface the PUT response in CI logs to root-cause
+      // why the confirm modal doesn't close. Remove once resolved.
+      console.log(`[diag] PUT /api/strategy -> ${putResponse.status()} ${await putResponse.text()}`);
       // Wait for the confirmation modal to close (save completed) rather
       // than just network idle, which can resolve before the UI updates.
       await expect(page.getByRole("dialog")).toBeHidden();
