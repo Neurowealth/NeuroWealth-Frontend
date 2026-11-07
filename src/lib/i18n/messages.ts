@@ -1044,6 +1044,39 @@ export interface AppMessages {
     reject: string;
     acceptAll: string;
   };
+  topHeader: {
+    notificationsAriaLabel: string;
+  };
+  notifications: {
+    title: string;
+    preferencesTitle: string;
+    empty: string;
+    loadMore: string;
+    markAllAsRead: string;
+    backToListAriaLabel: string;
+    openPreferencesAriaLabel: string;
+    regionAriaLabel: string;
+    unreadAriaLabel: string;
+  };
+  strategyList: {
+    title: string;
+    results: string;
+    noResults: string;
+    statReturn: string;
+    statParticipants: string;
+    filters: {
+      lowRisk: string;
+      mediumRisk: string;
+      highRisk: string;
+      growth: string;
+      income: string;
+      balanced: string;
+      defensive: string;
+      active: string;
+      paused: string;
+      archived: string;
+    };
+  };
 }
 
 export const localeToIntl: Record<AppLocale, string> = {
@@ -2407,6 +2440,39 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       reject: "Reject",
       acceptAll: "Accept all",
     },
+    topHeader: {
+      notificationsAriaLabel: "Notifications",
+    },
+    notifications: {
+      title: "Notifications",
+      preferencesTitle: "Preferences",
+      empty: "No notifications yet.",
+      loadMore: "Load More",
+      markAllAsRead: "Mark all as read",
+      backToListAriaLabel: "Back to notification list",
+      openPreferencesAriaLabel: "Open notification preferences",
+      regionAriaLabel: "Notifications",
+      unreadAriaLabel: "{{count}} unread",
+    },
+    strategyList: {
+      title: "Investment Strategies",
+      results: "results",
+      noResults: "No strategies match the selected filters.",
+      statReturn: "RETURN",
+      statParticipants: "PARTICIPANTS",
+      filters: {
+        lowRisk: "Low Risk",
+        mediumRisk: "Medium Risk",
+        highRisk: "High Risk",
+        growth: "Growth",
+        income: "Income",
+        balanced: "Balanced",
+        defensive: "Defensive",
+        active: "Active",
+        paused: "Paused",
+        archived: "Archived",
+      },
+    },
   },
   fr: {
     locale: {
@@ -3764,6 +3830,39 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       options: "Options",
       reject: "Refuser",
       acceptAll: "Tout accepter",
+    },
+    topHeader: {
+      notificationsAriaLabel: "Notifications",
+    },
+    notifications: {
+      title: "Notifications",
+      preferencesTitle: "Préférences",
+      empty: "Aucune notification pour le moment.",
+      loadMore: "Charger plus",
+      markAllAsRead: "Tout marquer comme lu",
+      backToListAriaLabel: "Retour à la liste des notifications",
+      openPreferencesAriaLabel: "Ouvrir les préférences de notification",
+      regionAriaLabel: "Notifications",
+      unreadAriaLabel: "{{count}} non lue(s)",
+    },
+    strategyList: {
+      title: "Stratégies d'investissement",
+      results: "résultats",
+      noResults: "Aucune stratégie ne correspond aux filtres sélectionnés.",
+      statReturn: "RENDEMENT",
+      statParticipants: "PARTICIPANTS",
+      filters: {
+        lowRisk: "Risque faible",
+        mediumRisk: "Risque moyen",
+        highRisk: "Risque élevé",
+        growth: "Croissance",
+        income: "Revenu",
+        balanced: "Équilibrée",
+        defensive: "Défensive",
+        active: "Active",
+        paused: "En pause",
+        archived: "Archivée",
+      },
     },
   },
 };

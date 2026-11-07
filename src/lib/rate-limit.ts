@@ -136,13 +136,15 @@ export function getRateLimitKey(
     return "unknown";
   }
 
-  const xForwardedFor = headers.get("x-forwarded-for");
-  const parsedXff = parseClientIp(xForwardedFor);
-  if (parsedXff) return parsedXff;
-
+  // x-real-ip is set by the trusted reverse proxy itself and cannot be
+  // spoofed by the client, so it takes priority over x-forwarded-for.
   const xRealIp = headers.get("x-real-ip");
   const parsedXReal = parseClientIp(xRealIp);
   if (parsedXReal) return parsedXReal;
+
+  const xForwardedFor = headers.get("x-forwarded-for");
+  const parsedXff = parseClientIp(xForwardedFor);
+  if (parsedXff) return parsedXff;
 
   return "unknown";
 }

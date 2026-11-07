@@ -21,6 +21,7 @@ boundary catches the error, what the user sees, and how they recover.
 | RootLayout / ClientProviders crash (any route) | Possible | Unhandled render throw in top-level context providers above RootLayout | `src/app/global-error.tsx` | Title: "We ran into an unexpected issue"; Description: "The page could not finish loading. Your account and funds remain safe. Try again now or return home." | Primary: "Back to home" (`href=/`); Secondary: "Try again" (calls `reset()`) |
 | `/dashboard/dev-errors/route-error` (dev only) | Yes — intentional | `throw new Error(…)` in the page component | `src/app/dashboard/error.tsx` | Title: "Dashboard unavailable"; Description: "We are having trouble loading this dashboard view right now. Your funds and wallet connection remain safe." | Primary: "Back to dashboard home" (`href=/dashboard`); Secondary: "Try again" (calls `reset()`) |
 | `/dashboard/dev-errors/boundary-error` (dev only) | Yes — on button click | `TriggerBoundaryError` sets `shouldThrow = true`, causing a render throw | Global `ErrorBoundary` in `src/app/layout.tsx` | Heading: "We hit a temporary app issue."; Body: "Try reloading this view. If the issue keeps happening, return shortly while we investigate." | "Try again" button resets `hasError` state; full reload also recovers |
+| `/dashboard/dev-errors/global-error` (dev only) | Yes — on visit | `GlobalErrorDevTrigger` (rendered by `ClientProviders` above the `ErrorBoundary`) throws when this pathname is active | `src/app/global-error.tsx` | Title: "We ran into an unexpected issue"; Description: "The page could not finish loading. Your account and funds remain safe. Try again now or return home." | Primary: "Back to home" (`href=/`); Secondary: "Try again" (re-throws while still on this path, by design) |
 | `/dashboard/**` (all live dashboard segments) | Possible (data fetch, runtime) | Unhandled exception in a server component or async route handler | `src/app/dashboard/error.tsx` | Title: "Dashboard unavailable"; Description: "We are having trouble loading this dashboard view right now. Your funds and wallet connection remain safe." | Primary: "Back to dashboard home"; Secondary: "Try again" |
 | `/onboarding` | Possible | Unhandled exception in onboarding server components | `src/app/onboarding/error.tsx` | Title: "Onboarding unavailable"; Description: "We could not load the onboarding flow. Your current progress remains safe, and you can retry the route when ready." | Primary: "Back to home" (`href=/`); Secondary: "Try again" |
 | `/profile` | Possible | Unhandled exception in profile server components | `src/app/profile/error.tsx` | Title: "Profile unavailable"; Description: "We could not load your profile view. Your saved preferences remain unchanged, and you can try loading this route again." | Primary: "Back to dashboard" (`href=/dashboard`); Secondary: "Try again" |
@@ -44,7 +45,7 @@ The raw `error` prop is accepted but intentionally unused (`error: _error`) in e
 
 ## Test coverage
 
-Playwright smoke tests live in `e2e/error-boundary-smoke.spec.ts` and cover both
+Playwright smoke tests live in `e2e/error-boundary-smoke.spec.ts` and cover all three
 boundary types:
 
 - **Route-level boundary**: navigates to `/dashboard/dev-errors/route-error` and asserts
@@ -52,8 +53,11 @@ boundary types:
 - **Client-side `ErrorBoundary`**: navigates to `/dashboard/dev-errors/boundary-error`,
   clicks the trigger button, and asserts the global fallback heading and reload-prompt copy
   are visible.
+- **Global root boundary**: navigates to `/dashboard/dev-errors/global-error`, which
+  immediately crashes `ClientProviders` via `GlobalErrorDevTrigger`, and asserts
+  `global-error.tsx`'s heading and safety-reassurance copy are visible.
 
-Both dev-only trigger routes return 404 in production (`notFound()` guard), so they are
+All dev-only trigger routes return 404 in production (`notFound()` guard), so they are
 safe to leave in the codebase.
 
 ## Adding a new segment

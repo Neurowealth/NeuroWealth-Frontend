@@ -108,13 +108,28 @@ export function requireAuth(
 
   if (requireSameOrigin) {
     const origin = request.headers.get("origin");
-    const expectedOrigin = request.nextUrl.origin;
+    const host = request.headers.get("host");
     const fetchSite = request.headers.get("sec-fetch-site");
+
+    // Compared against the Host header rather than request.nextUrl.origin:
+    // nextUrl.origin reflects the server's own bind address/port (e.g.
+    // "0.0.0.0" under the standalone server that `output: "standalone"`
+    // generates — see the Dockerfile), not the origin the browser actually
+    // connected to, so it never matches a legitimate same-origin request
+    // under that deployment.
+    let originHost: string | null = null;
+    if (origin) {
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        originHost = null;
+      }
+    }
 
     // Fail closed: a missing Origin is rejected rather than assumed same-origin.
     // Browsers always send Origin on POST/PUT/PATCH/DELETE, which are the only
     // methods that opt into this check.
-    if (origin !== expectedOrigin || fetchSite === "cross-site") {
+    if (!origin || originHost !== host || fetchSite === "cross-site") {
       return NextResponse.json(
         {
           success: false,

@@ -4,6 +4,7 @@ import React, { type ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setupDomGlobals } from "@/test-setup";
+import { I18nProvider } from "@/contexts/I18nContext";
 
 setupDomGlobals();
 (globalThis as typeof globalThis & { React?: typeof React }).React = React;
@@ -13,7 +14,7 @@ function mount(ui: ReactNode): { root: Root; container: HTMLDivElement } {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  act(() => root.render(ui));
+  act(() => root.render(React.createElement(I18nProvider, null, ui)));
   return { root, container };
 }
 
@@ -62,11 +63,11 @@ test("StrategyList cards have no inline styles and pair light/dark colors", asyn
     assert.equal(card!.querySelector("[style]"), null, "card content should not use inline styles");
     assert.equal(card!.getAttribute("style"), null, "card should not use inline styles");
     assert.match(card!.className, /\bbg-white\b/);
-    assert.match(card!.className, /\bdark:bg-gray-900\b/);
+    assert.match(card!.className, /\bdark:bg-slate-900\b/);
 
     const title = card!.querySelector("h3")!;
     assert.match(title.className, /\btext-slate-900\b/);
-    assert.match(title.className, /\bdark:text-gray-50\b/);
+    assert.match(title.className, /\bdark:text-slate-50\b/);
   }
 
   act(() => root.unmount());

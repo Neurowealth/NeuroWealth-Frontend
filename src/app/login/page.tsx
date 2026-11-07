@@ -74,14 +74,14 @@ function LoginContent() {
         // Mock: treat demo credentials as valid
         if (
           email === "demo@neurowealth.app" ||
-          password === "password123"
+          password === "demo123"
         ) {
           await signIn(email, password);
           setState("success");
           setTimeout(() => router.replace(from), 800);
         } else {
           setState("error");
-          setFormError("Invalid credentials. Try demo@neurowealth.app / password123.");
+          setFormError("Invalid credentials. Try demo@neurowealth.app / demo123.");
         }
       } catch {
         setState("error");
@@ -93,7 +93,7 @@ function LoginContent() {
 
   const handleDemoFill = () => {
     setEmail("demo@neurowealth.app");
-    setPassword("password123");
+    setPassword("demo123");
     setEmailError(null);
     setPasswordError(null);
     setFormError(null);

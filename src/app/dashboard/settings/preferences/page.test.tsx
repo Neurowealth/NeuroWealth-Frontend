@@ -4,16 +4,22 @@ import React, { type ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setupDomGlobals } from "@/test-setup";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { ThemeProvider } from "@/contexts/ThemeProvider";
 
 setupDomGlobals();
 (globalThis as typeof globalThis & { React?: typeof React }).React = React;
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+function Providers({ children }: { children: ReactNode }) {
+  return React.createElement(I18nProvider, null, React.createElement(ThemeProvider, null, children));
+}
+
 function mount(ui: ReactNode): { root: Root; container: HTMLDivElement } {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  act(() => root.render(ui));
+  act(() => root.render(React.createElement(Providers, null, ui)));
   return { root, container };
 }
 
@@ -25,7 +31,7 @@ test("Preferences page loads with defaults and displays read-only view", async (
   const { root, container } = mount(React.createElement(PreferencesPage));
 
   // Wait for page to load (loading skeleton should disappear)
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 700));
   act(() => {
     // Trigger potential re-renders
   });
@@ -56,7 +62,7 @@ test("Preferences page enters edit mode and shows theme selection", async () => 
   const { root, container } = mount(React.createElement(PreferencesPage));
 
   // Wait for page to load
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 700));
 
   // Find and click the Edit button
   const editButton = Array.from(container.querySelectorAll("button")).find(
@@ -99,7 +105,7 @@ test("Preferences page allows theme selection with live preview and cancel rever
   const { root, container } = mount(React.createElement(PreferencesPage));
 
   // Wait for page to load
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 700));
 
   // Enter edit mode
   const editButton = Array.from(container.querySelectorAll("button")).find(
@@ -151,7 +157,7 @@ test("Preferences page displays unsaved indicator when changes are made", async 
   const { root, container } = mount(React.createElement(PreferencesPage));
 
   // Wait for page to load
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 700));
 
   // Enter edit mode
   const editButton = Array.from(container.querySelectorAll("button")).find(
@@ -187,7 +193,7 @@ test("Preferences page handles locale and timezone selection", async () => {
   const { root, container } = mount(React.createElement(PreferencesPage));
 
   // Wait for page to load
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 700));
 
   // Enter edit mode
   const editButton = Array.from(container.querySelectorAll("button")).find(

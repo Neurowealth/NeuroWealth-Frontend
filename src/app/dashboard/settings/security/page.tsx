@@ -13,7 +13,15 @@ import { useI18n } from "@/contexts/I18nContext";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { logger } from "@/lib/logger";
-import styles from "../settings.module.css";
+import rawStyles from "../settings.module.css";
+
+// CSS Modules resolve to undefined under the Node test runner (no bundler),
+// so fall back to an identity proxy there — see privacy/page.tsx.
+const styles: Record<string, string> =
+  rawStyles ||
+  new Proxy({}, {
+    get: (_target, prop) => (typeof prop === "string" ? prop : ""),
+  });
 
 interface SecurityData {
   twoFactorEnabled: boolean;
