@@ -21,7 +21,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
     status: "success",
     isRead: false,
-    action: { label: "View Transaction", href: "/dashboard/transactions/1" },
+    action: { label: "View Transaction", href: "/dashboard/transactions" },
   },
   {
     id: "2",
@@ -46,7 +46,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     status: "warning",
     isRead: true,
-    action: { label: "Verify Email", href: "/settings/profile" },
+    action: { label: "Verify Email", href: "/profile" },
   },
   {
     id: "5",

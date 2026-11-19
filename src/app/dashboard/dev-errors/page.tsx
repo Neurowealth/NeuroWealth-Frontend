@@ -55,6 +55,11 @@ export default function DashboardDevErrorsPage() {
               Trigger client ErrorBoundary fallback
             </Link>
           </li>
+          <li>
+            <Link className="text-primary hover:underline" href="/dashboard/dev-errors/global-error">
+              Trigger global-error.tsx (ClientProviders crash)
+            </Link>
+          </li>
         </ul>
       </section>
     </main>

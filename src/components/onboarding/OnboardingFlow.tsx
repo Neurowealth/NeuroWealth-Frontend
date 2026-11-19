@@ -47,6 +47,7 @@ export default function OnboardingFlow({
     handleNext,
     handleBack,
     handleSkip,
+    handleStepSkip,
     handleStepClick,
     resetFlow,
   } = useOnboardingFlow({
@@ -133,7 +134,7 @@ export default function OnboardingFlow({
             <div className="p-6 sm:p-8">
               <CurrentStepComponent
                 onNext={handleNext}
-                onSkip={handleSkip}
+                onSkip={handleStepSkip}
                 onBack={currentStep > 0 ? handleBack : undefined}
               />
             </div>

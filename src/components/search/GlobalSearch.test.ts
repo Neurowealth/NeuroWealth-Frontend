@@ -12,6 +12,9 @@ import {
   searchMockIndex,
 } from "@/lib/mock-search-index";
 import { getSearchDataProvider, setSearchDataProvider } from "@/lib/search-service";
+import { dictionaries } from "@/lib/i18n/messages";
+
+const tSearch = dictionaries.en.globalSearch;
 
 // ── computeNextIndex ─────────────────────────────────────────────────────────
 
@@ -235,24 +238,36 @@ test("searchMockIndex 'usdc' returns deposit action and TX record", async () => 
 // ── resolveLiveRegionMessage ─────────────────────────────────────────────────
 
 test("live region: empty query returns no message", () => {
-  assert.equal(resolveLiveRegionMessage(false, null, false, false, "", 0), "");
+  assert.equal(resolveLiveRegionMessage(false, null, false, false, "", 0, tSearch), "");
 });
 
 test("live region: loading state returns no message to avoid noise", () => {
-  assert.equal(resolveLiveRegionMessage(true, null, true, false, "test", 0), "");
+  assert.equal(resolveLiveRegionMessage(true, null, true, false, "test", 0, tSearch), "");
 });
 
 test("live region: error state returns error message", () => {
-  assert.equal(resolveLiveRegionMessage(false, "Network error", true, false, "test", 0), "Search error: Network error");
+  assert.equal(
+    resolveLiveRegionMessage(false, "Network error", true, false, "test", 0, tSearch),
+    "Search error: Network error",
+  );
 });
 
 test("live region: committed query with no results returns empty message", () => {
-  assert.equal(resolveLiveRegionMessage(false, null, true, false, "unknown", 0), "No results found for unknown");
+  assert.equal(
+    resolveLiveRegionMessage(false, null, true, false, "unknown", 0, tSearch),
+    "No results found for unknown",
+  );
 });
 
 test("live region: results returns count and navigation instruction", () => {
-  assert.equal(resolveLiveRegionMessage(false, null, true, true, "test", 1), "1 search result available. Use arrow keys to navigate.");
-  assert.equal(resolveLiveRegionMessage(false, null, true, true, "test", 5), "5 search results available. Use arrow keys to navigate.");
+  assert.equal(
+    resolveLiveRegionMessage(false, null, true, true, "test", 1, tSearch),
+    "1 search result available. Use arrow keys to navigate.",
+  );
+  assert.equal(
+    resolveLiveRegionMessage(false, null, true, true, "test", 5, tSearch),
+    "5 search results available. Use arrow keys to navigate.",
+  );
 });
 
 // ── SearchDataProvider Mock ──────────────────────────────────────────────────

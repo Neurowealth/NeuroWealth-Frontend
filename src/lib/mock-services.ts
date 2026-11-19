@@ -43,6 +43,9 @@ import {
 import type { AuthSession } from "./mock-auth";
 import { adaptMockAuthUser } from "./user";
 import { STORAGE_KEYS } from "./storage-keys";
+import { dictionaries } from "./i18n/messages";
+
+const tDomain = dictionaries.en.transactions.domain;
 
 // ─── Shared error model ───────────────────────────────────────────────────────
 
@@ -333,7 +336,7 @@ export const mockStrategyService: StrategyService = {
 // ─── Transaction service ──────────────────────────────────────────────────────
 
 export interface TransactionQuoteResult {
-  quote: TransactionQuote;
+  quote: TransactionQuote | null;
   fieldErrors: TransactionFieldErrors;
 }
 
@@ -377,12 +380,15 @@ export const mockTransactionService: TransactionService = {
       );
     }
 
-    const fieldErrors = validateTransactionValues(kind, values);
+    const fieldErrors = validateTransactionValues(kind, values, tDomain);
     if (Object.keys(fieldErrors).length > 0) {
-      return { quote: buildTransactionQuote(kind, values), fieldErrors };
+      return { quote: null, fieldErrors };
     }
 
-    return { quote: buildTransactionQuote(kind, values), fieldErrors: {} };
+    return {
+      quote: buildTransactionQuote(kind, values, tDomain.context),
+      fieldErrors: {},
+    };
   },
 
   async submit(kind, values, opts = {}) {
@@ -398,7 +404,15 @@ export const mockTransactionService: TransactionService = {
     }
 
     const nextStatus = opts.outcome === "failure" ? "failure" : "success";
-    return { pending: buildPendingTransaction(kind, values, nextStatus) };
+    return {
+      pending: buildPendingTransaction(
+        kind,
+        values,
+        tDomain.pending,
+        tDomain.context,
+        nextStatus,
+      ),
+    };
   },
 
   async settle(pending, opts = {}) {
@@ -406,9 +420,17 @@ export const mockTransactionService: TransactionService = {
     await delay(opts.latencyMs ?? pending.completionDelayMs ?? 1600);
 
     if (shouldFail(opts.outcome)) {
-      return { receipt: buildTransactionReceipt(pending, "failure") };
+      return {
+        receipt: buildTransactionReceipt(pending, "failure", tDomain.receipt),
+      };
     }
 
-    return { receipt: buildTransactionReceipt(pending, pending.nextStatus) };
+    return {
+      receipt: buildTransactionReceipt(
+        pending,
+        pending.nextStatus,
+        tDomain.receipt,
+      ),
+    };
   },
 };

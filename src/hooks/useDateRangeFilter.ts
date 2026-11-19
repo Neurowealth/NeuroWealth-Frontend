@@ -51,8 +51,7 @@ export { useLocalDateFilter as useDateFilter };
  * useLocalDateFilter
  *
  * Mock hook for filtering by single date selection with local state.
- * Note: This is a local-state variant; use useDateFilter from useDateFilter.ts
- * for range-based filtering without internal state management.
+ * Note: This is a local-state variant with no URL or range handling.
  */
 export function useLocalDateFilter(data: FilteredData[]) {
   const [date, setDate] = useState<Date | null>(null);

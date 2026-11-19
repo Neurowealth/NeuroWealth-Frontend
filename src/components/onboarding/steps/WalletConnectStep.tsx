@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { random } from '@/lib/seeded-rng';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface WalletConnectStepProps {
   onNext: () => void;
@@ -10,29 +12,31 @@ interface WalletConnectStepProps {
   onBack?: () => void;
 }
 
-const walletOptions = [
-  {
-    id: 'freighter',
-    name: 'Freighter',
-    description: 'Popular browser wallet for Stellar',
-    icon: '🚢',
-    recommended: true
-  },
-  {
-    id: 'albedo',
-    name: 'Albedo',
-    description: 'Secure web-based wallet',
-    icon: '🔐'
-  },
-  {
-    id: 'ledger',
-    name: 'Ledger',
-    description: 'Hardware wallet for maximum security',
-    icon: '🔒'
-  }
-];
-
 export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConnectStepProps) {
+  const { messages } = useI18n();
+  const t = messages.onboardingSteps.walletConnect;
+
+  const walletOptions = [
+    {
+      id: 'freighter',
+      name: 'Freighter',
+      description: t.walletDescriptions.freighter,
+      icon: '🚢',
+      recommended: true
+    },
+    {
+      id: 'albedo',
+      name: 'Albedo',
+      description: t.walletDescriptions.albedo,
+      icon: '🔐'
+    },
+    {
+      id: 'ledger',
+      name: 'Ledger',
+      description: t.walletDescriptions.ledger,
+      icon: '🔒'
+    }
+  ];
   const [selectedWallet, setSelectedWallet] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string>('');
@@ -51,10 +55,10 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
         // Connection successful
         onNext();
       } else {
-        throw new Error('Connection failed. Please try again.');
+        throw new Error(t.errorConnectionFailed);
       }
     } catch (error) {
-      setConnectionError(error instanceof Error ? error.message : 'Connection failed');
+      setConnectionError(error instanceof Error ? error.message : t.errorGeneric);
     } finally {
       setIsConnecting(false);
     }
@@ -69,9 +73,9 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t.title}</h2>
         <p className="text-slate-400 max-w-md mx-auto">
-          Choose a wallet to secure your NeuroWealth account. Your wallet will be used to sign transactions and manage your assets.
+          {t.description}
         </p>
       </div>
 
@@ -101,7 +105,7 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
             {wallet.recommended && (
               <div className="absolute top-2 right-2">
                 <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">
-                  Recommended
+                  {t.recommended}
                 </span>
               </div>
             )}
@@ -146,9 +150,9 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-white mb-1">Security Notice</h4>
+              <h4 className="font-medium text-white mb-1">{t.securityNoticeTitle}</h4>
               <p className="text-sm text-slate-300">
-                Never share your private keys or seed phrase with anyone. NeuroWealth will never ask for your wallet credentials.
+                {t.securityNoticeBody}
               </p>
             </div>
           </div>
@@ -164,28 +168,25 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
         >
           {isConnecting ? (
             <span className="flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Connecting...
+              <Spinner />
+              {t.connectingButton}
             </span>
           ) : (
-            'Connect Wallet'
+            t.connectButton
           )}
         </Button>
         
         <Button variant="secondary" onClick={onSkip} data-qa="wallet-skip-button">
-          Skip for Now
+          {t.skipButton}
         </Button>
       </div>
 
       {/* Help Links */}
       <div className="text-center max-w-2xl mx-auto">
         <p className="text-sm text-slate-400">
-          Don&apos;t have a wallet?{' '}
+          {t.noWalletPrompt}{' '}
           <button className="text-green-400 hover:text-green-300 underline">
-            Learn more
+            {t.learnMore}
           </button>
         </p>
       </div>

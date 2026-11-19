@@ -20,8 +20,14 @@ describe("user module", () => {
   });
 
   describe("truncateWalletAddress", () => {
+    // #1092 — the format is 6 leading + 6 trailing characters. This expectation
+    // used to assert the old NavWalletStatus 4-trailing shape, which the shared
+    // util has not produced since the consolidation.
     it("truncates long addresses", () => {
-      assert.equal(truncateWalletAddress("0x1234567890abcdef1234567890abcdef"), "0x1234...cdef");
+      assert.equal(
+        truncateWalletAddress("0x1234567890abcdef1234567890abcdef"),
+        "0x1234...abcdef",
+      );
     });
 
     it("returns short addresses as is", () => {
@@ -31,11 +37,36 @@ describe("user module", () => {
     it("returns already truncated addresses as is", () => {
       assert.equal(truncateWalletAddress("0x12...cdef"), "0x12...cdef");
     });
+
+    // #1092 — locks in the consolidated format (6 leading + 6 trailing chars)
+    // for a real Stellar account ID. The previous NavWalletStatus-local helper
+    // kept 4 trailing chars and bailed at length < 12, so this exact output is
+    // the intended contract going forward, not an incidental change.
+    it("documents the intended format for a Stellar-length (56 char) address", () => {
+      const stellarAddress =
+        "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37";
+
+      assert.equal(stellarAddress.length, 56);
+      assert.equal(truncateWalletAddress(stellarAddress), "GDQP2K...HG4W37");
+    });
+
+    it("only preserves addresses of 12 characters or fewer", () => {
+      const twelveChars = "GABCDEFGHIJK";
+      assert.equal(twelveChars.length, 12);
+      assert.equal(truncateWalletAddress(twelveChars), twelveChars);
+
+      const thirteenChars = "GABCDEFGHIJKL";
+      assert.equal(thirteenChars.length, 13);
+      assert.equal(truncateWalletAddress(thirteenChars), "GABCDE...GHIJKL");
+    });
   });
 
   describe("getUserAddressLabel", () => {
     it("returns truncated label when address exists", () => {
-      assert.equal(getUserAddressLabel({ walletAddress: "0x1234567890abcdef1234567890abcdef" }), "0x1234...cdef");
+      assert.equal(
+        getUserAddressLabel({ walletAddress: "0x1234567890abcdef1234567890abcdef" }),
+        "0x1234...abcdef",
+      );
     });
 
     it("returns undefined when address is missing", () => {

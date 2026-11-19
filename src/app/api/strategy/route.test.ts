@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { GET, PUT } from "./route";
-import { getRateLimitKey } from "@/lib/rate-limit";
+import { getRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { ERROR_CODE, HTTP_STATUS, MAX_BODY_BYTES } from "@/lib/api-response";
+
+test.afterEach(() => {
+  resetRateLimitStore();
+});
 
 const VALID_SESSION_COOKIE = encodeURIComponent(
   JSON.stringify({ token: "test_token", expiresAt: Date.now() + 3600 * 1000 }),
@@ -27,7 +31,11 @@ function makeGetRequest(cookieValue?: string, authenticated = true): NextRequest
 }
 
 function makePutRequest(body: unknown, authenticated = true): NextRequest {
-  const headers = new Headers({ "Content-Type": "application/json", Origin: "http://localhost:3000" });
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    Origin: "http://localhost:3000",
+    Host: "localhost:3000",
+  });
   if (authenticated) {
     headers.set("Cookie", `nw_session=${VALID_SESSION_COOKIE}`);
   }
@@ -105,6 +113,7 @@ test("PUT /api/strategy returns 400 for malformed JSON", async () => {
       "Content-Type": "application/json",
       Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
       Origin: "http://localhost:3000",
+      Host: "localhost:3000",
     },
     body: "not-json",
   });
@@ -127,6 +136,7 @@ test("PUT /api/strategy returns 413 for oversized JSON body", async () => {
       "Content-Length": String(MAX_BODY_BYTES + 1),
       Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
       Origin: "http://localhost:3000",
+      Host: "localhost:3000",
     },
     body: "{}",
   });
@@ -170,4 +180,156 @@ test("getRateLimitKey prefers trusted platform headers over a spoofed x-forwarde
   });
 
   assert.equal(getRateLimitKey(req), "203.0.113.42");
+});
+
+test("getRateLimitKey returns null when neither x-real-ip nor x-forwarded-for is present", () => {
+  const req = new NextRequest("http://localhost:3000/api/strategy");
+  assert.equal(getRateLimitKey(req), null);
+});
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = value;
+  }
+}
+
+// ── Backend error & exception paths (#Issue 1) ──────────────────────────
+
+test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(JSON.stringify({ error: "Internal Error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const req = makeGetRequest("growth");
+    const res = await GET(req);
+    const body = await res.json();
+
+    assert.equal(res.status, 503);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exception", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      throw new Error("DNS resolution failed");
+    };
+
+    const req = makeGetRequest("growth");
+    const res = await GET(req);
+    const body = await res.json();
+
+    assert.equal(res.status, 503);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(JSON.stringify({ error: "Bad Gateway" }), {
+        status: 502,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, 503);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy returns 503 BACKEND_ERROR when backend fetch throws network exception", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      throw new TypeError("fetch failed: ECONNREFUSED");
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, 503);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy rate limiting isolates clients by session when IP headers are absent", async () => {
+  resetRateLimitStore();
+
+  const userA = encodeURIComponent(
+    JSON.stringify({ token: "user_a_token", expiresAt: Date.now() + 3600_000 }),
+  );
+  const userB = encodeURIComponent(
+    JSON.stringify({ token: "user_b_token", expiresAt: Date.now() + 3600_000 }),
+  );
+
+  function makeUserPutRequest(sessionCookie: string) {
+    const headers = new Headers({
+      "Content-Type": "application/json",
+      Origin: "http://localhost:3000",
+      Host: "localhost:3000",
+      Cookie: `nw_session=${sessionCookie}`,
+    });
+    return new NextRequest("http://localhost:3000/api/strategy", {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ strategy: "growth" }),
+    });
+  }
+
+  // Exhaust limit for user A (10 requests)
+  for (let i = 0; i < 10; i++) {
+    const res = await PUT(makeUserPutRequest(userA));
+    assert.equal(res.status, 200);
+  }
+
+  // User A should now be rate limited
+  const blockedA = await PUT(makeUserPutRequest(userA));
+  assert.equal(blockedA.status, 429);
+
+  // User B should NOT be rate limited (separate session identity)
+  const allowedB = await PUT(makeUserPutRequest(userB));
+  assert.equal(allowedB.status, 200);
 });

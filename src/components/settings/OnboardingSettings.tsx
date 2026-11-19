@@ -4,10 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/notifications/ToastProvider';
-import { clearOnboardingState, loadOnboardingState as getOnboardingState } from '@/lib/onboarding-state';
+import { loadOnboardingState as getOnboardingState, resetOnboardingState } from '@/lib/onboarding-state';
 import { logger } from '@/lib/logger';
 import { formatDate } from '@/lib/formatters';
-import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useI18n } from '@/contexts/I18nContext';
 
 interface OnboardingState {
@@ -44,10 +43,9 @@ export default function OnboardingSettings() {
     setIsResetting(true);
     
     try {
-      // Clear onboarding state
-      clearOnboardingState();
-      localStorage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
-      localStorage.removeItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT);
+      // Clear onboarding progress and the step-scoped strategy/deposit
+      // records — the same shared reset used by the onboarding flow (#954).
+      resetOnboardingState();
       
       // Reset state
       setOnboardingState(null);

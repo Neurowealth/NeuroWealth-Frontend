@@ -13,6 +13,8 @@ import {
 } from "@/lib/search-service";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useI18n } from "@/contexts/I18nContext";
+import type { AppMessages } from "@/lib/i18n/messages";
 
 interface GlobalSearchProps {
   placeholder?: string;
@@ -52,12 +54,13 @@ export function resolveLiveRegionMessage(
   hasCommittedQuery: boolean,
   hasResults: boolean,
   debouncedQuery: string,
-  numResults: number
+  numResults: number,
+  t: AppMessages['globalSearch']
 ): string {
   if (isLoading) return "";
-  if (errorMessage) return `Search error: ${errorMessage}`;
-  if (hasCommittedQuery && !hasResults) return `No results found for ${debouncedQuery}`;
-  if (hasResults) return `${numResults} search result${numResults !== 1 ? "s" : ""} available. Use arrow keys to navigate.`;
+  if (errorMessage) return `${t.liveRegion.errorPrefix} ${errorMessage}`;
+  if (hasCommittedQuery && !hasResults) return `${t.liveRegion.noResults} ${debouncedQuery}`;
+  if (hasResults) return `${numResults} ${numResults !== 1 ? t.liveRegion.resultsAvailable : t.liveRegion.resultsAvailableSingular}`;
   return "";
 }
 
@@ -87,12 +90,15 @@ export function createLatestRequestTracker(): LatestRequestTracker {
 }
 
 export function GlobalSearch({
-  placeholder = "Search pages, actions, or records",
+  placeholder,
   onRequestClose,
   autoFocus = false,
   className = "",
 }: GlobalSearchProps) {
   const router = useRouter();
+  const { messages } = useI18n();
+  const t = messages.globalSearch;
+  const resolvedPlaceholder = placeholder ?? t.placeholder;
   const listboxId = useId();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -155,7 +161,7 @@ export function GlobalSearch({
         if (tracker.isStale(requestId)) return;
         setResults(EMPTY_RESULTS);
         setActiveIndex(-1);
-        setErrorMessage("Search is temporarily unavailable. Please try again.");
+        setErrorMessage(t.errorMessage);
       })
       .finally(() => {
         if (!tracker.isStale(requestId)) {
@@ -167,7 +173,7 @@ export function GlobalSearch({
       // A newer query (or unmount) supersedes this run; ignore its result.
       tracker.invalidate();
     };
-  }, [debouncedQuery, retryKey]);
+  }, [debouncedQuery, retryKey, t.errorMessage]);
 
   const flatResults = useMemo(() => flattenResults(results), [results]);
 
@@ -220,11 +226,11 @@ export function GlobalSearch({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       <label htmlFor={`${listboxId}-input`} className="sr-only">
-        Global search
+        {t.label}
       </label>
       <div className="relative">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400"
           size={18}
           aria-hidden="true"
         />
@@ -264,8 +270,8 @@ export function GlobalSearch({
               onRequestClose?.();
             }
           }}
-          placeholder={placeholder}
-          className="h-11 w-full rounded-xl border border-white/10 bg-slate-950/80 pl-10 pr-10 text-sm text-white shadow-inner shadow-black/20 outline-none transition focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/20"
+          placeholder={resolvedPlaceholder}
+          className="h-11 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white/90 dark:bg-slate-950/80 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-inner shadow-black/5 dark:shadow-black/20 outline-none transition focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/20"
           autoComplete="off"
           role="combobox"
           aria-autocomplete="list"
@@ -278,8 +284,8 @@ export function GlobalSearch({
           <button
             type="button"
             onClick={clearQuery}
-            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
-            aria-label="Clear search"
+            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+            aria-label={t.clearAriaLabel}
           >
             <X size={16} aria-hidden="true" />
           </button>
@@ -298,7 +304,8 @@ export function GlobalSearch({
           hasCommittedQuery,
           hasResults,
           debouncedQuery,
-          flatResults.length
+          flatResults.length,
+          t
         )}
       </div>
 
@@ -306,12 +313,12 @@ export function GlobalSearch({
         <div
           id={listboxId}
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+8px)] z-dropdown max-h-[min(70vh,28rem)] overflow-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-md"
+          className="absolute left-0 right-0 top-[calc(100%+8px)] z-dropdown max-h-[min(70vh,28rem)] overflow-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-slate-950/95 p-2 shadow-2xl shadow-slate-900/10 dark:shadow-black/50 backdrop-blur-md"
         >
           {isLoading && (
-            <div className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-300">
+            <div className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
               <Loader2 size={16} className="animate-spin text-sky-400" aria-hidden="true" />
-              Searching index...
+              {t.searching}
             </div>
           )}
 
@@ -323,7 +330,7 @@ export function GlobalSearch({
               <div className="flex items-start gap-2">
                 <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-300" aria-hidden="true" />
                 <div className="min-w-0">
-                  <p className="font-medium">Search unavailable</p>
+                  <p className="font-medium">{t.errorTitle}</p>
                   <p className="mt-1 text-red-200/90">{errorMessage}</p>
                 </div>
               </div>
@@ -333,23 +340,23 @@ export function GlobalSearch({
                   onClick={handleRetry}
                   className="rounded-lg border border-red-500/40 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-100 transition hover:bg-red-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                 >
-                  Retry
+                  {t.errorRetry}
                 </button>
                 <span className="text-xs text-red-200/70 self-center">
-                  Or try a different query.
+                  {t.errorOr}
                 </span>
               </div>
             </div>
           )}
 
           {!isLoading && !errorMessage && hasCommittedQuery && !hasResults && (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
-              <SearchX size={28} className="mx-auto text-slate-500" aria-hidden="true" />
-              <p className="mt-2 font-medium text-slate-300">
-                No matches for &ldquo;{debouncedQuery}&rdquo;
+            <div className="rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+              <SearchX size={28} className="mx-auto text-slate-400 dark:text-slate-500" aria-hidden="true" />
+              <p className="mt-2 font-medium text-slate-700 dark:text-slate-300">
+                {t.noMatchesTitle} for &ldquo;{debouncedQuery}&rdquo;
               </p>
               <p className="mt-1 text-slate-500">
-                Try a different route name, action verb, or record ID.
+                {t.noMatchesHint}
               </p>
             </div>
           )}
@@ -361,9 +368,9 @@ export function GlobalSearch({
                 if (groupResults.length === 0) return null;
 
                 return (
-                  <section key={group} aria-label={`${group} results`}>
-                    <h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-                      {group}
+                  <section key={group} aria-label={`${t.groups[group]} results`}>
+                    <h3 className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+                      {t.groups[group]}
                     </h3>
                     <ul className="space-y-1">
                       {groupResults.map((item) => {
@@ -381,15 +388,15 @@ export function GlobalSearch({
                               onClick={() => navigateToResult(item)}
                               className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
                                 isActive
-                                  ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-400/50"
-                                  : "text-slate-200 hover:bg-white/10"
+                                  ? "bg-slate-100 text-sky-600 dark:bg-slate-800 dark:text-sky-400"
+                                  : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"
                               }`}
                             >
                               <span className="pr-3">
-                                <span className="block text-sm font-medium">{item.title}</span>
-                                <span className="block text-xs text-slate-400">{item.description}</span>
+                                <span className="block text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</span>
+                                <span className="block text-xs text-slate-500 dark:text-slate-400">{item.description}</span>
                               </span>
-                              <span className="text-[11px] uppercase tracking-wide text-slate-500">{item.group}</span>
+                              <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{item.group}</span>
                             </button>
                           </li>
                         );

@@ -76,9 +76,16 @@ src/
 │   ├── dashboard/         # Protected dashboard shell and sub-routes
 │   │   ├── dev-errors/    # Dev-only error trigger routes (hidden in production)
 │   │   ├── portfolio/
+│   │   ├── async-states/
+│   │   ├── audit/
 │   │   ├── activity/
+│   │   ├── help/
+│   │   ├── history/
+│   │   ├── notifications/
+│   │   ├── sandbox/
 │   │   ├── strategy/
-│   │   └── settings/
+│   │   ├── settings/
+│   │   └── transactions/
 │   ├── demo/              # Dev-only demo pages and UI probes
 │   ├── docs/              # Reference docs pages and examples
 │   ├── login/             # Login entry flow and redirect handling
@@ -88,13 +95,15 @@ src/
 │   ├── profile/           # Account and profile pages
 │   ├── settings/          # Top-level settings shell and pages
 │   └── error.tsx          # Global 500 / uncaught error boundary
-├── components/            # Shared UI components (ui/, dashboard/, auth/, layout/)
+├── components/            # Shared UI components (ui/, dashboard/, auth/)
+├── contexts/              # React context providers shared across the app
 ├── features/              # Feature-scoped logic co-located with its UI
 ├── hooks/                 # Reusable React hooks
 ├── lib/                   # Pure utilities, constants, and adapters
 │   ├── mock-auth.ts       # Client-side mock auth session
 │   ├── auth-constants.ts  # Canonical storage/cookie key names
 │   └── …
+├── test-utils/            # Shared test helpers, custom renders, and fixtures
 └── types/                 # Shared TypeScript types and interfaces
 ```
 
@@ -115,7 +124,7 @@ The frontend supports two runtime modes controlled by **server-only** env vars (
 | Mode | Condition | Behaviour |
 | --- | --- | --- |
 | **Demo / mock** | `NEUROWEALTH_API_BASE_URL` unset | All `/api/*` route handlers return in-process mock data (`source: "demo"`). No backend required — default for local dev and PR previews. |
-| **Real API** | `NEUROWEALTH_API_BASE_URL` set | Route handlers proxy to the backend via `createServerApiClient()` with `Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>`. |
+| **Real API** | `NEUROWEALTH_API_BASE_URL` set | Route handlers proxy to the backend via `createServerFetcher()` with `Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>`. |
 
 ### Request paths
 
@@ -125,7 +134,7 @@ The frontend supports two runtime modes controlled by **server-only** env vars (
 | Transactions | `POST /api/transactions` | `POST {NEUROWEALTH_TRANSACTIONS_PATH}` (default `/transactions`) |
 | Strategy | `GET/PUT /api/strategy` | `GET/PUT {NEUROWEALTH_STRATEGY_PATH}` (default `/strategy/preference`) |
 
-Browser → Next.js requests authenticate via the httpOnly session cookie (`nw_session`).
+Browser → Next.js requests authenticate via the non-httpOnly session cookie (`nw_session`).
 Next.js → backend requests require the Bearer token — never expose it to the client bundle.
 
 ### Headers
@@ -183,7 +192,7 @@ ClientProviders
 1. **Authentication**:
    - User signs in via `/login` → `AuthContext.signIn()` → `mock-auth.ts` creates session
    - Session stored in `localStorage` (key: `SESSION_STORAGE_KEY`)
-   - Session mirrored to httpOnly cookie (key: `SESSION_COOKIE_NAME`) for middleware
+   - Session mirrored to non-httpOnly cookie (key: `SESSION_COOKIE_NAME`) for middleware
    - Middleware (`middleware.ts`) reads cookie to redirect unauth users
    - Sign-in on other tabs triggers `storage` event → all tabs sync
 
@@ -193,8 +202,8 @@ ClientProviders
    - `useWallet()` hook provides wallet state and account info
 
 3. **API requests**:
-   - Browser → Next.js `/api/*` routes: authenticated via httpOnly cookie (no extra header needed)
-   - Next.js → Real backend: use `createServerApiClient()` in route handlers to inject Bearer token (from `NEUROWEALTH_API_AUTH_TOKEN` env)
+   - Browser → Next.js `/api/*` routes: authenticated via non-httpOnly cookie (no extra header needed)
+   - Next.js → Real backend: use `createServerFetcher()` in route handlers to inject Bearer token (from `NEUROWEALTH_API_AUTH_TOKEN` env)
    - All responses must conform to the standard envelope (see NEUROWEALTH_API.md)
    - Demo mode (no backend): all `/api/*` routes return mock data
 

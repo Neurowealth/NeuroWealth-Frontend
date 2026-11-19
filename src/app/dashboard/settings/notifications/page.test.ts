@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import React, { createElement } from "react";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { act, renderHook } from "@/test-utils/render-hook";
 import { DEFAULT_PREFERENCES, type NotificationPreferences } from "@/lib/mock-preferences";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
@@ -99,6 +99,66 @@ test("notifications settings page — every toggle's accessible name matches its
       `expected a toggle with accessible name "${title}"`,
     );
   }
+
+  cleanup();
+  localStorage.clear();
+});
+
+/**
+ * Regression test for issue #1047: the "N / 5 enabled" summary only counts the
+ * transaction / weekly-digest / promotions sub-toggles while the email channel
+ * is on, so muting email must drop the count by every enabled dependent toggle,
+ * not just by one.
+ */
+test("notifications settings page — enabled summary drops channel-gated sub-toggles when email is turned off", async () => {
+  localStorage.clear();
+  const t = dictionaries.en.settings.notifications;
+  const stored: NotificationPreferences = {
+    ...DEFAULT_PREFERENCES,
+    channels: { ...DEFAULT_PREFERENCES.channels, email: true },
+    categories: { ...DEFAULT_PREFERENCES.categories, transactions: true, promotions: true },
+    emailDigest: { weeklyDigest: true, securityAlerts: true },
+  };
+  localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(stored));
+
+  const view = render(
+    createElement(
+      I18nProvider,
+      null,
+      createElement(ToastProvider, null, createElement(NotificationsSettingsPage)),
+    ),
+  );
+
+  const summaryLabel = await view.findByText(t.summary.enabledPreferences, {}, { timeout: 3000 });
+  const enabledCount = () => summaryLabel.nextElementSibling?.textContent;
+  const toggle = (name: string) => fireEvent.click(view.getByRole("checkbox", { name }));
+
+  assert.equal(enabledCount(), "5 / 5");
+
+  fireEvent.click(view.getByRole("button", { name: t.actions.edit }));
+
+  // Email off: transactions, weekly digest and promotions all stop counting
+  // alongside email itself, leaving only security alerts (5 -> 1, not 5 -> 4).
+  toggle(t.channels.emailTitle);
+  assert.equal(enabledCount(), "1 / 5");
+  // The sub-toggles keep their stored values; they are just gated off.
+  assert.equal(
+    (view.getByRole("checkbox", { name: t.channels.transactionTitle }) as HTMLInputElement).checked,
+    true,
+  );
+
+  toggle(t.channels.emailTitle);
+  assert.equal(enabledCount(), "5 / 5");
+
+  // With only some dependents on, muting email drops exactly 1 + that many.
+  toggle(t.channels.productTitle);
+  assert.equal(enabledCount(), "4 / 5");
+  toggle(t.channels.emailTitle);
+  assert.equal(enabledCount(), "1 / 5");
+
+  // Security alerts are not channel-gated: they were the one remaining count.
+  toggle(t.channels.securityTitle);
+  assert.equal(enabledCount(), "0 / 5");
 
   cleanup();
   localStorage.clear();

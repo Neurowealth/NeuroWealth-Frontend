@@ -37,11 +37,18 @@ test.describe("Strategy update", () => {
     await page.goto("/dashboard/strategy");
     await page.waitForLoadState("networkidle");
 
+    // Wait for the real cards (not the loading skeleton) before checking
+    // selection state — isVisible() doesn't auto-wait, so checking too early
+    // would always see no "Select Balanced" button and skip the click.
+    await expect(page.getByRole("article")).toHaveCount(3);
+
     const selectBalanced = page.getByRole("button", { name: "Select Balanced" });
     if (await selectBalanced.isVisible()) {
       await selectBalanced.click();
       await page.getByRole("button", { name: "Confirm" }).click();
-      await page.waitForLoadState("networkidle");
+      // Wait for the confirmation modal to close (save completed) rather
+      // than just network idle, which can resolve before the UI updates.
+      await expect(page.getByRole("dialog")).toBeHidden();
     }
 
     const activeCheck = page.getByText("Current");

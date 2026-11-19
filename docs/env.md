@@ -89,7 +89,7 @@ The `src/lib/api-client.ts` module handles this split:
   authenticated via the `nw_session` cookie. Note: this cookie is **not** currently
   `httpOnly` and carries no signature (see the `AUTH_SECRET` note above) — it is set by
   client-side JS in `AuthContext.tsx` for the mock auth flow.
-- `createServerApiClient()` — used inside Next.js route handlers; calls the real backend
+- `createServerFetcher()` — used inside Next.js route handlers; calls the real backend
   and automatically injects the `Authorization` header.
 
 See `docs/api-integration.md` for the full API integration guide.

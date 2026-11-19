@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import { renderHook, act } from "@/test-utils/render-hook";
 import { useTransactionForm } from "./useTransactionForm";
 import { TransactionKind } from "@/lib/transactions";
+import { dictionaries } from "@/lib/i18n/messages";
+
+const tDomain = dictionaries.en.transactions.domain;
 
 describe("useTransactionForm", () => {
   describe("updateField", () => {
     it("updates a single field value", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.updateField("amount", "100");
@@ -17,7 +20,7 @@ describe("useTransactionForm", () => {
     });
 
     it("clears the field error when updating that field", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({ amount: "Amount is required" });
@@ -33,7 +36,7 @@ describe("useTransactionForm", () => {
     });
 
     it("clears the form-level error when updating any field", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({ form: "Form validation failed" });
@@ -49,7 +52,7 @@ describe("useTransactionForm", () => {
     });
 
     it("does not clear other field errors when updating a different field", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({
@@ -67,7 +70,7 @@ describe("useTransactionForm", () => {
     });
 
     it("only clears the field error and form error, not other fields", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({
@@ -89,7 +92,7 @@ describe("useTransactionForm", () => {
 
   describe("validate", () => {
     it("returns true when no validation errors", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.updateField("amount", "100");
@@ -106,7 +109,7 @@ describe("useTransactionForm", () => {
     });
 
     it("returns false and sets errors when validation fails", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       let isValid = false;
       act(() => {
@@ -118,7 +121,7 @@ describe("useTransactionForm", () => {
     });
 
     it("sets individual field errors on validation failure", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.validate();
@@ -130,7 +133,7 @@ describe("useTransactionForm", () => {
     });
 
     it("clears previous errors before validating", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       // Set some initial errors
       act(() => {
@@ -154,7 +157,7 @@ describe("useTransactionForm", () => {
 
   describe("reset", () => {
     it("resets form to default values", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.updateField("amount", "100");
@@ -174,7 +177,7 @@ describe("useTransactionForm", () => {
 
   describe("setErrors", () => {
     it("sets field errors directly", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({
@@ -188,7 +191,7 @@ describe("useTransactionForm", () => {
     });
 
     it("can set form-level errors", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       act(() => {
         result.current.setErrors({ form: "Network error occurred" });
@@ -200,7 +203,7 @@ describe("useTransactionForm", () => {
 
   describe("setValues", () => {
     it("sets form values from snapshot", () => {
-      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind));
+      const { result } = renderHook(() => useTransactionForm("deposit" as TransactionKind, tDomain));
 
       const snapshotValues = {
         ...result.current.formValues,
@@ -216,4 +219,39 @@ describe("useTransactionForm", () => {
       assert.equal(result.current.formValues.walletAddress, "GABC123...");
     });
   });
+
+  // #1051 — validate must re-bind when tDomain changes (locale switch while mounted).
+  describe("validate locale reactivity", () => {
+    it("uses the latest tDomain messages after a locale change", () => {
+      const frenchDomain = {
+        ...tDomain,
+        validation: {
+          ...tDomain.validation,
+          enterAmount: "Saisissez un montant pour continuer.",
+        },
+      };
+
+      let domain = tDomain;
+      const { result, rerender } = renderHook(() =>
+        useTransactionForm("deposit" as TransactionKind, domain),
+      );
+
+      act(() => {
+        result.current.validate();
+      });
+      assert.equal(result.current.fieldErrors.amount, tDomain.validation.enterAmount);
+
+      domain = frenchDomain;
+      rerender();
+
+      act(() => {
+        result.current.validate();
+      });
+      assert.equal(
+        result.current.fieldErrors.amount,
+        "Saisissez un montant pour continuer.",
+      );
+    });
+  });
 });
+

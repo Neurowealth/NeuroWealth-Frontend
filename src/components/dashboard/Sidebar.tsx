@@ -41,7 +41,7 @@ export default function Sidebar() {
         "transition-[width] duration-200 ease-in-out overflow-hidden",
         tabletExpanded ? "w-64" : "w-14 lg:w-64",
       )}
-      aria-label="Dashboard sidebar"
+      aria-label={messages.sidebar.ariaLabel}
     >
       {/* ── Logo ── */}
       <div
@@ -70,7 +70,7 @@ export default function Sidebar() {
       {/* ── Navigation ── */}
       <nav
         className="flex-1 px-1.5 py-4 space-y-1 overflow-y-auto overflow-x-hidden"
-        aria-label="Sidebar navigation"
+        aria-label={messages.sidebar.navigationAriaLabel}
       >
         <h2
           className={cn(
@@ -159,7 +159,7 @@ export default function Sidebar() {
             )}
           >
             <p className="text-sm font-medium text-text-primary truncate">
-              {user?.displayName ?? "User"}
+              {user?.displayName ?? messages.sidebar.userFallback}
             </p>
             <p className="text-xs text-text-muted truncate">
               {getUserAddressLabel(user ?? {})}
@@ -211,7 +211,7 @@ export default function Sidebar() {
             "hover:bg-white/5 hover:text-text-primary transition-colors duration-150 lg:hidden",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
           )}
-          aria-label={tabletExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          aria-label={tabletExpanded ? messages.sidebar.collapseSidebar : messages.sidebar.expandSidebar}
           aria-expanded={tabletExpanded}
           aria-controls="dashboard-sidebar"
         >

@@ -54,7 +54,20 @@ export function useSettingsForm<T>(
         return;
       }
 
-      const data = JSON.parse(stored) as T;
+      const parsed = JSON.parse(stored) as unknown;
+      let data: T;
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        typeof fallback === "object" &&
+        fallback !== null &&
+        !Array.isArray(parsed) &&
+        !Array.isArray(fallback)
+      ) {
+        data = { ...fallback, ...parsed } as T;
+      } else {
+        data = (parsed as T) ?? fallback;
+      }
       setSaved(data);
       if (!editingRef.current) {
         setDraft(data);
@@ -71,11 +84,13 @@ export function useSettingsForm<T>(
     }
   }, [storageKey]);
 
-  useStorageSync(storageKey, () => {
+  const handleStorageSync = useCallback(() => {
     if (!editingRef.current) {
       syncFromStorage();
     }
-  });
+  }, [syncFromStorage]);
+
+  useStorageSync(storageKey, handleStorageSync);
 
   useEffect(() => {
     const timer = setTimeout(() => {

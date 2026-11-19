@@ -10,6 +10,9 @@ Versions are tagged in GitHub Releases and linked from this file.
 ## [Unreleased]
 
 ### Added
+- Added dark mode support and theme styling consistency across components (#985, #1062)
+- Added localization integration (`useI18n`) across GlobalSearch, NotificationPreferences, and onboarding steps (#942, #994)
+- Added comprehensive unit and regression test suites for preferences, command palette dialog, onboarding steps, strategy selector aborted-fetch races, and settings async-state error handling (#901, #975, #986)
 - Provider service layer, storage adapters, and onboarding hook refactor (#335, #337, #338, #339; #597)
 - Global search and validation system with race-safety / no-results coverage (#520, #515, #365, #366)
 - Shared form-field accessibility wiring and chart `aria-label` / `prefers-reduced-motion` support (#498, #594)
@@ -24,6 +27,10 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Regression coverage for preview cache headers, privacy and cookie-consent settings, role adaptation, notification preferences, release-checklist flows, transaction forms, debounce behavior, and wallet/UI accessibility (#833, #834, #836, #837, #844, #846, #847)
 
 ### Changed
+- Refactored wallet connection handling, accessibility, and UI states to align with shared design tokens (#1060)
+- Improved ImageCrop keyboard interaction, resize, and move semantics with regression test coverage (#979)
+- Made FAQSection and TransactionGuidance category mapping robust by coupling keys instead of relying on array indices (#974)
+- Updated onboarding skip action so that per-step skip advances to next step instead of abruptly completing onboarding (#991)
 - Consolidated `/signin` into `/login` as the canonical auth route (#381, #508)
 - Performance pass: memoized Auth/Sandbox provider values, lazy-loaded GlobalSearch, shared formatters (#588, #589, #586)
 - Unified seed strategy across mock services and chart data (#661)
@@ -40,6 +47,17 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Added a light-mode surface to the command palette while preserving the dark-mode presentation (#885)
 
 ### Fixed
+- Fixed raw `console.warn` logging in `parseTransactionKind` to use centralized PII-scrubbing logger (#999)
+- Fixed production and staging deploy workflows by setting `NEXT_PUBLIC_STELLAR_NETWORK` and `NEXT_PUBLIC_STELLAR_HORIZON_URL` during build (#1000)
+- Replaced hand-rolled modal implementation with shared Modal component in security settings (#993)
+- Fixed modal detection effect dependency cycles and improved light mode contrast across components (#1062)
+- Fixed `parseAmount` hex and scientific notation validation guard dead-code issue (#944)
+- Fixed Emergency Support button action by properly binding click handler (#978)
+- Synchronized multi-tab storage events and fixed listener leaks in `useNotificationPreferences` (#974, #1057)
+- Bounded transaction form inputs, rate-limited preview routes, and hardened client IP extraction for rate limits (#945, #976)
+- Resolved NotificationCenter popover accessibility by adding dialog role, focus trap, and Escape key dismissal (#987)
+- Guard `useStorageSync` callback against editing state to prevent overwriting active user edits during background sync (#899)
+- Remove dead `setAuditService` export and clean up unused audit service bindings (#898)
 - Accessibility hardening: modal/drawer focus traps, keyboard-operable controls, navbar touch targets, Switch focus-visible ring (#595, #660, #585, #663)
 - Deposit/withdraw `aria-invalid` / `aria-describedby`, notification keyboard semantics, portfolio breakpoint alignment (#594, #523, #564)
 - Fetch recovery UX, logger/PII hardening, and API timeout documentation (#389, #390, #357–#360)
@@ -60,6 +78,9 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Replaced StrategyList's hand-rolled status colors with shared Badge variants and corrected the misleading PreferenceToggle test comment (#883, #884)
 
 ### Removed
+- Removed unused `matchesPattern` validator (#973)
+- Removed dead exports `bcp47ToAppLocale` and `appLocaleToBcp47Default` from `locale-options.ts` (#974)
+- Cleaned up obsolete audit helpers and dead code across settings and transactions (#945, #1062)
 - Orphaned service layer module (#727; #749)
 - Unused CVD chart-color exports (#725; #751)
 - Dead `next/script` import and stale DB/WALLET_ENCRYPTION_KEY secrets (#717; #672, #765)
@@ -76,6 +97,10 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Hardened wallet connection DOM handling and refreshed the September npm audit policy snapshot (#875, #877, #878, #890, #894, #896)
 
 ### Documented
+- Corrected inaccurate folder structure diagram in `README.md` (#1008, #1063)
+- Updated `docs/deployment.md` pre-release checklist to verify `NEXT_PUBLIC_STELLAR_NETWORK` (#1001)
+- Reconciled duplicate cookie-consent checklists into single canonical document (#984)
+- Updated preview endpoint documentation and test matrices (#975)
 - Folder structure documentation in `README.md` covering all top-level `src/` directories (closes #428)
 - Release notes process confirmed as manual Keep a Changelog (closes #427)
 - Authenticated dashboard shell verified: protected route, responsive layout (sidebar + top header / mobile bottom nav), skeleton loading states, and error boundary all in place (closes #429)
@@ -86,6 +111,6 @@ Versions are tagged in GitHub Releases and linked from this file.
 
 ### Process
 - Release notes remain manual Keep a Changelog entries under the single, date-free `[Unreleased]` section.
-- Release automation (release-please / Changesets) is not configured; retain the manual process until a dedicated tooling decision is made.
-- This refresh consolidates the previously duplicated dated `[Unreleased]` sections and records merged work through PR #896.
+- Given recurring staleness across audit cycles, release automation (such as Changesets or Release Please) is strongly recommended for upcoming releases to automate changelog maintenance from merged PRs.
+- This refresh records merged work through PR #1063 as well as issues #999, #1000, #1001, and #1002.
 - Each PR that ships user-visible changes should add an entry here; maintainers fold `[Unreleased]` into a versioned section on release.

@@ -13,7 +13,11 @@ export interface AvatarUploaderProps {
   onSave?: (dataUrl: string) => void;
 }
 
-export default function AvatarUploader({ name, size = 64, onSave }: AvatarUploaderProps) {
+export default function AvatarUploader({
+  name,
+  size = 64,
+  onSave,
+}: AvatarUploaderProps) {
   const [step, setStep] = useState<Step>("idle");
   const [previewSrc, setPreviewSrc] = useState<string | undefined>();
   const [croppedSrc, setCroppedSrc] = useState<string | undefined>();
@@ -40,9 +44,9 @@ export default function AvatarUploader({ name, size = 64, onSave }: AvatarUpload
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Avatar preview row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="flex items-center gap-4">
         <Avatar
           size={size}
           src={croppedSrc}
@@ -50,10 +54,10 @@ export default function AvatarUploader({ name, size = 64, onSave }: AvatarUpload
           onClick={step === "idle" ? () => setStep("upload") : undefined}
         />
         <div>
-          <p style={{ fontSize: 13, color: "#e5e7eb", fontWeight: 500, margin: 0 }}>
+          <p className="m-0 text-[13px] font-medium text-slate-800 dark:text-slate-200">
             {name ?? "Your avatar"}
           </p>
-          <p style={{ fontSize: 11, color: "#6b7280", margin: "2px 0 0" }}>
+          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             {step === "idle" && "Click avatar to upload"}
             {step === "upload" && "Choose or drop an image"}
             {step === "crop" && "Adjust the crop area"}
@@ -62,13 +66,9 @@ export default function AvatarUploader({ name, size = 64, onSave }: AvatarUpload
         </div>
         {(step === "upload" || step === "done") && (
           <button
+            type="button"
             onClick={reset}
-            style={{
-              marginLeft: "auto", fontFamily: "inherit", fontSize: 11,
-              cursor: "pointer", border: "0.5px solid #374151",
-              background: "transparent", color: "#9ca3af",
-              borderRadius: 5, padding: "4px 10px",
-            }}
+            className="ml-auto cursor-pointer rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1 text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {step === "done" ? "Change" : "Cancel"}
           </button>

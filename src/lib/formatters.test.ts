@@ -9,7 +9,6 @@ import {
   formatCurrencyPrecise,
   formatApy,
   formatApyRange,
-  formatCompactNumber,
   formatCompactCurrency,
   formatTimestamp,
   formatSyncLabel,
@@ -64,6 +63,12 @@ describe("formatters", () => {
       const result = formatSignedCurrency(0);
       assert.ok(!result.match(/[\+\-]/));
     });
+
+    it("omits the sign when a small value rounds to zero", () => {
+      const result = formatSignedCurrency(-0.004);
+      assert.ok(!result.match(/[\+\-]/));
+      assert.ok(result.includes("0.00") || result.includes("0,00"));
+    });
   });
 
   describe("formatPercent", () => {
@@ -96,6 +101,12 @@ describe("formatters", () => {
       const result = formatSignedPercent(-3.2);
       assert.match(result, /-/);
       assert.ok(result.includes("%"));
+    });
+
+    it("omits the sign when a small percent rounds to zero", () => {
+      const result = formatSignedPercent(-0.04);
+      assert.ok(!result.match(/[\+\-]/));
+      assert.ok(result.includes("0.0%") || result.includes("0,0%"));
     });
   });
 
@@ -163,25 +174,6 @@ describe("formatters", () => {
       const result = formatApyRange(4.25, 4.25);
       assert.ok(result.includes("–"));
       assert.ok(result.includes("4.25") || result.includes("4,25"));
-    });
-  });
-
-  describe("formatCompactNumber", () => {
-    it("compacts large numbers", () => {
-      const result = formatCompactNumber(12300);
-      // Compact formatting should produce something like "12.3K"
-      assert.ok(result.length <= 6);
-    });
-
-    it("handles millions", () => {
-      const result = formatCompactNumber(1200000);
-      // Should be compact (e.g., "1.2M")
-      assert.ok(result.length <= 6);
-    });
-
-    it("formats small numbers without compacting", () => {
-      const result = formatCompactNumber(500);
-      assert.ok(result.includes("500") || result.length <= 5);
     });
   });
 

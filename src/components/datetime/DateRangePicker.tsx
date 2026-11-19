@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface DateRange { start: Date | null; end: Date | null; }
 
@@ -112,6 +113,7 @@ export default function DateRangePicker({ value, onChange, minDate, maxDate, pla
   const [leftYear, setLeftYear] = useState(today.getFullYear());
   const [leftMonth, setLeftMonth] = useState(today.getMonth());
   const ref = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const rightMonth = leftMonth === 11 ? 0 : leftMonth + 1;
   const rightYear = leftMonth === 11 ? leftYear + 1 : leftYear;
@@ -121,6 +123,9 @@ export default function DateRangePicker({ value, onChange, minDate, maxDate, pla
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Focus-trap the dialog panel while open
+  useFocusTrap(dialogRef, open);
 
   const select = (date: Date) => {
     if (!range.start || (range.start && range.end)) {
@@ -170,10 +175,13 @@ export default function DateRangePicker({ value, onChange, minDate, maxDate, pla
 
       {open && (
         <div
+          ref={dialogRef}
           role="dialog"
+          aria-modal="true"
           aria-label="Date range picker"
+          className="z-dropdown"
           style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+            position: "absolute", top: "calc(100% + 6px)", left: 0,
             background: "#111827", border: "0.5px solid #374151",
             borderRadius: 12, padding: 16,
             boxShadow: "0 4px 24px rgba(0,0,0,0.5)",

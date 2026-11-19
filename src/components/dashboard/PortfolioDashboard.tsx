@@ -45,12 +45,6 @@ const toneMap: Record<string, string> = {
   "neutral-soft": "#94a3b8",
 };
 
-const activityLabels: Record<string, string> = {
-  deposit: "Deposit",
-  withdrawal: "Withdrawal",
-  rebalance: "Rebalance",
-  yield: "Yield",
-};
 
 
 type ThemeMode = "light" | "dark";
@@ -137,7 +131,7 @@ function renderSourceLabel(source: PortfolioPayload["source"], t: AppMessages["d
     return t.emptyStates;
   }
 
-  return "Preview data";
+  return t.previewData;
 }
 
 export function PortfolioDashboard() {
@@ -173,7 +167,7 @@ export function PortfolioDashboard() {
       } catch (loadError) {
         if (controller.signal.aborted) return;
         const copy = getApiErrorPresentation(loadError, {
-          description: "Unable to load portfolio widgets.",
+          description: t.unableToLoad,
           actionLabel: t.retryWidgets,
         });
         logger.error("portfolio_fetch_failed", {
@@ -211,28 +205,28 @@ export function PortfolioDashboard() {
   const summaryCards = portfolio
     ? [
         {
-          label: "Total balance",
+          label: t.summaryTotalBalance,
           value: formatCurrency(portfolio.summary.totalBalance),
-          helper: "Across active positions and protected reserve holdings.",
+          helper: t.summaryTotalBalanceHelper,
           tone: "default",
           mono: true,
         },
         {
-          label: "Total yield",
+          label: t.summaryTotalYield,
           value: formatSignedCurrency(portfolio.summary.totalYield),
-          helper: "Net earnings since your first deployed deposit.",
+          helper: t.summaryTotalYieldHelper,
           tone: getValueTone(portfolio.summary.totalYield),
           mono: true,
         },
         {
-          label: "APY",
+          label: t.summaryApy,
           value: formatApy(portfolio.summary.apy),
-          helper: "Weighted live rate across the current strategy mix.",
+          helper: t.summaryApyHelper,
           tone: getValueTone(portfolio.summary.apy),
           mono: true,
         },
         {
-          label: "Strategy",
+          label: t.summaryStrategy,
           value: portfolio.summary.strategyLabel,
           helper: portfolio.summary.strategyDescription,
           tone: "default",
@@ -501,7 +495,14 @@ export function PortfolioDashboard() {
                                 {item.detail}
                               </p>
                               <div className={styles.activityMeta}>
-                                <span>{activityLabels[item.kind]}</span>
+                                <span>{(
+                                  {
+                                    deposit: t.activityKindDeposit,
+                                    withdrawal: t.activityKindWithdrawal,
+                                    rebalance: t.activityKindRebalance,
+                                    yield: t.activityKindYield,
+                                  } as Record<string, string>
+                                )[item.kind] ?? item.kind}</span>
                                 <span>{formatTimestamp(item.occurredAt)}</span>
                               </div>
                             </div>

@@ -1,8 +1,15 @@
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { render, screen, waitFor } from "@testing-library/react";
+import React from "react";
+// Must be imported before `@testing-library/user-event` — see jsdom-setup.ts.
+import "@/test-utils/jsdom-setup";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ReleaseChecklistPage from "./page";
+
+Object.assign(globalThis, { React });
+
+afterEach(cleanup);
 
 describe("ReleaseChecklistPage", () => {
   describe("item status updates", () => {
@@ -215,9 +222,11 @@ describe("ReleaseChecklistPage", () => {
     it("renders sign-offs section with product, design, and engineering roles", () => {
       render(<ReleaseChecklistPage />);
 
-      assert.ok(screen.getByText(/Product/i));
-      assert.ok(screen.getByText(/Design/i));
-      assert.ok(screen.getByText(/Engineering/i));
+      // Anchored exact match — "Product" alone would also match the page's
+      // "Initial production release..." subtitle text.
+      assert.ok(screen.getByText(/^product$/i));
+      assert.ok(screen.getByText(/^design$/i));
+      assert.ok(screen.getByText(/^engineering$/i));
     });
 
     it("renders known issues section", () => {

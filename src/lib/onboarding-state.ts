@@ -8,8 +8,6 @@ export interface OnboardingState {
 }
 
 const STORAGE_KEY = STORAGE_KEYS.ONBOARDING_STATE;
-// Legacy key used by older code paths (kept for migration/backwards compatibility)
-const LEGACY_KEY = 'onboarding-state';
 
 function getStorage(): Storage | null {
   return globalThis.localStorage ?? null;
@@ -21,11 +19,7 @@ export function loadOnboardingState(): OnboardingState | null {
     return null;
   }
 
-  let raw = storage.getItem(STORAGE_KEY);
-  // Fallback to legacy key for existing installs
-  if (!raw) {
-    raw = storage.getItem(LEGACY_KEY) ?? null;
-  }
+  const raw = storage.getItem(STORAGE_KEY);
   if (!raw) {
     return null;
   }
@@ -49,7 +43,6 @@ export function saveOnboardingState(state: OnboardingState): void {
   }
 
   try {
-    // Always write to canonical key; keep legacy key untouched to avoid surprising deletes
     storage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
     logger.error('Failed to save onboarding state:', error);
@@ -63,6 +56,26 @@ export function clearOnboardingState(): void {
   }
 
   storage.removeItem(STORAGE_KEY);
+}
+
+/**
+ * Clear every key written during onboarding: the flow progress plus the
+ * step-scoped strategy / first-deposit records (#954).
+ *
+ * Both reset entry points — `useOnboardingFlow().resetFlow` ("Review
+ * Onboarding") and the OnboardingSettings reset button — call this single
+ * function so the two reset paths cannot drift apart again.
+ */
+export function resetOnboardingState(): void {
+  clearOnboardingState();
+
+  const storage = getStorage();
+  if (!storage) {
+    return;
+  }
+
+  storage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
+  storage.removeItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT);
 }
 
 export function isOnboardingCompleted(): boolean {

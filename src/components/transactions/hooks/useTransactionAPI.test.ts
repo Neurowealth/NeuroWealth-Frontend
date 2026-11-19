@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import React from "react";
 import { renderHook, act } from "@/test-utils/render-hook";
+import { I18nProvider } from "@/contexts/I18nContext";
 import { useTransactionAPI } from "./useTransactionAPI";
+
+function renderApiHook() {
+  return renderHook(() => useTransactionAPI(), {
+    wrapper: ({ children }) => React.createElement(I18nProvider, null, children),
+  });
+}
 
 const originalFetch = globalThis.fetch;
 
@@ -59,7 +67,7 @@ test("requestQuote returns fieldErrors from API details instead of discarding th
     "values.walletConnected": "Connect a funding wallet",
   });
 
-  const { result } = renderHook(() => useTransactionAPI());
+  const { result } = renderApiHook();
 
   let quoteResult: Awaited<ReturnType<typeof result.current.requestQuote>> | undefined;
 
@@ -89,7 +97,7 @@ test("submitTransaction returns fieldErrors from API details instead of discardi
     "values.walletAddress": "Use a valid Stellar public address",
   });
 
-  const { result } = renderHook(() => useTransactionAPI());
+  const { result } = renderApiHook();
 
   let submitResult:
     | Awaited<ReturnType<typeof result.current.submitTransaction>>
@@ -127,7 +135,7 @@ test("submitTransaction returns fieldErrors from API details instead of discardi
 test("a successful request clears field errors left by a previous failure", async () => {
   mockErrorResponse({ amount: "Amount exceeds available balance" });
 
-  const { result } = renderHook(() => useTransactionAPI());
+  const { result } = renderApiHook();
 
   await act(async () => {
     await result.current.requestQuote("deposit", {
@@ -155,7 +163,7 @@ test("a successful request clears field errors left by a previous failure", asyn
 test("requestQuote returns the quote on success", async () => {
   mockSuccessQuote();
 
-  const { result } = renderHook(() => useTransactionAPI());
+  const { result } = renderApiHook();
 
   let quoteResult: Awaited<ReturnType<typeof result.current.requestQuote>> | undefined;
 

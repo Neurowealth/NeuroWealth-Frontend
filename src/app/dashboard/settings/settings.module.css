@@ -260,71 +260,7 @@
   }
 }
 
-/* Modal (security password-change dialog) */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-index-modal);
-  backdrop-filter: blur(4px);
-}
-
-.modalContent {
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 14px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.modalTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin: 0;
-}
-
-.modalClose {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 20px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.modalClose:hover {
-  color: #e2e8f0;
-}
-
-.modalBody {
-  padding: 20px 24px;
-}
-
+/* Modal body content — used inside the shared Modal component */
 .modalField {
   display: flex;
   flex-direction: column;
@@ -356,14 +292,6 @@
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
-.modalFooter {
-  display: flex;
-  gap: 10px;
-  padding: 16px 24px;
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
-  justify-content: flex-end;
-}
-
 @media (max-width: 520px) {
   .settingsCardHeader {
     padding: 16px;
@@ -381,9 +309,5 @@
   .settingsActions {
     flex-direction: column;
     margin-left: 0;
-  }
-
-  .modalContent {
-    margin: 16px;
   }
 }

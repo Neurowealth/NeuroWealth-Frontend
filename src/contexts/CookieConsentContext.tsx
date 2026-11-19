@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { logger } from "@/lib/logger";
@@ -155,20 +156,34 @@ export function CookieConsentProvider({
   }, []);
   const openModal = useCallback(() => setShowModal(true), []);
   const closeModal = useCallback(() => setShowModal(false), []);
+  const value = useMemo(
+    () => ({
+      consentState,
+      showBanner: hydrated && showBanner,
+      showModal,
+      openModal,
+      closeModal,
+      acceptAll,
+      rejectAll,
+      savePreferences,
+      resetConsent,
+    }),
+    [
+      consentState,
+      hydrated,
+      showBanner,
+      showModal,
+      openModal,
+      closeModal,
+      acceptAll,
+      rejectAll,
+      savePreferences,
+      resetConsent,
+    ],
+  );
+
   return (
-    <CookieConsentContext.Provider
-      value={{
-        consentState,
-        showBanner: hydrated && showBanner,
-        showModal,
-        openModal,
-        closeModal,
-        acceptAll,
-        rejectAll,
-        savePreferences,
-        resetConsent,
-      }}
-    >
+    <CookieConsentContext.Provider value={value}>
       {children}
     </CookieConsentContext.Provider>
   );

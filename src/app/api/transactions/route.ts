@@ -19,25 +19,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
 import { createServerFetcher } from "@/lib/api-client";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
-import { requireAuth } from "@/lib/api-auth";
+import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
+import { dictionaries } from "@/lib/i18n/messages";
+
+const tDomain = dictionaries.en.transactions.domain;
 
 export async function POST(request: NextRequest) {
   const authError = requireAuth(request, { requireSameOrigin: true });
   if (authError) return authError;
 
+  const session = getSessionFromRequest(request);
   const ip = getRateLimitKey(request);
-  const limit = checkRateLimit(`POST:/api/transactions:${ip}`, {
-    maxRequests: 20,
-    windowMs: 60_000,
-  });
-  if (!limit.allowed) {
-    return NextResponse.json(
-      errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
-      {
-        status: HTTP_STATUS.TOO_MANY_REQUESTS,
-        headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
-      },
-    );
+  const clientId = ip ?? (session?.token ? `session:${session.token}` : null);
+
+  if (clientId) {
+    const limit = checkRateLimit(`POST:/api/transactions:${clientId}`, {
+      maxRequests: 20,
+      windowMs: 60_000,
+    });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
+        {
+          status: HTTP_STATUS.TOO_MANY_REQUESTS,
+          headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+        },
+      );
+    }
   }
 
   const bodyResult = await readJsonBody(request);
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
   // Validate transaction values BEFORE forwarding to backend
   // This ensures semantic checks (amount range, wallet format, etc.) are
   // enforced regardless of whether we're using a backend or local mock
-  const errors = validateTransactionValues(kind, values);
+  const errors = validateTransactionValues(kind, values, tDomain);
 
   if (Object.keys(errors).length > 0) {
     return NextResponse.json(
@@ -131,14 +139,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       successResponse({
-        pending: buildPendingTransaction(kind, values, outcome),
+        pending: buildPendingTransaction(
+          kind,
+          values,
+          tDomain.pending,
+          tDomain.context,
+          outcome,
+        ),
       }),
     );
   }
 
   return NextResponse.json(
     successResponse({
-      quote: buildTransactionQuote(kind, values),
+      quote: buildTransactionQuote(kind, values, tDomain.context),
     }),
   );
 }

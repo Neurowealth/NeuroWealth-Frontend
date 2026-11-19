@@ -95,6 +95,7 @@ the seed is set:
 | `src/components/onboarding/steps/FirstDepositStep.tsx` | 95% deposit success simulation |
 | `src/components/help/SupportForm.tsx` | Support reference ID suffix |
 | `src/components/avatar/FileUpload.tsx` | Upload progress increment steps |
+| `src/hooks/useRealtimeStream.ts` | Realtime event intervals, kinds, and simulated values |
 
 > **Note:** `src/lib/mock-auth.ts` is intentionally **not** seeded — it uses
 > `crypto.randomUUID()` for secure, unpredictable session tokens and user IDs.

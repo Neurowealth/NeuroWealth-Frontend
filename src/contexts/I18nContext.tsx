@@ -22,14 +22,30 @@ const LOCALE_STORAGE_KEY = STORAGE_KEYS.LOCALE;
 
 interface I18nContextValue {
   locale: AppLocale;
-  setLocale: (locale: AppLocale) => void;
+  setLocale: (locale: AppLocale | string) => void;
   messages: (typeof dictionaries)[AppLocale];
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-function isSupportedLocale(value: string): value is AppLocale {
+export function isSupportedLocale(value: string): value is AppLocale {
   return value === "en" || value === "fr";
+}
+
+/**
+ * Normalizes any locale string (such as "en-US", "fr-FR", "en_GB") to an AppLocale.
+ * Unsupported values fall back safely to fallback (default: "en").
+ */
+export function normalizeLocale(
+  value: string | null | undefined,
+  fallback: AppLocale = "en",
+): AppLocale {
+  if (!value) return fallback;
+  const trimmed = value.trim().toLowerCase();
+  const lang = trimmed.split(/[-_]/)[0];
+  if (lang === "fr") return "fr";
+  if (lang === "en") return "en";
+  return fallback;
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -80,6 +96,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((nextLocale: AppLocale) => {
     setLocaleState(nextLocale);
+  const setLocale = useCallback((nextLocale: AppLocale | string) => {
+    const normalized = normalizeLocale(nextLocale);
+    setLocaleState(normalized);
   }, []);
 
   const value = useMemo<I18nContextValue>(

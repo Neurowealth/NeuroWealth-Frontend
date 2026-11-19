@@ -49,16 +49,13 @@ function pickFirstValue(
   ...values: Array<string | null | undefined>
 ): string | undefined {
   return values.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0,
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0,
   );
 }
 
 export function getUserInitials(displayName: string): string {
-  const parts = displayName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = displayName.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
   if (parts.length === 0) {
     return "??";
@@ -72,7 +69,7 @@ export function truncateWalletAddress(walletAddress: string): string {
     return walletAddress;
   }
 
-  return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}`;
 }
 
 function resolveDisplayName(
@@ -128,5 +125,7 @@ export function adaptApiUser(record: ApiUserRecord): User {
 export function getUserAddressLabel(
   user: Pick<User, "walletAddress">,
 ): string | undefined {
-  return user.walletAddress ? truncateWalletAddress(user.walletAddress) : undefined;
+  return user.walletAddress
+    ? truncateWalletAddress(user.walletAddress)
+    : undefined;
 }
