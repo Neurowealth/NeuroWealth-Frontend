@@ -7,12 +7,14 @@ import {
   getTransactionRecoveryUI,
   parseAmount,
   parseTransactionKind,
+  validateTransactionValues,
   type ErrorMode,
   type TransactionRecoveryUI,
 } from "@/lib/transactions";
 import { dictionaries } from "@/lib/i18n/messages";
 
-const tRecovery = dictionaries.en.transactions.domain.recovery;
+const tDomain = dictionaries.en.transactions.domain;
+const tRecovery = tDomain.recovery;
 
 test("mapErrorCodeToErrorMode maps NETWORK_ERROR", () => {
   const mode = mapErrorCodeToErrorMode("NETWORK_ERROR");
@@ -272,5 +274,87 @@ test("parseTransactionKind defaults null, empty, and invalid values to deposit w
   } finally {
     unsubscribe();
   }
+});
+
+// ── validateTransactionValues ──────────────────────────────────────────────
+
+const VALID_STELLAR_ADDRESS =
+  "GB4Q5QW7GWXW2P2UAEY6SVS2XHNRDXQ6T7MIP72N6YLHH6GXQK4YAP5G";
+
+test("validateTransactionValues accepts a valid Stellar address on deposit", () => {
+  const errors = validateTransactionValues(
+    "deposit",
+    {
+      amount: "100",
+      walletAddress: VALID_STELLAR_ADDRESS,
+      walletConnected: true,
+    },
+    tDomain,
+  );
+
+  assert.deepEqual(errors, {});
+});
+
+test("validateTransactionValues rejects an invalid Stellar address on deposit", () => {
+  const invalidAddresses = [
+    "BAD-ADDRESS",
+    "GABC123",
+    "S4Q5QW7GWXW2P2UAEY6SVS2XHNRDXQ6T7MIP72N6YLHH6GXQK4YAP5G",
+    "",
+    "   ",
+  ];
+
+  for (const walletAddress of invalidAddresses) {
+    const errors = validateTransactionValues(
+      "deposit",
+      {
+        amount: "100",
+        walletAddress,
+        walletConnected: true,
+      },
+      tDomain,
+    );
+
+    assert.equal(
+      errors.walletAddress,
+      tDomain.validation.validStellarAddress,
+      `Expected deposit validation error for "${walletAddress}"`,
+    );
+  }
+});
+
+test("validateTransactionValues continues to validate withdrawal addresses", () => {
+  const emptyErrors = validateTransactionValues(
+    "withdrawal",
+    {
+      amount: "100",
+      walletAddress: "   ",
+      walletConnected: true,
+    },
+    tDomain,
+  );
+  assert.equal(emptyErrors.walletAddress, tDomain.validation.enterDestination);
+
+  const invalidErrors = validateTransactionValues(
+    "withdrawal",
+    {
+      amount: "100",
+      walletAddress: "NOT-A-STELLAR-ADDRESS",
+      walletConnected: true,
+    },
+    tDomain,
+  );
+  assert.equal(invalidErrors.walletAddress, tDomain.validation.validStellarAddress);
+
+  const validErrors = validateTransactionValues(
+    "withdrawal",
+    {
+      amount: "100",
+      walletAddress: VALID_STELLAR_ADDRESS,
+      walletConnected: true,
+    },
+    tDomain,
+  );
+  assert.deepEqual(validErrors, {});
 });
 

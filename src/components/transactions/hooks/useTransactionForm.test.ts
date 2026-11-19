@@ -96,7 +96,10 @@ describe("useTransactionForm", () => {
 
       act(() => {
         result.current.updateField("amount", "100");
-        result.current.updateField("walletAddress", "GBXYZ...");
+        result.current.updateField(
+          "walletAddress",
+          "GB4Q5QW7GWXW2P2UAEY6SVS2XHNRDXQ6T7MIP72N6YLHH6GXQK4YAP5G",
+        );
       });
 
       let isValid = false;
@@ -143,7 +146,10 @@ describe("useTransactionForm", () => {
       // Provide valid data
       act(() => {
         result.current.updateField("amount", "100");
-        result.current.updateField("walletAddress", "GBXYZ...");
+        result.current.updateField(
+          "walletAddress",
+          "GB4Q5QW7GWXW2P2UAEY6SVS2XHNRDXQ6T7MIP72N6YLHH6GXQK4YAP5G",
+        );
       });
 
       act(() => {
