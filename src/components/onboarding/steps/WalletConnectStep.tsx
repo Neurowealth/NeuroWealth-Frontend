@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { random } from '@/lib/seeded-rng';
 
@@ -184,9 +185,9 @@ export default function WalletConnectStep({ onNext, onSkip, onBack }: WalletConn
       <div className="text-center max-w-2xl mx-auto">
         <p className="text-sm text-slate-400">
           Don&apos;t have a wallet?{' '}
-          <button className="text-green-400 hover:text-green-300 underline">
+          <Link href="/help" className="text-green-400 hover:text-green-300 underline">
             Learn more
-          </button>
+          </Link>
         </p>
       </div>
     </div>

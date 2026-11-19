@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/logger';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
@@ -50,9 +51,11 @@ const riskColors = {
 export default function StrategyOverviewStep({ onNext, onSkip, onBack }: StrategyOverviewStepProps) {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('balanced');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   const handleContinue = async () => {
     setIsSaving(true);
+    setSaveError(false);
     
     try {
       // Simulate saving strategy preference
@@ -64,6 +67,7 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
       onNext();
     } catch (error) {
       logger.error('Failed to save strategy:', error);
+      setSaveError(true);
     } finally {
       setIsSaving(false);
     }
@@ -198,13 +202,47 @@ export default function StrategyOverviewStep({ onNext, onSkip, onBack }: Strateg
         </Button>
       </div>
 
+      {/* Storage Error Feedback */}
+      {saveError && (
+        <div className="max-w-4xl mx-auto">
+          <div role="alert" className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+            <div className="flex items-start gap-2 text-red-400">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-medium mb-1">Could not save your strategy preference.</p>
+                <p className="text-sm text-slate-300 mb-3">
+                  Your browser blocked local storage. You can try again or continue to the next step — your selection is kept for this session.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => { setSaveError(false); handleContinue(); }}
+                    disabled={isSaving}
+                  >
+                    Try again
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setSaveError(false); onNext(); }}
+                  >
+                    Continue anyway
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Additional Info */}
       <div className="text-center max-w-4xl mx-auto">
         <p className="text-sm text-slate-400">
           Not sure which strategy to choose?{' '}
-          <button className="text-green-400 hover:text-green-300 underline">
+          <Link href="/help" className="text-green-400 hover:text-green-300 underline">
             Take our risk assessment quiz
-          </button>
+          </Link>
         </p>
       </div>
     </div>

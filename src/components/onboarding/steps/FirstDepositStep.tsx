@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { random } from '@/lib/seeded-rng';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
@@ -269,9 +270,9 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
       <div className="text-center max-w-2xl mx-auto">
         <p className="text-sm text-slate-400">
           Questions about deposits?{' '}
-          <button className="text-green-400 hover:text-green-300 underline">
+          <Link href="/help" className="text-green-400 hover:text-green-300 underline">
             View deposit guide
-          </button>
+          </Link>
         </p>
       </div>
     </div>
