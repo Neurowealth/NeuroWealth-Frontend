@@ -634,6 +634,21 @@ export interface AppMessages {
       loadingLabel: string;
       loadingText: string;
     };
+    list: {
+      heading: string;
+      /** "{count}" is replaced with the number of matching transactions. */
+      resultsCount: string;
+      /** "{count}" is replaced with the number of matching transactions. */
+      caption: string;
+      empty: string;
+      columns: {
+        date: string;
+        description: string;
+        type: string;
+        amount: string;
+        status: string;
+      };
+    };
     domain: {
       context: {
         withdrawFunds: string;
@@ -1075,6 +1090,37 @@ export interface AppMessages {
       active: string;
       paused: string;
       archived: string;
+    };
+  };
+  walletConnection: {
+    states: {
+      restoringTitle: string;
+      restoringSubtitle: string;
+      connectedTitle: string;
+      connectedBody: string;
+      disconnectedTitle: string;
+      disconnectedBody: string;
+      benefitsTitle: string;
+      benefits: {
+        insights: string;
+        strategies: string;
+        tracking: string;
+      };
+    };
+    guard: {
+      loading: string;
+      requiredTitle: string;
+      requiredBody: string;
+    };
+    button: {
+      connect: string;
+      connecting: string;
+      disconnecting: string;
+      connectFailedTitle: string;
+      disconnectFailedTitle: string;
+      connectFailedFallback: string;
+      disconnectFailedFallback: string;
+      modalMessage: string;
     };
   };
 }
@@ -1834,6 +1880,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         loadingLabel: "Loading transactions",
         loadingText: "Loading transaction history…",
       },
+      list: {
+        heading: "Transactions",
+        resultsCount: "{count} results",
+        caption: "Transaction history, {count} results",
+        empty: "No transactions match the selected filters.",
+        columns: {
+          date: "Date",
+          description: "Description",
+          type: "Type",
+          amount: "Amount",
+          status: "Status",
+        },
+      },
 
       domain: {
         context: {
@@ -2471,6 +2530,40 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         active: "Active",
         paused: "Paused",
         archived: "Archived",
+      },
+    },
+    walletConnection: {
+      states: {
+        restoringTitle: "Checking wallet connection...",
+        restoringSubtitle: "Restoring your previous session",
+        connectedTitle: "Connected",
+        connectedBody: "Your wallet is connected and ready for transactions.",
+        disconnectedTitle: "Wallet Not Connected",
+        disconnectedBody:
+          "Connect your Stellar wallet to access investment strategies and manage your portfolio.",
+        benefitsTitle: "Benefits:",
+        benefits: {
+          insights: "View AI-powered portfolio insights",
+          strategies: "Execute automated investment strategies",
+          tracking: "Track transactions and balances",
+        },
+      },
+      guard: {
+        loading: "Loading wallet status...",
+        requiredTitle: "Wallet Connection Required",
+        requiredBody:
+          "This action requires your wallet to be connected. Please connect your wallet to continue.",
+      },
+      button: {
+        connect: "Connect Wallet",
+        connecting: "Connecting...",
+        disconnecting: "Disconnecting...",
+        connectFailedTitle: "Connect failed",
+        disconnectFailedTitle: "Disconnect failed",
+        connectFailedFallback: "Failed to connect wallet",
+        disconnectFailedFallback: "Failed to disconnect wallet",
+        modalMessage:
+          "🧠 Connect your Stellar wallet to access NeuroWealth's AI-powered investment strategies and portfolio management tools.",
       },
     },
   },
@@ -3225,6 +3318,19 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         loadingLabel: "Chargement des transactions",
         loadingText: "Chargement de l'historique des transactions…",
       },
+      list: {
+        heading: "Transactions",
+        resultsCount: "{count} résultats",
+        caption: "Historique des transactions, {count} résultats",
+        empty: "Aucune transaction ne correspond aux filtres sélectionnés.",
+        columns: {
+          date: "Date",
+          description: "Description",
+          type: "Type",
+          amount: "Montant",
+          status: "Statut",
+        },
+      },
 
       domain: {
         context: {
@@ -3862,6 +3968,40 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         active: "Active",
         paused: "En pause",
         archived: "Archivée",
+      },
+    },
+    walletConnection: {
+      states: {
+        restoringTitle: "Vérification de la connexion du portefeuille...",
+        restoringSubtitle: "Restauration de votre session précédente",
+        connectedTitle: "Connecté",
+        connectedBody: "Votre portefeuille est connecté et prêt pour les transactions.",
+        disconnectedTitle: "Portefeuille non connecté",
+        disconnectedBody:
+          "Connectez votre portefeuille Stellar pour accéder aux stratégies d'investissement et gérer votre portefeuille.",
+        benefitsTitle: "Avantages :",
+        benefits: {
+          insights: "Consultez des analyses de portefeuille propulsées par l'IA",
+          strategies: "Exécutez des stratégies d'investissement automatisées",
+          tracking: "Suivez vos transactions et vos soldes",
+        },
+      },
+      guard: {
+        loading: "Chargement de l'état du portefeuille...",
+        requiredTitle: "Connexion du portefeuille requise",
+        requiredBody:
+          "Cette action nécessite que votre portefeuille soit connecté. Veuillez connecter votre portefeuille pour continuer.",
+      },
+      button: {
+        connect: "Connecter le wallet",
+        connecting: "Connexion...",
+        disconnecting: "Déconnexion...",
+        connectFailedTitle: "Échec de la connexion",
+        disconnectFailedTitle: "Échec de la déconnexion",
+        connectFailedFallback: "Impossible de connecter le portefeuille",
+        disconnectFailedFallback: "Impossible de déconnecter le portefeuille",
+        modalMessage:
+          "🧠 Connectez votre portefeuille Stellar pour accéder aux stratégies d'investissement et aux outils de gestion de portefeuille de NeuroWealth propulsés par l'IA.",
       },
     },
   },

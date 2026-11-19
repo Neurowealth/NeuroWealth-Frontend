@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@/contexts";
 import { NetworkMismatchWarning } from "@/components/wallet/NetworkMismatchWarning";
 import { useToast } from "@/components/notifications/ToastProvider";
+import { useI18n } from "@/contexts/I18nContext";
 import { logger } from "@/lib/logger";
 import { truncateWalletAddress } from "@/lib/user";
 
@@ -44,6 +45,25 @@ const LoaderIcon = () => (
 interface WalletConnectButtonProps {
   theme?: "light" | "dark";
 }
+
+/**
+ * Boilerplate copy rendered by the third-party Stellar Wallets Kit modal that
+ * we hide. These match the *vendor's* strings, not ours: the kit renders its
+ * modal in English regardless of the app locale, so these deliberately stay
+ * out of the i18n dictionaries. If the kit gains localized copy, add the
+ * translated variants here.
+ */
+export const SWK_BOILERPLATE_TEXT: readonly string[] = [
+  "Learn more",
+  "What is a Wallet",
+  "What is Stellar",
+  "Wallets are used to send",
+  "Stellar is a decentralized",
+];
+
+export function isSwkBoilerplateText(text: string): boolean {
+  return SWK_BOILERPLATE_TEXT.some((fragment) => text.includes(fragment));
+}
 export function findSwkModal(node: HTMLElement): Element | null {
   if (
     node.matches &&
@@ -70,6 +90,8 @@ export default function WalletConnectButton({
     networkStatus,
   } = useWallet();
   const { pushToast } = useToast();
+  const { messages } = useI18n();
+  const t = messages.walletConnection.button;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +102,10 @@ export default function WalletConnectButton({
   // cleanup closed over the previous render's (stale) observer instead of
   // the one just created, leaking it instead of disconnecting it.
   const modalObserverRef = useRef<MutationObserver | null>(null);
+  // The modal observer is set up once (empty deps), so read the injected
+  // copy through a ref to pick up locale changes without re-subscribing.
+  const modalMessageRef = useRef(t.modalMessage);
+  modalMessageRef.current = t.modalMessage;
 
   useEffect(() => {
     const handleModalMutations = (modal: Element) => {
@@ -92,13 +118,7 @@ export default function WalletConnectButton({
 
       textNodes.forEach((textNode) => {
         const text = textNode.textContent || "";
-        if (
-          text.includes("Learn more") ||
-          text.includes("What is a Wallet") ||
-          text.includes("What is Stellar") ||
-          text.includes("Wallets are used to send") ||
-          text.includes("Stellar is a decentralized")
-        ) {
+        if (isSwkBoilerplateText(text)) {
           const parent = textNode.parentElement;
           if (parent) {
             parent.style.display = "none";
@@ -106,7 +126,14 @@ export default function WalletConnectButton({
         }
       });
 
-      if (!modal.querySelector(".custom-neurowealth-message")) {
+      const existingMessage = modal.querySelector(
+        ".custom-neurowealth-message > div",
+      );
+      if (existingMessage) {
+        if (existingMessage.textContent !== modalMessageRef.current) {
+          existingMessage.textContent = modalMessageRef.current;
+        }
+      } else {
         const customMessage = document.createElement("div");
         customMessage.className = "custom-neurowealth-message";
         const messageContainer = document.createElement("div");
@@ -120,8 +147,7 @@ export default function WalletConnectButton({
           line-height: 1.5;
           border: 1px solid rgba(156, 163, 175, 0.3);
         `;
-        messageContainer.textContent =
-          "🧠 Connect your Stellar wallet to access NeuroWealth's AI-powered investment strategies and portfolio management tools.";
+        messageContainer.textContent = modalMessageRef.current;
         customMessage.appendChild(messageContainer);
         modal.appendChild(customMessage);
       }
@@ -177,12 +203,16 @@ export default function WalletConnectButton({
     } catch (err) {
       const action = connected ? "disconnect" : "connect";
       const message =
-        err instanceof Error ? err.message : `Failed to ${action} wallet`;
+        err instanceof Error
+          ? err.message
+          : connected
+            ? t.disconnectFailedFallback
+            : t.connectFailedFallback;
       logger.error(`Wallet ${action} failed`, err);
       setError(message);
       pushToast({
         variant: "error",
-        title: connected ? "Disconnect failed" : "Connect failed",
+        title: connected ? t.disconnectFailedTitle : t.connectFailedTitle,
         description: message,
       });
     } finally {
@@ -191,12 +221,12 @@ export default function WalletConnectButton({
   };
 
   const getButtonText = () => {
-    if (isLoading) return connected ? "Disconnecting..." : "Connecting...";
+    if (isLoading) return connected ? t.disconnecting : t.connecting;
     if (connected && publicKey) {
       const truncated = truncateWalletAddress(publicKey);
       return `${truncated} (${walletName})`;
     }
-    return "Connect Wallet";
+    return t.connect;
   };
 
   const getIcon = () => {

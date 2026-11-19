@@ -111,6 +111,47 @@ describe("i18n message dictionaries shape parity (#1093)", () => {
   });
 });
 
+// #1126 — a hardcoded literal once shipped UTF-8 bytes decoded as Windows-1252
+// ("â€¦" instead of "…"). Guard every translation against that class of
+// mojibake so it cannot slip back in through the dictionaries.
+describe("i18n message dictionaries encoding (#1126)", () => {
+  const MOJIBAKE = /â€|Ã[\u0080-\u00BF]|Â[\u00A0-\u00BF]|\uFFFD/;
+
+  it("contains no mojibake sequences in either locale", () => {
+    const corrupted: string[] = [];
+    for (const locale of ["en", "fr"] as const) {
+      for (const [path, kind] of shapeOf(locale).leaves) {
+        if (kind !== "string") continue;
+        const value = resolve(locale, path);
+        if (typeof value === "string" && MOJIBAKE.test(value)) {
+          corrupted.push(`${locale}.${path}`);
+        }
+      }
+    }
+    assert.deepEqual(corrupted, [], `mojibake in: ${corrupted.join(", ")}`);
+  });
+
+  it("keeps the transaction-history loading copy wired up (#1126)", () => {
+    for (const locale of ["en", "fr"] as const) {
+      const history = dictionaries[locale].transactions.history;
+      assert.ok(history.loadingLabel.length > 0);
+      assert.ok(history.loadingText.endsWith("…"), `${locale} loadingText should end with "…"`);
+    }
+  });
+});
+
+// #1130 — interpolated TransactionList copy must keep its placeholder in
+// every locale, or the count silently disappears from the UI.
+describe("transactions.list placeholders (#1130)", () => {
+  for (const locale of ["en", "fr"] as const) {
+    it(`${locale} resultsCount and caption include {count}`, () => {
+      const list = dictionaries[locale].transactions.list;
+      assert.ok(list.resultsCount.includes("{count}"));
+      assert.ok(list.caption.includes("{count}"));
+    });
+  }
+});
+
 /** Read a locale-relative leaf path back out of a dictionary. */
 function resolve(locale: AppLocale, path: string): unknown {
   return path
