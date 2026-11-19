@@ -36,6 +36,8 @@
  *   README.md               Mock vs real API mode overview for contributors
  */
 
+import { validateBackendBaseUrl } from "@/lib/api-client";
+
 interface EnvConfig {
   /** NEXT_PUBLIC_WEBHOOK_URL — WhatsApp webhook receiver URL. */
   webhookUrl: string;
@@ -104,7 +106,20 @@ function validateEnv(): EnvConfig {
     process.env.NEXT_PUBLIC_STELLAR_HORIZON_URL || fallbackHorizonUrl;
 
   // ── Server-only variables (optional) ───────────────────────────────────
-  const neuroWealthApiBaseUrl = process.env.NEUROWEALTH_API_BASE_URL ?? "";
+  const neuroWealthApiBaseUrl = (
+    process.env.NEUROWEALTH_API_BASE_URL ?? ""
+  ).trim();
+  if (neuroWealthApiBaseUrl) {
+    try {
+      validateBackendBaseUrl(neuroWealthApiBaseUrl);
+    } catch (error) {
+      errors.push(
+        error instanceof Error
+          ? error.message
+          : "NEUROWEALTH_API_BASE_URL must use the https:// scheme outside development.",
+      );
+    }
+  }
   const neuroWealthApiAuthToken =
     process.env.NEUROWEALTH_API_AUTH_TOKEN ?? "";
   const neuroWealthPortfolioPath =

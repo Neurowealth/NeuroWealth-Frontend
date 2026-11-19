@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ApiRequestError, apiRequest } from "@/lib/api-client";
+import {
+  ApiRequestError,
+  apiRequest,
+  createServerFetcher,
+  validateBackendBaseUrl,
+} from "@/lib/api-client";
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -178,4 +183,91 @@ test("apiRequest forwards external AbortSignal and rejects with NETWORK_ERROR wh
       return true;
     },
   );
+});
+
+// ── NEUROWEALTH_API_BASE_URL HTTPS enforcement (Issue #1201) ────────────────
+
+test("validateBackendBaseUrl allows https:// in production and development", () => {
+  assert.equal(
+    validateBackendBaseUrl("https://api.neurowealth.app", "production"),
+    "https://api.neurowealth.app",
+  );
+  assert.equal(
+    validateBackendBaseUrl("https://api.neurowealth.app/v1", "development"),
+    "https://api.neurowealth.app/v1",
+  );
+  assert.equal(
+    validateBackendBaseUrl("https://api.neurowealth.app", undefined),
+    "https://api.neurowealth.app",
+  );
+});
+
+test("validateBackendBaseUrl allows http:// only in development", () => {
+  assert.equal(
+    validateBackendBaseUrl("http://localhost:8000", "development"),
+    "http://localhost:8000",
+  );
+});
+
+test("validateBackendBaseUrl rejects non-HTTPS URLs outside development", () => {
+  for (const nodeEnv of ["production", "test", undefined]) {
+    assert.throws(
+      () => validateBackendBaseUrl("http://api.neurowealth.app", nodeEnv),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /NEUROWEALTH_API_BASE_URL/);
+        assert.match(error.message, /https:\/\//);
+        return true;
+      },
+    );
+  }
+});
+
+test("validateBackendBaseUrl rejects malformed URLs", () => {
+  for (const nodeEnv of ["production", "development"]) {
+    assert.throws(
+      () => validateBackendBaseUrl("not-a-valid-url", nodeEnv),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /NEUROWEALTH_API_BASE_URL/);
+        return true;
+      },
+    );
+  }
+});
+
+test("createServerFetcher rejects non-HTTPS NEUROWEALTH_API_BASE_URL in production", () => {
+  (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+  process.env.NEUROWEALTH_API_BASE_URL = "http://api.neurowealth.app";
+
+  assert.throws(
+    () => createServerFetcher(),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /NEUROWEALTH_API_BASE_URL/);
+      assert.match(error.message, /https:\/\//);
+      return true;
+    },
+  );
+});
+
+test("createServerFetcher returns a fetcher for HTTPS NEUROWEALTH_API_BASE_URL in production", async () => {
+  (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://api.neurowealth.app";
+  process.env.NEUROWEALTH_API_AUTH_TOKEN = "secret-token";
+
+  let capturedUrl = "";
+  let capturedAuth = "";
+  globalThis.fetch = async (url, init) => {
+    capturedUrl = String(url);
+    capturedAuth = new Headers(init?.headers).get("Authorization") ?? "";
+    return new Response("{}", { status: 200 });
+  };
+
+  const serverFetch = createServerFetcher();
+  assert.ok(serverFetch);
+  await serverFetch("/portfolio/overview");
+
+  assert.equal(capturedUrl, "https://api.neurowealth.app/portfolio/overview");
+  assert.equal(capturedAuth, "Bearer secret-token");
 });

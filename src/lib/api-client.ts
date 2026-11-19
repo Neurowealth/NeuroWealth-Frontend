@@ -320,14 +320,54 @@ export async function apiRequest<T>(
  * Returns null when NEUROWEALTH_API_BASE_URL is not configured so callers
  * can cleanly branch to demo/mock mode without checking env themselves.
  */
+/**
+ * Validates NEUROWEALTH_API_BASE_URL.
+ * Rejects malformed URLs, and rejects non-HTTPS schemes outside development
+ * so Bearer tokens are never sent in cleartext.
+ */
+export function validateBackendBaseUrl(
+  baseUrl: string,
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    throw new Error(
+      `NEUROWEALTH_API_BASE_URL must be a valid URL (got "${baseUrl}").`,
+    );
+  }
+
+  const isDevelopment = nodeEnv === "development";
+  if (!isDevelopment && parsed.protocol !== "https:") {
+    throw new Error(
+      `NEUROWEALTH_API_BASE_URL must use the https:// scheme outside development (got "${parsed.protocol}").`,
+    );
+  }
+
+  if (
+    isDevelopment &&
+    parsed.protocol !== "https:" &&
+    parsed.protocol !== "http:"
+  ) {
+    throw new Error(
+      `NEUROWEALTH_API_BASE_URL must use the http:// or https:// scheme (got "${parsed.protocol}").`,
+    );
+  }
+
+  return baseUrl;
+}
+
 export function createServerFetcher(
   userIdentity?: string,
 ): ((
   path: string,
   init?: RequestInit,
 ) => Promise<Response>) | null {
-  const baseUrl = process.env.NEUROWEALTH_API_BASE_URL;
+  const baseUrl = process.env.NEUROWEALTH_API_BASE_URL?.trim();
   if (!baseUrl) return null;
+
+  validateBackendBaseUrl(baseUrl);
 
   const token = process.env.NEUROWEALTH_API_AUTH_TOKEN;
 

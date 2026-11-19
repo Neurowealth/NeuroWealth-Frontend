@@ -200,7 +200,7 @@ function restoreEnv(key: string, value: string | undefined) {
 test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
-  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://mock-api.local";
 
   try {
     globalThis.fetch = async () => {
@@ -226,7 +226,7 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK re
 test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exception", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
-  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://mock-api.local";
 
   try {
     globalThis.fetch = async () => {
@@ -249,7 +249,7 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exce
 test("PUT /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
-  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://mock-api.local";
 
   try {
     globalThis.fetch = async () => {
@@ -275,7 +275,7 @@ test("PUT /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK re
 test("PUT /api/strategy returns 503 BACKEND_ERROR when backend fetch throws network exception", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
-  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://mock-api.local";
 
   try {
     globalThis.fetch = async () => {
