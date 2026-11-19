@@ -145,6 +145,11 @@ vercel rollback --token=$VERCEL_TOKEN
 
 A `Dockerfile` is included for teams that prefer containerised deploys instead of Vercel.
 
+The repository includes a tracked `public/` directory (via `public/.gitkeep`) so
+that `docker build .` succeeds from a clean checkout. Next.js serves any static
+assets placed in `public/` at the root path; the directory is empty by default
+but available for favicons, robots.txt, or other static files as needed.
+
 ```bash
 # Build image
 docker build \

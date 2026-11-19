@@ -825,6 +825,24 @@ export interface AppMessages {
       }[];
     };
   };
+  onboardingFlow: {
+    heading: string;
+    subtitle: string;
+    back: string;
+    skipAll: string;
+    stepProgress: string;
+    completion: {
+      title: string;
+      description: string;
+      goToDashboard: string;
+      reviewOnboarding: string;
+    };
+    steps: {
+      wallet: { title: string; description: string };
+      strategy: { title: string; description: string };
+      deposit: { title: string; description: string };
+    };
+  };
 }
 
 export const localeToIntl: Record<AppLocale, string> = {
@@ -1886,6 +1904,24 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         ],
       },
     },
+    onboardingFlow: {
+      heading: "Get Started with NeuroWealth",
+      subtitle: "Complete these simple steps to set up your investment account",
+      back: "Back",
+      skipAll: "Skip All",
+      stepProgress: "Step {current} of {total}",
+      completion: {
+        title: "Welcome to NeuroWealth!",
+        description: "You've successfully completed the onboarding process. You're all set to start your investment journey.",
+        goToDashboard: "Go to Dashboard",
+        reviewOnboarding: "Review Onboarding",
+      },
+      steps: {
+        wallet: { title: "Connect Wallet", description: "Secure your account" },
+        strategy: { title: "Choose Strategy", description: "Set your preferences" },
+        deposit: { title: "Make Deposit", description: "Start investing" },
+      },
+    },
   },
   fr: {
     locale: {
@@ -2940,6 +2976,24 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             ],
           },
         ],
+      },
+    },
+    onboardingFlow: {
+      heading: "Commencez avec NeuroWealth",
+      subtitle: "Suivez ces étapes simples pour configurer votre compte d'investissement",
+      back: "Retour",
+      skipAll: "Tout passer",
+      stepProgress: "Étape {current} sur {total}",
+      completion: {
+        title: "Bienvenue sur NeuroWealth !",
+        description: "Vous avez terminé le processus d'intégration. Vous êtes prêt à commencer votre parcours d'investissement.",
+        goToDashboard: "Aller au tableau de bord",
+        reviewOnboarding: "Revoir l'intégration",
+      },
+      steps: {
+        wallet: { title: "Connecter le wallet", description: "Sécurisez votre compte" },
+        strategy: { title: "Choisir la stratégie", description: "Définissez vos préférences" },
+        deposit: { title: "Effectuer un dépôt", description: "Commencez à investir" },
       },
     },
   },

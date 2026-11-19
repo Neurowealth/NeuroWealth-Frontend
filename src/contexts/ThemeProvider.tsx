@@ -97,6 +97,27 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     }
   }, [theme, resolvedTheme, mounted]);
 
+  // Cross-tab sync: when another tab changes the stored theme, apply it here.
+  useEffect(() => {
+    if (typeof globalThis.window === "undefined") return;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_STORAGE_KEY) return;
+      const newTheme = e.newValue;
+      if (newTheme === null) return;
+      if (newTheme === "light" || newTheme === "dark" || newTheme === "system") {
+        setThemeState(newTheme);
+        const resolved = resolveTheme(newTheme);
+        setResolvedTheme(resolved);
+        addTransitionClass();
+        applyTheme(resolved);
+      }
+    };
+
+    globalThis.window.addEventListener("storage", handleStorage);
+    return () => globalThis.window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const contextValue = useMemo(() => ({
     theme,
     resolvedTheme,
