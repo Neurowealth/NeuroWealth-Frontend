@@ -73,7 +73,7 @@ test("GET /api/portfolio sandbox scenarios return demo data", async () => {
 
 test("GET /api/portfolio normalizes real backend responses when NEUROWEALTH_API_BASE_URL is set", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
-  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+  process.env.NEUROWEALTH_API_BASE_URL = "https://mock-api.local";
   
   const originalFetch = global.fetch;
   
