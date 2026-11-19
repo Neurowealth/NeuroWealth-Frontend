@@ -115,3 +115,59 @@ test("requireSameOrigin allows a matching Origin regardless of request.nextUrl's
     null,
   );
 });
+
+// ── Token validation in requireAuth & getSessionFromRequest ───────────────
+
+test("requireAuth rejects empty and whitespace-only session tokens", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  for (const token of ["", "   ", "\t\r\n"]) {
+    const raw = encodeURIComponent(
+      JSON.stringify({ token, expiresAt: Date.now() + 60_000 }),
+    );
+    const req = new NextRequest("http://localhost:3000/api/strategy", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+    });
+    const res = requireAuth(req);
+    assert.ok(res, `token '${token}' should be rejected`);
+    assert.equal(res?.status, 401);
+  }
+});
+
+test("requireAuth rejects oversized session tokens", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth, MAX_SESSION_TOKEN_LENGTH } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  const raw = encodeURIComponent(
+    JSON.stringify({
+      token: "a".repeat(MAX_SESSION_TOKEN_LENGTH + 1),
+      expiresAt: Date.now() + 60_000,
+    }),
+  );
+  const req = new NextRequest("http://localhost:3000/api/strategy", {
+    headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+  });
+  const res = requireAuth(req);
+  assert.ok(res);
+  assert.equal(res?.status, 401);
+});
+
+test("requireAuth accepts valid non-empty tokens within length bound", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth, MAX_SESSION_TOKEN_LENGTH } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  for (const token of ["valid-token", "t", "a".repeat(MAX_SESSION_TOKEN_LENGTH)]) {
+    const raw = encodeURIComponent(
+      JSON.stringify({ token, expiresAt: Date.now() + 60_000 }),
+    );
+    const req = new NextRequest("http://localhost:3000/api/strategy", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+    });
+    const res = requireAuth(req);
+    assert.equal(res, null);
+  }
+});

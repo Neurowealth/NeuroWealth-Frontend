@@ -117,10 +117,13 @@ export function parseClientIp(value: string | null | undefined): string | null {
  * Only standard x-forwarded-for (first hop) or x-real-ip are trusted.
  * Vendor-specific / spoofable headers like cf-connecting-ip, fastly-client-ip,
  * true-client-ip, and x-client-ip are strictly ignored.
+ *
+ * Returns the client IP, or fallback (defaults to null) if no trusted client IP header is present.
  */
 export function getRateLimitKey(
   request: Pick<Request, "headers"> | { headers: Headers | Record<string, string | undefined> } | Headers,
-): string {
+  fallback?: string | null,
+): string | null {
   let headers: Headers | { get(name: string): string | null | undefined };
 
   if ("headers" in request && typeof (request as { headers: Headers }).headers.get === "function") {
@@ -133,7 +136,7 @@ export function getRateLimitKey(
   } else if (typeof (request as Headers).get === "function") {
     headers = request as Headers;
   } else {
-    return "unknown";
+    return fallback ?? null;
   }
 
   // x-real-ip is set by the trusted reverse proxy itself and cannot be
@@ -146,5 +149,5 @@ export function getRateLimitKey(
   const parsedXff = parseClientIp(xForwardedFor);
   if (parsedXff) return parsedXff;
 
-  return "unknown";
+  return fallback ?? null;
 }
