@@ -158,6 +158,14 @@ export interface AppMessages {
         paused: string;
         idle: string;
       };
+      events: {
+        depositTitle: string;
+        depositDesc: string;
+        withdrawalTitle: string;
+        withdrawalDesc: string;
+        rebalanceTitle: string;
+        rebalanceDesc: string;
+      };
     };
     portfolio: {
       overview: string;
@@ -1398,6 +1406,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           live: "Live",
           paused: "Paused",
           idle: "Idle",
+        },
+        events: {
+          depositTitle: "Deposit received",
+          depositDesc: "+{{amount}} USDC deposited and routed to active strategy.",
+          withdrawalTitle: "Withdrawal processed",
+          withdrawalDesc: "-{{amount}} liquidity released to destination wallet.",
+          rebalanceTitle: "Auto-rebalance executed",
+          rebalanceDesc: "Strategy drift corrected. APY improved by {{apyGain}}%.",
         },
       },
       portfolio: {
@@ -2846,6 +2862,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           live: "En direct",
           paused: "En pause",
           idle: "Inactif",
+        },
+        events: {
+          depositTitle: "Dépôt reçu",
+          depositDesc: "+{{amount}} USDC déposés et acheminés vers la stratégie active.",
+          withdrawalTitle: "Retrait traité",
+          withdrawalDesc: "-{{amount}} de liquidités libérées vers le portefeuille de destination.",
+          rebalanceTitle: "Rééquilibrage automatique exécuté",
+          rebalanceDesc: "Dérive de la stratégie corrigée. APY amélioré de {{apyGain}} %.",
         },
       },
       portfolio: {

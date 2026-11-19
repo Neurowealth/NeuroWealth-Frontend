@@ -157,8 +157,23 @@ The typed client in `src/lib/api-client.ts` unwraps success payloads and throws 
 on failure. Built-in client error codes include `REQUEST_TIMEOUT` (408), `NETWORK_ERROR` (503),
 `INVALID_JSON`, and `INVALID_ENVELOPE`. Backend codes are forwarded verbatim.
 
-Use `useAsyncData((signal) => apiRequest("/api/…", { signal }))` so in-flight requests abort on
-unmount. See [NEUROWEALTH_API.md](NEUROWEALTH_API.md) and [docs/api-integration.md](docs/api-integration.md)
+To manage asynchronous state in UI components, use the `useAsyncState` hook from `src/hooks/useAsyncState.ts`. For request cancellation on unmount or re-fetch, pass an `AbortSignal` from an `AbortController` to `apiRequest`:
+
+```tsx
+import { useEffect } from "react";
+import { useAsyncState } from "@/hooks/useAsyncState";
+import { apiRequest } from "@/lib/api-client";
+
+const { state, run, reset } = useAsyncState<PortfolioPayload>();
+
+useEffect(() => {
+  const controller = new AbortController();
+  run(() => apiRequest<PortfolioPayload>("/api/portfolio", { signal: controller.signal }));
+  return () => controller.abort();
+}, [run]);
+```
+
+See [NEUROWEALTH_API.md](NEUROWEALTH_API.md) and [docs/api-integration.md](docs/api-integration.md)
 for full endpoint schemas and integration checklists.
 
 ## Provider tree & data flow
