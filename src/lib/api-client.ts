@@ -283,6 +283,21 @@ export async function apiRequest<T>(
 }
 
 /**
+ * Default timeout (ms) applied to every backend proxy fetch made through
+ * createServerFetcher().  Matches the browser-side apiRequest() default so
+ * the documented 10-second SLA is enforced end-to-end.
+ */
+export const SERVER_FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Result shape returned when a proxy fetch times out or aborts.
+ * Callers should turn this into the appropriate HTTP response.
+ */
+export type ServerFetchTimeoutResult =
+  | { timedOut: true }
+  | { timedOut: false };
+
+/**
  * Create a pre-configured raw fetch for server-side route handlers that proxy
  * to the real backend (NEUROWEALTH_API_BASE_URL) but need the unparsed
  * Response — e.g. because the backend returns its own JSON shape rather than
@@ -293,6 +308,10 @@ export async function apiRequest<T>(
  *   - Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN> (server credential)
  *   - X-User-Identity: <userIdentity> (per-user identity from session)
  * and resolves `path` against NEUROWEALTH_API_BASE_URL via resolveServerEndpoint.
+ *
+ * Every fetch is wrapped with an AbortController-based timeout (default
+ * SERVER_FETCH_TIMEOUT_MS).  A timed-out request throws a
+ * ServerFetchTimeoutError so route handlers can return a deterministic 408.
  *
  * Trust Model:
  *   The backend receives two credentials:
@@ -320,8 +339,18 @@ export async function apiRequest<T>(
  * Returns null when NEUROWEALTH_API_BASE_URL is not configured so callers
  * can cleanly branch to demo/mock mode without checking env themselves.
  */
+
+/** Thrown by the server fetcher when the backend does not respond in time. */
+export class ServerFetchTimeoutError extends Error {
+  constructor() {
+    super("Backend request timed out");
+    this.name = "ServerFetchTimeoutError";
+  }
+}
+
 export function createServerFetcher(
   userIdentity?: string,
+  timeoutMs: number = SERVER_FETCH_TIMEOUT_MS,
 ): ((
   path: string,
   init?: RequestInit,
@@ -339,6 +368,30 @@ export function createServerFetcher(
     if (userIdentity && !headers.has("X-User-Identity")) {
       headers.set("X-User-Identity", userIdentity);
     }
-    return fetch(resolveServerEndpoint(baseUrl, path), { ...init, headers });
+
+    const { signal, cancel, wasTimedOut } = mergeSignalWithTimeout(
+      (init.signal as AbortSignal | null | undefined) ?? null,
+      timeoutMs,
+    );
+
+    const fetchPromise = fetch(resolveServerEndpoint(baseUrl, path), {
+      ...init,
+      headers,
+      signal,
+    });
+
+    return fetchPromise.then(
+      (response) => {
+        cancel();
+        return response;
+      },
+      (error) => {
+        cancel();
+        if (wasTimedOut()) {
+          throw new ServerFetchTimeoutError();
+        }
+        throw error;
+      },
+    );
   };
 }

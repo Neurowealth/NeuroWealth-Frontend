@@ -48,5 +48,10 @@ test("GET /api/widget-preview rate limits repeated requests from the same IP", a
   assert.equal(limited.status, 429);
   assert.ok(limited.headers.get("Retry-After"));
 
+  // Body must be the standard error envelope, not plain text
+  const body = await limited.json();
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, "RATE_LIMITED");
+
   resetRateLimitStore();
 });

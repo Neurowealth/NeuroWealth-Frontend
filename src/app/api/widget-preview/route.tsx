@@ -9,6 +9,8 @@ import { buildScenarioPayload } from "@/lib/portfolio";
 import { parseWidgetPreviewSearchParams } from "@/lib/preview-route-query";
 import { ImageResponse } from "next/og";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
+import { ERROR_CODE, HTTP_STATUS, errorResponse } from "@/lib/api-response";
 
 type ThemeMode = "light" | "dark";
 
@@ -62,10 +64,13 @@ export async function GET(request: Request) {
     windowMs: 60_000,
   });
   if (!limit.allowed) {
-    return new Response("Too many requests. Please try again later.", {
-      status: 429,
-      headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
-    });
+    return NextResponse.json(
+      errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
+      {
+        status: HTTP_STATUS.TOO_MANY_REQUESTS,
+        headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+      },
+    );
   }
 
   const { searchParams } = new URL(request.url);

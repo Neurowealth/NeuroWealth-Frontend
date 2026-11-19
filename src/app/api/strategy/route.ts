@@ -12,7 +12,7 @@ import {
   successResponse,
 } from "@/lib/api-response";
 import { strategyUpdateSchema, zodErrorToDetails } from "@/lib/validation/api";
-import { createServerFetcher } from "@/lib/api-client";
+import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/api-auth";
 
@@ -39,7 +39,13 @@ export async function GET(request: NextRequest) {
           headers: { "Cache-Control": "no-store" },
         });
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ServerFetchTimeoutError) {
+        return NextResponse.json(
+          errorResponse(ERROR_CODE.SERVICE_UNAVAILABLE, "Strategy service timed out. Please try again."),
+          { status: 408, headers: { "Cache-Control": "no-store" } },
+        );
+      }
       // fall through to local fallback
     }
   }
@@ -126,7 +132,13 @@ export async function PUT(request: NextRequest) {
         httpOnly: false,
       });
       return response;
-    } catch {
+    } catch (error) {
+      if (error instanceof ServerFetchTimeoutError) {
+        return NextResponse.json(
+          errorResponse(ERROR_CODE.SERVICE_UNAVAILABLE, "Strategy service timed out. Please try again."),
+          { status: 408, headers: { "Cache-Control": "no-store" } },
+        );
+      }
       // fall through to local fallback
     }
   }

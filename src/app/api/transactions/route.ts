@@ -17,7 +17,7 @@ import {
 } from "@/lib/validation/api";
 import { NextRequest, NextResponse } from "next/server";
 import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
-import { createServerFetcher } from "@/lib/api-client";
+import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/api-auth";
 import { dictionaries } from "@/lib/i18n/messages";
@@ -113,6 +113,16 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (error) {
+      if (error instanceof ServerFetchTimeoutError) {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.SERVICE_UNAVAILABLE,
+            "Transaction service timed out. Please try again.",
+          ),
+          { status: 408 },
+        );
+      }
+
       const message =
         error instanceof Error ? error.message : "Backend request failed";
 
