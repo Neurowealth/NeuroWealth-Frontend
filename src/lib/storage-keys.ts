@@ -4,7 +4,14 @@
  * Keys mirror existing app behavior and may use either `nw_` or legacy hyphenated names.
  */
 
+import { SESSION_STORAGE_KEY, SESSION_COOKIE_NAME } from "./auth-constants";
+
 export const STORAGE_KEYS = {
+  // Session
+  SESSION: SESSION_STORAGE_KEY,
+  AUTH_SESSION: SESSION_STORAGE_KEY,
+  SESSION_COOKIE: SESSION_COOKIE_NAME,
+
   // Cookie consent
   COOKIE_CONSENT: "nw_cookie_consent",
 

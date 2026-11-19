@@ -1,6 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, devices } from "@playwright/test";
+import { STORAGE_KEYS } from "../src/lib/storage-keys.ts";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_STORAGE_KEY,
+  SIGN_IN_PATH,
+} from "../src/lib/auth-constants.ts";
 
 const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
 const DATE_STAMP = process.env.VISUAL_BASELINE_DATE ?? "2026-03-28";
@@ -139,8 +145,10 @@ const AUTH_SESSION = {
     id: "u1",
     email: "qa@neurowealth.app",
     name: "Visual QA",
+    displayName: "Visual QA",
   },
   token: "mock-jwt-token-visual-baseline",
+  expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
 };
 
 const DEFAULT_PROFILE = {
@@ -166,9 +174,9 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
 
 function buildStorageState(overrides = {}) {
   const state = {
-    "neurowealth_profile": JSON.stringify(DEFAULT_PROFILE),
-    "nw_preferences": JSON.stringify(DEFAULT_PREFERENCES),
-    "nw_notifications": JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS),
+    [STORAGE_KEYS.PROFILE]: JSON.stringify(DEFAULT_PROFILE),
+    [STORAGE_KEYS.PREFERENCES]: JSON.stringify(DEFAULT_PREFERENCES),
+    [STORAGE_KEYS.NOTIFICATIONS]: JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS),
     ...overrides,
   };
 
@@ -186,18 +194,18 @@ const scenarios = [
     page: "signin",
     state: "default",
     path: "/signin",
-    waitForText: "Welcome Back",
+    waitForText: "Sign in to your account",
   },
   {
     page: "signin",
     state: "invalid",
     path: "/signin",
-    waitForText: "Welcome Back",
+    waitForText: "Sign in to your account",
     action: async (page) => {
-      await page.getByLabel("Email Address").fill("qa@neurowealth.app");
+      await page.getByLabel("Email address").fill("qa@neurowealth.app");
       await page.getByLabel("Password").fill("wrong-password");
       await page.locator('form button[type="submit"]').click();
-      await page.getByText("Invalid Credentials").waitFor({ timeout: 5000 });
+      await page.getByText(/Invalid credentials/i).waitFor({ timeout: 5000 });
     },
   },
   {
@@ -220,15 +228,17 @@ const scenarios = [
     page: "onboarding",
     state: "start",
     path: "/onboarding",
-    waitForText: "Connect your wallet",
+    requiresAuth: true,
+    waitForText: "Connect Your Wallet",
   },
   {
     page: "onboarding",
     state: "completed",
     path: "/onboarding",
-    waitForText: "Onboarding Already Completed",
+    requiresAuth: true,
+    waitForText: "Total balance",
     localStorage: buildStorageState({
-      "onboarding-state": JSON.stringify({
+      [STORAGE_KEYS.ONBOARDING_STATE]: JSON.stringify({
         completed: true,
         lastStep: 2,
         timestamp: 1711584000000,
@@ -338,8 +348,9 @@ const scenarios = [
     page: "settings",
     state: "default",
     path: "/settings",
+    requiresAuth: true,
     localStorage: buildStorageState({
-      "onboarding-state": JSON.stringify({
+      [STORAGE_KEYS.ONBOARDING_STATE]: JSON.stringify({
         completed: true,
         lastStep: 2,
         timestamp: 1711584000000,
@@ -372,8 +383,9 @@ const scenarios = [
     page: "profile",
     state: "default",
     path: "/profile",
+    requiresAuth: true,
     localStorage: buildStorageState({
-      "neurowealth_profile": JSON.stringify({
+      [STORAGE_KEYS.PROFILE]: JSON.stringify({
         displayName: "Visual QA",
         locale: "en-US",
         timezone: "UTC",
@@ -450,10 +462,19 @@ async function stabilizePage(page, scenario) {
 }
 
 async function captureScenario(browser, viewport, scenario) {
+  const sessionPayload = JSON.stringify(AUTH_SESSION);
+  const cookiePayload = encodeURIComponent(
+    JSON.stringify({
+      token: AUTH_SESSION.token,
+      expiresAt: AUTH_SESSION.expiresAt,
+    }),
+  );
+
   const storageState = buildStorageState(
     scenario.requiresAuth
       ? {
-          "nw_auth_session": JSON.stringify(AUTH_SESSION),
+          [SESSION_STORAGE_KEY]: sessionPayload,
+          [SESSION_COOKIE_NAME]: cookiePayload,
         }
       : {},
   );
@@ -468,6 +489,17 @@ async function captureScenario(browser, viewport, scenario) {
     colorScheme: "dark",
     locale: "en-US",
   });
+
+  if (scenario.requiresAuth) {
+    await context.addCookies([
+      {
+        name: SESSION_COOKIE_NAME,
+        value: cookiePayload,
+        url: BASE_URL,
+      },
+    ]);
+  }
+
   const page = await context.newPage();
 
   await injectStorage(page, mergedStorage);

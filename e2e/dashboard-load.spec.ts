@@ -16,8 +16,9 @@ test.describe("Dashboard load", () => {
   });
 
   test("dashboard shows portfolio section", async ({ page }) => {
-    // Dashboard should have main content
-    await expect(page.locator("main")).toBeVisible();
+    // Dashboard should have main content distinct from login markup
+    await expect(page.locator("main#main-content")).toBeVisible();
+    await expect(page.locator("main#main-content")).toHaveAttribute("aria-labelledby", "dashboard-route-title");
   });
 
   test("dashboard navigation links are accessible", async ({ page }) => {
