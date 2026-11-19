@@ -360,16 +360,16 @@ const portfolio = await apiRequest<PortfolioPayload>("/api/portfolio");
 
 ### Making authenticated requests (server-side)
 
-Server route handlers must use `createServerApiClient()` to proxy to the backend:
+Server route handlers use `createServerFetcher()` to proxy to the backend. It injects `Authorization: Bearer <NEUROWEALTH_API_AUTH_TOKEN>` (and `X-User-Identity` when given) and returns the raw `Response`:
 
 ```typescript
 // Route handler: GET /api/portfolio
-import { createServerApiClient } from "@/lib/api-client";
+import { createServerFetcher } from "@/lib/api-client";
 
 export async function GET(request: NextRequest) {
-  const client = createServerApiClient();
+  const fetchBackend = createServerFetcher();
 
-  if (!client) {
+  if (!fetchBackend) {
     // Backend not configured — return demo data
     return NextResponse.json({
       success: true,
@@ -379,25 +379,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  try {
-    const portfolio = await client<PortfolioPayload>("/portfolio/overview");
-    return NextResponse.json({ success: true, data: portfolio });
-  } catch (error) {
-    if (error instanceof ApiRequestError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-          },
-        },
-        { status: error.status },
-      );
-    }
-    throw error;
-  }
+  const response = await fetchBackend("/portfolio/overview", { cache: "no-store" });
+  return NextResponse.json(await response.json(), { status: response.status });
 }
 ```
 
@@ -427,7 +410,7 @@ try {
 
 When `NEUROWEALTH_API_BASE_URL` is **not** set:
 
-- `createServerApiClient()` returns `null`
+- `createServerFetcher()` returns `null`
 - Route handlers branch to return mock data
 - Frontend tests and development work without a backend
 - Useful for design sprints, offline work, and CI/CD without deployment
@@ -435,9 +418,9 @@ When `NEUROWEALTH_API_BASE_URL` is **not** set:
 Example check in a route handler:
 
 ```typescript
-const client = createServerApiClient();
+const fetchBackend = createServerFetcher();
 
-if (!client) {
+if (!fetchBackend) {
   // No backend configured — use demo data
   return NextResponse.json({
     success: true,
@@ -446,7 +429,7 @@ if (!client) {
 }
 
 // Backend available — proxy request
-const data = await client<T>("/endpoint");
+const response = await fetchBackend("/endpoint");
 ```
 
 ## Rate Limiting

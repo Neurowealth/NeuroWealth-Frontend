@@ -47,6 +47,26 @@ export interface AppMessages {
     edit: string;
     open: string;
   };
+  errors: {
+    notFound: {
+      title: string;
+      description: string;
+      backToDashboard: string;
+      goToPortfolio: string;
+    };
+    unauthorized: {
+      title: string;
+      description: string;
+      signIn: string;
+      backToHome: string;
+    };
+    serverError: {
+      title: string;
+      description: string;
+      backToHome: string;
+      goToDashboard: string;
+    };
+  };
   navbar: {
     features: string;
     howItWorks: string;
@@ -128,6 +148,11 @@ export interface AppMessages {
       deltaYield: string;
       deltaApy: string;
       eventLog: string;
+      controlsLabel: string;
+      streamStatusLabel: string;
+      startStreamLabel: string;
+      stopStreamLabel: string;
+      resetStreamLabel: string;
       status: {
         live: string;
         paused: string;
@@ -163,12 +188,62 @@ export interface AppMessages {
       event: string;
       emptyActivity: string;
       noAmount: string;
+      activityKindDeposit: string;
+      activityKindWithdrawal: string;
+      activityKindRebalance: string;
+      activityKindYield: string;
+      previewData: string;
+      unableToLoad: string;
+      summaryTotalBalance: string;
+      summaryTotalBalanceHelper: string;
+      summaryTotalYield: string;
+      summaryTotalYieldHelper: string;
+      summaryApy: string;
+      summaryApyHelper: string;
+      summaryStrategy: string;
+    };
+    overview: {
+      heading: string;
+      totalBalance: string;
+      totalYieldEarned: string;
+      currentApy: string;
+      activeStrategy: string;
+      usdcAcrossStrategies: string;
+      allTime: string;
+      sevenDayAverage: string;
+      tapToChangeStrategy: string;
+      noFundsDeposited: string;
+      none: string;
+      deposit: string;
+      withdraw: string;
+      connectWalletPrompt: string;
+      assetAllocation: string;
+      noAllocationData: string;
+      depositFundsAllocation: string;
+      recentActivity: string;
+      noActivityYet: string;
+      transactionsWillAppear: string;
+      strategies: {
+        conservative: string;
+        balanced: string;
+        growth: string;
+      };
     };
   };
   settings: {
+    nav: {
+      sidebarLabel: string;
+      navigationLabel: string;
+      title: string;
+      preferences: string;
+      security: string;
+      notifications: string;
+      privacy: string;
+    };
     index: {
       title: string;
       subtitle: string;
+      onboardingTitle: string;
       appearance: {
         title: string;
         themeTitle: string;
@@ -236,6 +311,7 @@ export interface AppMessages {
         currencyLabel: string;
       };
       actions: {
+        groupLabel: string;
         edit: string;
         unsaved: string;
         cancel: string;
@@ -280,6 +356,7 @@ export interface AppMessages {
         desc: string;
       };
       actions: {
+        groupLabel: string;
         edit: string;
         unsaved: string;
         noPending: string;
@@ -315,6 +392,14 @@ export interface AppMessages {
         warning: string;
         changeAction: string;
       };
+      passwordStrength: {
+        tooShort: string;
+        weak: string;
+        medium: string;
+        strong: string;
+        strengthLabel: string;
+        minCharsHint: string;
+      };
       twoFactor: {
         title: string;
         desc: string;
@@ -330,6 +415,7 @@ export interface AppMessages {
         disabledHint: string;
       };
       actions: {
+        groupLabel: string;
         edit: string;
         unsaved: string;
         cancel: string;
@@ -386,6 +472,9 @@ export interface AppMessages {
         balanced: { title: string; riskLabel: string; description: string; primaryAction: string };
         growth: { title: string; riskLabel: string; description: string; primaryAction: string };
       };
+      loadError: string;
+      saveError: string;
+      retry: string;
     };
     onboarding: {
       title: string;
@@ -545,7 +634,21 @@ export interface AppMessages {
       loadingLabel: string;
       loadingText: string;
     };
-  };
+    list: {
+      heading: string;
+      /** "{count}" is replaced with the number of matching transactions. */
+      resultsCount: string;
+      /** "{count}" is replaced with the number of matching transactions. */
+      caption: string;
+      empty: string;
+      columns: {
+        date: string;
+        description: string;
+        type: string;
+        amount: string;
+        status: string;
+      };
+    };
     domain: {
       context: {
         withdrawFunds: string;
@@ -623,6 +726,7 @@ export interface AppMessages {
         actionReview: string;
       };
     };
+  };
   audit: {
     title: string;
     subtitle: string;
@@ -663,6 +767,16 @@ export interface AppMessages {
     previousPage: string;
     nextPage: string;
     pageLabel: string;
+  };
+  pagination: {
+    label: string;
+    status: string;
+    previousPage: string;
+    nextPage: string;
+    page: string;
+    goTo: string;
+    jumpToPage: string;
+    resultRange: string;
   };
   profile: {
     pageTitleFallback: string;
@@ -841,6 +955,198 @@ export interface AppMessages {
       wallet: { title: string; description: string };
       strategy: { title: string; description: string };
       deposit: { title: string; description: string };
+  onboardingSteps: {
+    walletConnect: {
+      title: string;
+      description: string;
+      recommended: string;
+      securityNoticeTitle: string;
+      securityNoticeBody: string;
+      connectButton: string;
+      connectingButton: string;
+      skipButton: string;
+      noWalletPrompt: string;
+      learnMore: string;
+      walletDescriptions: {
+        freighter: string;
+        albedo: string;
+        ledger: string;
+      };
+      errorConnectionFailed: string;
+      errorGeneric: string;
+    };
+    firstDeposit: {
+      title: string;
+      description: string;
+      selectAssetHeading: string;
+      balancePrefix: string;
+      depositAmountHeading: string;
+      customAmountPlaceholder: string;
+      totalToDeposit: string;
+      feeInfoTitle: string;
+      feeInfoBody: string;
+      depositButton: string;
+      depositingButton: string;
+      skipButton: string;
+      questionsPrompt: string;
+      viewGuide: string;
+      errorInvalidAmount: string;
+      errorInsufficientBalance: string;
+      errorMinDeposit: string;
+      errorTransactionFailed: string;
+      errorGeneric: string;
+    };
+    strategyOverview: {
+      title: string;
+      description: string;
+      recommended: string;
+      riskSuffix: string;
+      expectedPrefix: string;
+      infoTitle: string;
+      infoDescription: string;
+      continueButton: string;
+      savingButton: string;
+      skipButton: string;
+      footerPrompt: string;
+      quizLink: string;
+      strategies: {
+        conservative: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+        balanced: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+        aggressive: {
+          name: string;
+          description: string;
+          risk: string;
+          expectedReturn: string;
+          features: string[];
+        };
+      };
+    };
+  };
+  notificationPreferences: {
+    categoriesHeading: string;
+    channelsHeading: string;
+    transactions: string;
+    systemEvents: string;
+    promotions: string;
+    inApp: string;
+    emailDigest: string;
+    push: string;
+  };
+  toast: {
+    categories: Record<"success" | "info" | "warning" | "error", string>;
+  };
+  globalSearch: {
+    label: string;
+    placeholder: string;
+    clearAriaLabel: string;
+    searching: string;
+    errorTitle: string;
+    errorMessage: string;
+    errorRetry: string;
+    errorOr: string;
+    noMatchesTitle: string;
+    noMatchesHint: string;
+    liveRegion: {
+      errorPrefix: string;
+      noResults: string;
+      resultsAvailable: string;
+      resultsAvailableSingular: string;
+    };
+    groups: {
+      Pages: string;
+      Actions: string;
+      Records: string;
+    };
+  };
+  sidebar: {
+    ariaLabel: string;
+    navigationAriaLabel: string;
+    collapseSidebar: string;
+    expandSidebar: string;
+    userFallback: string;
+  };
+  cookieBanner: {
+    ariaLabel: string;
+    message: string;
+    privacyPolicy: string;
+    options: string;
+    reject: string;
+    acceptAll: string;
+  };
+  topHeader: {
+    notificationsAriaLabel: string;
+  };
+  notifications: {
+    title: string;
+    preferencesTitle: string;
+    empty: string;
+    loadMore: string;
+    markAllAsRead: string;
+    backToListAriaLabel: string;
+    openPreferencesAriaLabel: string;
+    regionAriaLabel: string;
+    unreadAriaLabel: string;
+  };
+  strategyList: {
+    title: string;
+    results: string;
+    noResults: string;
+    statReturn: string;
+    statParticipants: string;
+    filters: {
+      lowRisk: string;
+      mediumRisk: string;
+      highRisk: string;
+      growth: string;
+      income: string;
+      balanced: string;
+      defensive: string;
+      active: string;
+      paused: string;
+      archived: string;
+    };
+  };
+  walletConnection: {
+    states: {
+      restoringTitle: string;
+      restoringSubtitle: string;
+      connectedTitle: string;
+      connectedBody: string;
+      disconnectedTitle: string;
+      disconnectedBody: string;
+      benefitsTitle: string;
+      benefits: {
+        insights: string;
+        strategies: string;
+        tracking: string;
+      };
+    };
+    guard: {
+      loading: string;
+      requiredTitle: string;
+      requiredBody: string;
+    };
+    button: {
+      connect: string;
+      connecting: string;
+      disconnecting: string;
+      connectFailedTitle: string;
+      disconnectFailedTitle: string;
+      connectFailedFallback: string;
+      disconnectFailedFallback: string;
+      modalMessage: string;
     };
   };
 }
@@ -868,6 +1174,26 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       cancel: "Cancel",
       edit: "Edit",
       open: "Open",
+    },
+    errors: {
+      notFound: {
+        title: "Dashboard page not found",
+        description: "The dashboard page you're looking for doesn't exist or has been removed. Try navigating using the menu or go back to the main dashboard.",
+        backToDashboard: "Back to dashboard",
+        goToPortfolio: "Go to portfolio",
+      },
+      unauthorized: {
+        title: "Authentication required",
+        description: "You need to sign in to access this page. Please connect your wallet or sign in to continue.",
+        signIn: "Sign in",
+        backToHome: "Back to home",
+      },
+      serverError: {
+        title: "Something went wrong",
+        description: "We ran into an unexpected server error. Your account and funds remain safe. Try again or return home while we look into it.",
+        backToHome: "Back to home",
+        goToDashboard: "Go to dashboard",
+      },
     },
     navbar: {
       features: "Features",
@@ -1079,6 +1405,11 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         deltaYield: "Δ Yield",
         deltaApy: "Δ APY",
         eventLog: "Event log",
+        controlsLabel: "Stream controls",
+        streamStatusLabel: "Stream status: {{status}}",
+        startStreamLabel: "Start stream",
+        stopStreamLabel: "Stop stream",
+        resetStreamLabel: "Reset stream",
         status: {
           live: "Live",
           paused: "Paused",
@@ -1114,12 +1445,62 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "event",
         emptyActivity: "No recent activity yet. Deposits and rebalances will appear here as soon as they happen.",
         noAmount: "No amount",
+        activityKindDeposit: "Deposit",
+        activityKindWithdrawal: "Withdrawal",
+        activityKindRebalance: "Rebalance",
+        activityKindYield: "Yield",
+        previewData: "Preview data",
+        unableToLoad: "Unable to load portfolio widgets.",
+        summaryTotalBalance: "Total balance",
+        summaryTotalBalanceHelper: "Across active positions and protected reserve holdings.",
+        summaryTotalYield: "Total yield",
+        summaryTotalYieldHelper: "Net earnings since your first deployed deposit.",
+        summaryApy: "APY",
+        summaryApyHelper: "Weighted live rate across the current strategy mix.",
+        summaryStrategy: "Strategy",
+      },
+      overview: {
+        heading: "Portfolio summary",
+        totalBalance: "Total Balance",
+        totalYieldEarned: "Total Yield Earned",
+        currentApy: "Current APY",
+        activeStrategy: "Active Strategy",
+        usdcAcrossStrategies: "USDC across all strategies",
+        allTime: "All time",
+        sevenDayAverage: "7-day average",
+        tapToChangeStrategy: "Tap to change strategy",
+        noFundsDeposited: "No funds deposited yet",
+        none: "None",
+        deposit: "Deposit",
+        withdraw: "Withdraw",
+        connectWalletPrompt: "Connect your Freighter wallet to deposit funds.",
+        assetAllocation: "Asset Allocation",
+        noAllocationData: "No allocation data",
+        depositFundsAllocation: "Deposit funds to see your asset allocation.",
+        recentActivity: "Recent Activity",
+        noActivityYet: "No activity yet",
+        transactionsWillAppear: "Your transactions will appear here.",
+        strategies: {
+          conservative: "Conservative",
+          balanced: "Balanced",
+          growth: "Growth",
+        },
       },
     },
     settings: {
+      nav: {
+        sidebarLabel: "Settings sidebar",
+        navigationLabel: "Settings navigation",
+        title: "Settings",
+        preferences: "Preferences",
+        security: "Security",
+        notifications: "Notifications",
+        privacy: "Privacy",
+      },
       index: {
         title: "Settings",
         subtitle: "Manage your account preferences and connected wallet.",
+        onboardingTitle: "Onboarding",
         appearance: {
           title: "Appearance",
           themeTitle: "Theme",
@@ -1187,6 +1568,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           currencyLabel: "Currency Format",
         },
         actions: {
+          groupLabel: "Save or cancel changes",
           edit: "Edit Preferences",
           unsaved: "Unsaved changes",
           cancel: "Cancel",
@@ -1231,6 +1613,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "High-risk account events may be missed until you re-enable security coverage.",
         },
         actions: {
+          groupLabel: "Notification settings actions",
           edit: "Edit Preferences",
           unsaved: "Unsaved changes",
           noPending: "No pending changes",
@@ -1266,6 +1649,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           warning: "Your password is over 90 days old. Consider updating it.",
           changeAction: "Change password",
         },
+        passwordStrength: {
+          tooShort: "Too short (min 8 chars)",
+          weak: "Weak",
+          medium: "Medium",
+          strong: "Strong",
+          strengthLabel: "Strength:",
+          minCharsHint: "Must be at least 8 characters",
+        },
         twoFactor: {
           title: "Two-Factor Authentication",
           desc: "Add an extra layer of security to your account.",
@@ -1281,6 +1672,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           disabledHint: "You won't be notified of new sign-ins.",
         },
         actions: {
+          groupLabel: "Save or cancel changes",
           edit: "Edit Security Settings",
           unsaved: "Unsaved changes",
           cancel: "Cancel",
@@ -1352,6 +1744,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             primaryAction: "Select Growth",
           },
         },
+        loadError: "Unable to load your saved strategy. You can still pick one below.",
+        saveError: "Failed to save strategy. Please try again.",
+        retry: "Retry",
       },
       onboarding: {
         title: "Onboarding Settings",
@@ -1511,6 +1906,97 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         loadingLabel: "Loading transactions",
         loadingText: "Loading transaction history…",
       },
+      list: {
+        heading: "Transactions",
+        resultsCount: "{count} results",
+        caption: "Transaction history, {count} results",
+        empty: "No transactions match the selected filters.",
+        columns: {
+          date: "Date",
+          description: "Description",
+          type: "Type",
+          amount: "Amount",
+          status: "Status",
+        },
+      },
+
+      domain: {
+        context: {
+          withdrawFunds: "Withdraw funds",
+          withdrawIntro: "Move settled capital out of NeuroWealth with clear validation and a traceable receipt.",
+          reviewWithdrawal: "Review withdrawal",
+          confirmWithdrawal: "Confirm withdrawal",
+          withdrawalAmount: "Withdrawal amount",
+          withdrawHint: "Minimum withdrawal is 10 USDC. Amounts above 10,000 USDC may require an extra treasury check.",
+          destinationWallet: "Destination wallet",
+          destinationHint: "Enter a Stellar public address that starts with G. We validate before confirmation.",
+          vaultReady: "Vault account ready",
+          sameDay: "Same-day settlement",
+          treasuryReview: "Treasury review may apply",
+          addCapital: "Add capital",
+          depositIntro: "Deposit USDC from your connected wallet and confirm the amount, fees, and request reference before submission.",
+          reviewDeposit: "Review deposit",
+          confirmDeposit: "Confirm deposit",
+          depositAmount: "Deposit amount",
+          depositHint: "Minimum deposit is 10 USDC. Stellar network fees stay separate from the credited deposit amount.",
+          fundingWallet: "Funding wallet",
+          fundingHint: "Use the connected Freighter wallet for the funding step. Disconnecting blocks submission until you reconnect.",
+          freighterConnected: "Freighter connected",
+          usuallyCompletes: "Usually completes in under 20 seconds",
+          networkFee: "Network fee shown at confirmation",
+        },
+        validation: {
+          connectFunding: "Connect a funding wallet before submitting a deposit.",
+          reconnectVault: "Reconnect your vault wallet before withdrawing funds.",
+          enterAmount: "Enter an amount to continue.",
+          validAmount: "Enter a valid amount greater than 0.",
+          minDeposit: (min: number) => `Minimum deposit amount is ${min} USDC.`,
+          minWithdrawal: (min: number) => `Minimum withdrawal amount is ${min} USDC.`,
+          fundingAvailable: (amt: string) => `Funding wallet only has ${amt} USDC available.`,
+          withdrawAvailable: (amt: string) => `Available to withdraw is ${amt} USDC.`,
+          enterDestination: "Enter a destination wallet address.",
+          validStellarAddress: "Use a valid Stellar public address that starts with G.",
+        },
+        pending: {
+          statusLabel: "Pending on Stellar",
+          submittingDeposit: "Submitting your deposit and waiting for network confirmation.",
+          submittingWithdrawal: "Submitting your withdrawal and waiting for liquidity settlement.",
+          feeExpired: "Network fee estimate expired before submission. Refresh the quote and try again.",
+          liquidityChanged: "Treasury liquidity changed mid-flight. Retry after reviewing the updated amount.",
+        },
+        receipt: {
+          depositConfirmed: "Deposit confirmed and added to your active strategy.",
+          withdrawalConfirmed: "Withdrawal confirmed and ready for your destination wallet.",
+          failed: "Transaction failed before final settlement.",
+          explorerAvailable: "Explorer reference available after backend wiring",
+        },
+        statusChips: {
+          walletRequired: "Wallet required",
+          depositCapacity: (amt: string) => `Deposit capacity ${amt}`,
+          withdrawalCapacity: (amt: string) => `Available ${amt}`,
+        },
+        recovery: {
+          networkErrorTitle: "Connection lost",
+          networkErrorDesc: "Your connection to the service was interrupted. Please check your network and try again, or contact support if the problem persists.",
+          timeoutTitle: "Request timed out",
+          timeoutDesc: "The server took too long to respond. Your amount and wallet settings are still saved. Retry the request or adjust your amount and try again.",
+          serverErrorTitle: "Service experiencing issues",
+          serverErrorDesc: "Service is temporarily unavailable or experiencing issues. Your details are saved. Try again in a few moments, or contact support for assistance.",
+          validationErrorTitle: "Validation failed",
+          validationErrorDesc: "The amount or wallet details didn't pass validation. Review your entries and make corrections before retrying.",
+          quotaErrorTitle: "Amount exceeds limit",
+          quotaErrorDesc: "The amount exceeds your available balance or transaction limit. Adjust the amount to a lower value and try again.",
+          stateConflictTitle: "Account state changed",
+          stateConflictDesc: "Your account balance, wallet, or transaction status changed. Review your current balance and wallet settings, then retry.",
+          unknownErrorTitle: "Something went wrong",
+          unknownErrorDesc: "An unexpected error occurred while processing your transaction. Your details are saved. Please try again or contact support for help.",
+          actionRetry: "Retry request",
+          actionEdit: "Edit details",
+          actionSupport: "Contact support",
+          actionBack: "Go back",
+          actionReview: "Review and retry",
+        },
+      },
     },
     audit: {
       title: "Account Audit Trail",
@@ -1552,6 +2038,16 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       previousPage: "Previous page",
       nextPage: "Next page",
       pageLabel: "Page {page}",
+    },
+    pagination: {
+      label: "Pagination",
+      status: "Page {page} of {total}",
+      previousPage: "Previous page",
+      nextPage: "Next page",
+      page: "Page {page}",
+      goTo: "Go to",
+      jumpToPage: "Jump to page",
+      resultRange: "{start}–{end} of {total}",
     },
     profile: {
       pageTitleFallback: "Your Profile",
@@ -1920,6 +2416,206 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         wallet: { title: "Connect Wallet", description: "Secure your account" },
         strategy: { title: "Choose Strategy", description: "Set your preferences" },
         deposit: { title: "Make Deposit", description: "Start investing" },
+    onboardingSteps: {
+      walletConnect: {
+        title: "Connect Your Wallet",
+        description: "Choose a wallet to secure your NeuroWealth account. Your wallet will be used to sign transactions and manage your assets.",
+        recommended: "Recommended",
+        securityNoticeTitle: "Security Notice",
+        securityNoticeBody: "Never share your private keys or seed phrase with anyone. NeuroWealth will never ask for your wallet credentials.",
+        connectButton: "Connect Wallet",
+        connectingButton: "Connecting...",
+        skipButton: "Skip for Now",
+        noWalletPrompt: "Don't have a wallet?",
+        learnMore: "Learn more",
+        walletDescriptions: {
+          freighter: "Popular browser wallet for Stellar",
+          albedo: "Secure web-based wallet",
+          ledger: "Hardware wallet for maximum security",
+        },
+        errorConnectionFailed: "Connection failed. Please try again.",
+        errorGeneric: "Connection failed",
+      },
+      firstDeposit: {
+        title: "Make Your First Deposit",
+        description: "Start your investment journey by depositing funds into your NeuroWealth account.",
+        selectAssetHeading: "Select Asset",
+        balancePrefix: "Balance:",
+        depositAmountHeading: "Deposit Amount",
+        customAmountPlaceholder: "Enter custom amount",
+        totalToDeposit: "Total to Deposit:",
+        feeInfoTitle: "Fee Information",
+        feeInfoBody: "Network fees: 0.00001 XLM per operation. No NeuroWealth deposit fees. Your deposit should arrive within 5-10 seconds.",
+        depositButton: "Deposit Funds",
+        depositingButton: "Depositing...",
+        skipButton: "Skip for Now",
+        questionsPrompt: "Questions about deposits?",
+        viewGuide: "View deposit guide",
+        errorInvalidAmount: "Please enter a valid amount",
+        errorInsufficientBalance: "Insufficient balance",
+        errorMinDeposit: "Minimum deposit is 10",
+        errorTransactionFailed: "Transaction failed. Please try again.",
+        errorGeneric: "Deposit failed",
+      },
+      strategyOverview: {
+        title: "Choose Your Investment Strategy",
+        description: "Select a strategy that matches your risk tolerance and financial goals. You can change this anytime.",
+        recommended: "Recommended",
+        riskSuffix: "Risk",
+        expectedPrefix: "Expected:",
+        infoTitle: "Strategy Information",
+        infoDescription: "Your chosen strategy will determine how your funds are allocated across different assets. You can adjust your strategy or switch to a different one at any time from your dashboard.",
+        continueButton: "Continue with Strategy",
+        savingButton: "Saving...",
+        skipButton: "Decide Later",
+        footerPrompt: "Not sure which strategy to choose?",
+        quizLink: "Take our risk assessment quiz",
+        strategies: {
+          conservative: {
+            name: "Conservative",
+            description: "Lower risk, steady returns",
+            risk: "Low",
+            expectedReturn: "5-8% annually",
+            features: ["Stable assets", "Low volatility", "Capital preservation"],
+          },
+          balanced: {
+            name: "Balanced",
+            description: "Moderate risk with growth potential",
+            risk: "Medium",
+            expectedReturn: "8-15% annually",
+            features: ["Diversified portfolio", "Regular rebalancing", "Growth & income"],
+          },
+          aggressive: {
+            name: "Aggressive",
+            description: "Higher risk for maximum returns",
+            risk: "High",
+            expectedReturn: "15-25% annually",
+            features: ["High-growth assets", "Active management", "Maximum upside"],
+          },
+        },
+      },
+    },
+    notificationPreferences: {
+      categoriesHeading: "Categories",
+      channelsHeading: "Channels",
+      transactions: "Transactions",
+      systemEvents: "System Events",
+      promotions: "Promotions",
+      inApp: "In-App Notifications",
+      emailDigest: "Email Digest",
+      push: "Push Notifications",
+    },
+    toast: {
+      categories: {
+        success: "Success",
+        info: "Info",
+        warning: "Warning",
+        error: "Error",
+      },
+    },
+    globalSearch: {
+      label: "Global search",
+      placeholder: "Search pages, actions, or records",
+      clearAriaLabel: "Clear search",
+      searching: "Searching index...",
+      errorTitle: "Search unavailable",
+      errorMessage: "Search is temporarily unavailable. Please try again.",
+      errorRetry: "Retry",
+      errorOr: "Or try a different query.",
+      noMatchesTitle: "No matches",
+      noMatchesHint: "Try a different route name, action verb, or record ID.",
+      liveRegion: {
+        errorPrefix: "Search error:",
+        noResults: "No results found for",
+        resultsAvailable: "search results available. Use arrow keys to navigate.",
+        resultsAvailableSingular: "search result available. Use arrow keys to navigate.",
+      },
+      groups: {
+        Pages: "Pages",
+        Actions: "Actions",
+        Records: "Records",
+      },
+    },
+    sidebar: {
+      ariaLabel: "Dashboard sidebar",
+      navigationAriaLabel: "Sidebar navigation",
+      collapseSidebar: "Collapse sidebar",
+      expandSidebar: "Expand sidebar",
+      userFallback: "User",
+    },
+    cookieBanner: {
+      ariaLabel: "Cookie consent",
+      message: "We use cookies to personalise your experience.",
+      privacyPolicy: "Privacy policy",
+      options: "Options",
+      reject: "Reject",
+      acceptAll: "Accept all",
+    },
+    topHeader: {
+      notificationsAriaLabel: "Notifications",
+    },
+    notifications: {
+      title: "Notifications",
+      preferencesTitle: "Preferences",
+      empty: "No notifications yet.",
+      loadMore: "Load More",
+      markAllAsRead: "Mark all as read",
+      backToListAriaLabel: "Back to notification list",
+      openPreferencesAriaLabel: "Open notification preferences",
+      regionAriaLabel: "Notifications",
+      unreadAriaLabel: "{{count}} unread",
+    },
+    strategyList: {
+      title: "Investment Strategies",
+      results: "results",
+      noResults: "No strategies match the selected filters.",
+      statReturn: "RETURN",
+      statParticipants: "PARTICIPANTS",
+      filters: {
+        lowRisk: "Low Risk",
+        mediumRisk: "Medium Risk",
+        highRisk: "High Risk",
+        growth: "Growth",
+        income: "Income",
+        balanced: "Balanced",
+        defensive: "Defensive",
+        active: "Active",
+        paused: "Paused",
+        archived: "Archived",
+      },
+    },
+    walletConnection: {
+      states: {
+        restoringTitle: "Checking wallet connection...",
+        restoringSubtitle: "Restoring your previous session",
+        connectedTitle: "Connected",
+        connectedBody: "Your wallet is connected and ready for transactions.",
+        disconnectedTitle: "Wallet Not Connected",
+        disconnectedBody:
+          "Connect your Stellar wallet to access investment strategies and manage your portfolio.",
+        benefitsTitle: "Benefits:",
+        benefits: {
+          insights: "View AI-powered portfolio insights",
+          strategies: "Execute automated investment strategies",
+          tracking: "Track transactions and balances",
+        },
+      },
+      guard: {
+        loading: "Loading wallet status...",
+        requiredTitle: "Wallet Connection Required",
+        requiredBody:
+          "This action requires your wallet to be connected. Please connect your wallet to continue.",
+      },
+      button: {
+        connect: "Connect Wallet",
+        connecting: "Connecting...",
+        disconnecting: "Disconnecting...",
+        connectFailedTitle: "Connect failed",
+        disconnectFailedTitle: "Disconnect failed",
+        connectFailedFallback: "Failed to connect wallet",
+        disconnectFailedFallback: "Failed to disconnect wallet",
+        modalMessage:
+          "🧠 Connect your Stellar wallet to access NeuroWealth's AI-powered investment strategies and portfolio management tools.",
       },
     },
   },
@@ -1940,6 +2636,26 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       cancel: "Annuler",
       edit: "Modifier",
       open: "Ouvrir",
+    },
+    errors: {
+      notFound: {
+        title: "Page de tableau de bord introuvable",
+        description: "La page de tableau de bord que vous recherchez n'existe pas ou a été supprimée. Essayez de naviguer en utilisant le menu ou revenez au tableau de bord principal.",
+        backToDashboard: "Retour au tableau de bord",
+        goToPortfolio: "Aller au portefeuille",
+      },
+      unauthorized: {
+        title: "Authentification requise",
+        description: "Vous devez vous connecter pour accéder à cette page. Veuillez connecter votre portefeuille ou vous connecter pour continuer.",
+        signIn: "Se connecter",
+        backToHome: "Retour à l'accueil",
+      },
+      serverError: {
+        title: "Une erreur s'est produite",
+        description: "Nous avons rencontré une erreur serveur inattendue. Votre compte et vos fonds restent en sécurité. Réessayez ou retournez à l'accueil pendant que nous examinons le problème.",
+        backToHome: "Retour à l'accueil",
+        goToDashboard: "Aller au tableau de bord",
+      },
     },
     navbar: {
       features: "Fonctionnalités",
@@ -2153,6 +2869,11 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         deltaYield: "Δ Rendement",
         deltaApy: "Δ APY",
         eventLog: "Journal des événements",
+        controlsLabel: "Commandes du flux",
+        streamStatusLabel: "État du flux : {{status}}",
+        startStreamLabel: "Démarrer le flux",
+        stopStreamLabel: "Arrêter le flux",
+        resetStreamLabel: "Réinitialiser le flux",
         status: {
           live: "En direct",
           paused: "En pause",
@@ -2188,12 +2909,62 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         event: "événement",
         emptyActivity: "Aucune activité récente. Les dépôts et rééquilibrages apparaîtront ici dès qu'ils se produiront.",
         noAmount: "Aucun montant",
+        activityKindDeposit: "Dépôt",
+        activityKindWithdrawal: "Retrait",
+        activityKindRebalance: "Rééquilibrage",
+        activityKindYield: "Rendement",
+        previewData: "Données d'aperçu",
+        unableToLoad: "Impossible de charger les widgets du portefeuille.",
+        summaryTotalBalance: "Solde total",
+        summaryTotalBalanceHelper: "Positions actives et réserves protégées confondues.",
+        summaryTotalYield: "Rendement total",
+        summaryTotalYieldHelper: "Gains nets depuis votre premier dépôt déployé.",
+        summaryApy: "APY",
+        summaryApyHelper: "Taux pondéré en direct sur la composition de stratégie actuelle.",
+        summaryStrategy: "Stratégie",
+      },
+      overview: {
+        heading: "Résumé du portefeuille",
+        totalBalance: "Solde total",
+        totalYieldEarned: "Rendement total gagné",
+        currentApy: "APY actuel",
+        activeStrategy: "Stratégie active",
+        usdcAcrossStrategies: "USDC sur toutes les stratégies",
+        allTime: "Depuis le début",
+        sevenDayAverage: "Moyenne sur 7 jours",
+        tapToChangeStrategy: "Appuyez pour modifier la stratégie",
+        noFundsDeposited: "Aucun fonds déposé pour le moment",
+        none: "Aucune",
+        deposit: "Déposer",
+        withdraw: "Retirer",
+        connectWalletPrompt: "Connectez votre portefeuille Freighter pour déposer des fonds.",
+        assetAllocation: "Allocation d'actifs",
+        noAllocationData: "Aucune donnée d'allocation",
+        depositFundsAllocation: "Déposez des fonds pour voir votre allocation d'actifs.",
+        recentActivity: "Activité récente",
+        noActivityYet: "Aucune activité pour l'instant",
+        transactionsWillAppear: "Vos transactions apparaîtront ici.",
+        strategies: {
+          conservative: "Conservatrice",
+          balanced: "Équilibrée",
+          growth: "Croissance",
+        },
       },
     },
     settings: {
+      nav: {
+        sidebarLabel: "Barre latérale des paramètres",
+        navigationLabel: "Navigation des paramètres",
+        title: "Paramètres",
+        preferences: "Préférences",
+        security: "Sécurité",
+        notifications: "Notifications",
+        privacy: "Confidentialité",
+      },
       index: {
         title: "Paramètres",
         subtitle: "Gérez les préférences de votre compte et votre portefeuille connecté.",
+        onboardingTitle: "Configuration initiale",
         appearance: {
           title: "Apparence",
           themeTitle: "Thème",
@@ -2261,6 +3032,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           currencyLabel: "Format de devise",
         },
         actions: {
+          groupLabel: "Enregistrer ou annuler les modifications",
           edit: "Modifier les préférences",
           unsaved: "Modifications non enregistrées",
           cancel: "Annuler",
@@ -2305,6 +3077,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           desc: "Les événements de compte à haut risque peuvent être manqués jusqu'à ce que vous réactiviez la couverture de sécurité.",
         },
         actions: {
+          groupLabel: "Actions des paramètres de notification",
           edit: "Modifier les préférences",
           unsaved: "Modifications non enregistrées",
           noPending: "Aucune modification en attente",
@@ -2340,6 +3113,14 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           warning: "Votre mot de passe date de plus de 90 jours. Pensez à le mettre à jour.",
           changeAction: "Changer le mot de passe",
         },
+        passwordStrength: {
+          tooShort: "Trop court (min 8 caractères)",
+          weak: "Faible",
+          medium: "Moyen",
+          strong: "Fort",
+          strengthLabel: "Force :",
+          minCharsHint: "Doit contenir au moins 8 caractères",
+        },
         twoFactor: {
           title: "Authentification à deux facteurs",
           desc: "Ajoutez une couche de sécurité supplémentaire à votre compte.",
@@ -2355,6 +3136,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
           disabledHint: "Vous ne serez pas averti des nouvelles connexions.",
         },
         actions: {
+          groupLabel: "Enregistrer ou annuler les modifications",
           edit: "Modifier les paramètres de sécurité",
           unsaved: "Modifications non enregistrées",
           cancel: "Annuler",
@@ -2426,6 +3208,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
             primaryAction: "Choisir Croissance",
           },
         },
+        loadError: "Impossible de charger votre stratégie enregistrée. Vous pouvez tout de même en choisir une ci-dessous.",
+        saveError: "Échec de l'enregistrement de la stratégie. Veuillez réessayer.",
+        retry: "Réessayer",
       },
       onboarding: {
         title: "Paramètres d'intégration",
@@ -2585,6 +3370,97 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         loadingLabel: "Chargement des transactions",
         loadingText: "Chargement de l'historique des transactions…",
       },
+      list: {
+        heading: "Transactions",
+        resultsCount: "{count} résultats",
+        caption: "Historique des transactions, {count} résultats",
+        empty: "Aucune transaction ne correspond aux filtres sélectionnés.",
+        columns: {
+          date: "Date",
+          description: "Description",
+          type: "Type",
+          amount: "Montant",
+          status: "Statut",
+        },
+      },
+
+      domain: {
+        context: {
+          withdrawFunds: "Withdraw funds",
+          withdrawIntro: "Move settled capital out of NeuroWealth with clear validation and a traceable receipt.",
+          reviewWithdrawal: "Review withdrawal",
+          confirmWithdrawal: "Confirm withdrawal",
+          withdrawalAmount: "Withdrawal amount",
+          withdrawHint: "Minimum withdrawal is 10 USDC. Amounts above 10,000 USDC may require an extra treasury check.",
+          destinationWallet: "Destination wallet",
+          destinationHint: "Enter a Stellar public address that starts with G. We validate before confirmation.",
+          vaultReady: "Vault account ready",
+          sameDay: "Same-day settlement",
+          treasuryReview: "Treasury review may apply",
+          addCapital: "Add capital",
+          depositIntro: "Deposit USDC from your connected wallet and confirm the amount, fees, and request reference before submission.",
+          reviewDeposit: "Review deposit",
+          confirmDeposit: "Confirm deposit",
+          depositAmount: "Deposit amount",
+          depositHint: "Minimum deposit is 10 USDC. Stellar network fees stay separate from the credited deposit amount.",
+          fundingWallet: "Funding wallet",
+          fundingHint: "Use the connected Freighter wallet for the funding step. Disconnecting blocks submission until you reconnect.",
+          freighterConnected: "Freighter connected",
+          usuallyCompletes: "Usually completes in under 20 seconds",
+          networkFee: "Network fee shown at confirmation",
+        },
+        validation: {
+          connectFunding: "Connect a funding wallet before submitting a deposit.",
+          reconnectVault: "Reconnect your vault wallet before withdrawing funds.",
+          enterAmount: "Enter an amount to continue.",
+          validAmount: "Enter a valid amount greater than 0.",
+          minDeposit: (min: number) => `Minimum deposit amount is ${min} USDC.`,
+          minWithdrawal: (min: number) => `Minimum withdrawal amount is ${min} USDC.`,
+          fundingAvailable: (amt: string) => `Funding wallet only has ${amt} USDC available.`,
+          withdrawAvailable: (amt: string) => `Available to withdraw is ${amt} USDC.`,
+          enterDestination: "Enter a destination wallet address.",
+          validStellarAddress: "Use a valid Stellar public address that starts with G.",
+        },
+        pending: {
+          statusLabel: "Pending on Stellar",
+          submittingDeposit: "Submitting your deposit and waiting for network confirmation.",
+          submittingWithdrawal: "Submitting your withdrawal and waiting for liquidity settlement.",
+          feeExpired: "Network fee estimate expired before submission. Refresh the quote and try again.",
+          liquidityChanged: "Treasury liquidity changed mid-flight. Retry after reviewing the updated amount.",
+        },
+        receipt: {
+          depositConfirmed: "Deposit confirmed and added to your active strategy.",
+          withdrawalConfirmed: "Withdrawal confirmed and ready for your destination wallet.",
+          failed: "Transaction failed before final settlement.",
+          explorerAvailable: "Explorer reference available after backend wiring",
+        },
+        statusChips: {
+          walletRequired: "Wallet required",
+          depositCapacity: (amt: string) => `Deposit capacity ${amt}`,
+          withdrawalCapacity: (amt: string) => `Available ${amt}`,
+        },
+        recovery: {
+          networkErrorTitle: "Connection lost",
+          networkErrorDesc: "Your connection to the service was interrupted. Please check your network and try again, or contact support if the problem persists.",
+          timeoutTitle: "Request timed out",
+          timeoutDesc: "The server took too long to respond. Your amount and wallet settings are still saved. Retry the request or adjust your amount and try again.",
+          serverErrorTitle: "Service experiencing issues",
+          serverErrorDesc: "Service is temporarily unavailable or experiencing issues. Your details are saved. Try again in a few moments, or contact support for assistance.",
+          validationErrorTitle: "Validation failed",
+          validationErrorDesc: "The amount or wallet details didn't pass validation. Review your entries and make corrections before retrying.",
+          quotaErrorTitle: "Amount exceeds limit",
+          quotaErrorDesc: "The amount exceeds your available balance or transaction limit. Adjust the amount to a lower value and try again.",
+          stateConflictTitle: "Account state changed",
+          stateConflictDesc: "Your account balance, wallet, or transaction status changed. Review your current balance and wallet settings, then retry.",
+          unknownErrorTitle: "Something went wrong",
+          unknownErrorDesc: "An unexpected error occurred while processing your transaction. Your details are saved. Please try again or contact support for help.",
+          actionRetry: "Retry request",
+          actionEdit: "Edit details",
+          actionSupport: "Contact support",
+          actionBack: "Go back",
+          actionReview: "Review and retry",
+        },
+      },
     },
     audit: {
       title: "Journal d'audit du compte",
@@ -2626,6 +3502,16 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       previousPage: "Page précédente",
       nextPage: "Page suivante",
       pageLabel: "Page {page}",
+    },
+    pagination: {
+      label: "Pagination",
+      status: "Page {page} sur {total}",
+      previousPage: "Page précédente",
+      nextPage: "Page suivante",
+      page: "Page {page}",
+      goTo: "Aller à",
+      jumpToPage: "Aller à la page",
+      resultRange: "{start}–{end} sur {total}",
     },
     profile: {
       pageTitleFallback: "Votre profil",
@@ -2994,6 +3880,206 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         wallet: { title: "Connecter le wallet", description: "Sécurisez votre compte" },
         strategy: { title: "Choisir la stratégie", description: "Définissez vos préférences" },
         deposit: { title: "Effectuer un dépôt", description: "Commencez à investir" },
+    onboardingSteps: {
+      walletConnect: {
+        title: "Connecter votre wallet",
+        description: "Choisissez un wallet pour sécuriser votre compte NeuroWealth. Votre wallet sera utilisé pour signer les transactions et gérer vos actifs.",
+        recommended: "Recommandé",
+        securityNoticeTitle: "Avertissement de sécurité",
+        securityNoticeBody: "Ne partagez jamais vos clés privées ou votre phrase secrète avec qui que ce soit. NeuroWealth ne vous demandera jamais vos identifiants de wallet.",
+        connectButton: "Connecter le wallet",
+        connectingButton: "Connexion en cours...",
+        skipButton: "Passer pour l'instant",
+        noWalletPrompt: "Vous n'avez pas de wallet ?",
+        learnMore: "En savoir plus",
+        walletDescriptions: {
+          freighter: "Wallet de navigateur populaire pour Stellar",
+          albedo: "Wallet web sécurisé",
+          ledger: "Wallet matériel pour une sécurité maximale",
+        },
+        errorConnectionFailed: "Échec de la connexion. Veuillez réessayer.",
+        errorGeneric: "Échec de la connexion",
+      },
+      firstDeposit: {
+        title: "Effectuer votre premier dépôt",
+        description: "Lancez votre parcours d'investissement en déposant des fonds sur votre compte NeuroWealth.",
+        selectAssetHeading: "Sélectionner un actif",
+        balancePrefix: "Solde :",
+        depositAmountHeading: "Montant du dépôt",
+        customAmountPlaceholder: "Saisir un montant personnalisé",
+        totalToDeposit: "Total à déposer :",
+        feeInfoTitle: "Informations sur les frais",
+        feeInfoBody: "Frais réseau : 0,00001 XLM par opération. Aucun frais de dépôt NeuroWealth. Votre dépôt devrait arriver dans les 5 à 10 secondes.",
+        depositButton: "Déposer des fonds",
+        depositingButton: "Dépôt en cours...",
+        skipButton: "Passer pour l'instant",
+        questionsPrompt: "Des questions sur les dépôts ?",
+        viewGuide: "Voir le guide des dépôts",
+        errorInvalidAmount: "Veuillez saisir un montant valide",
+        errorInsufficientBalance: "Solde insuffisant",
+        errorMinDeposit: "Le dépôt minimum est de 10",
+        errorTransactionFailed: "Échec de la transaction. Veuillez réessayer.",
+        errorGeneric: "Échec du dépôt",
+      },
+      strategyOverview: {
+        title: "Choisissez votre stratégie d'investissement",
+        description: "Sélectionnez une stratégie qui correspond à votre tolérance au risque et à vos objectifs financiers. Vous pouvez modifier cela à tout moment.",
+        recommended: "Recommandé",
+        riskSuffix: "Risque",
+        expectedPrefix: "Attendu :",
+        infoTitle: "Informations sur la stratégie",
+        infoDescription: "La stratégie choisie déterminera la répartition de vos fonds entre différents actifs. Vous pouvez ajuster ou changer de stratégie à tout moment depuis votre tableau de bord.",
+        continueButton: "Continuer avec la stratégie",
+        savingButton: "Enregistrement...",
+        skipButton: "Décider plus tard",
+        footerPrompt: "Vous hésitez sur la stratégie à choisir ?",
+        quizLink: "Passez notre quiz d'évaluation du risque",
+        strategies: {
+          conservative: {
+            name: "Conservatrice",
+            description: "Risque plus faible, rendements réguliers",
+            risk: "Faible",
+            expectedReturn: "5-8 % par an",
+            features: ["Actifs stables", "Faible volatilité", "Préservation du capital"],
+          },
+          balanced: {
+            name: "Équilibrée",
+            description: "Risque modéré avec potentiel de croissance",
+            risk: "Moyen",
+            expectedReturn: "8-15 % par an",
+            features: ["Portefeuille diversifié", "Rééquilibrage régulier", "Croissance et revenu"],
+          },
+          aggressive: {
+            name: "Agressive",
+            description: "Risque plus élevé pour des rendements maximaux",
+            risk: "Élevé",
+            expectedReturn: "15-25 % par an",
+            features: ["Actifs à forte croissance", "Gestion active", "Potentiel maximal"],
+          },
+        },
+      },
+    },
+    notificationPreferences: {
+      categoriesHeading: "Catégories",
+      channelsHeading: "Canaux",
+      transactions: "Transactions",
+      systemEvents: "Événements système",
+      promotions: "Promotions",
+      inApp: "Notifications in-app",
+      emailDigest: "Résumé par e-mail",
+      push: "Notifications push",
+    },
+    toast: {
+      categories: {
+        success: "Succès",
+        info: "Information",
+        warning: "Avertissement",
+        error: "Erreur",
+      },
+    },
+    globalSearch: {
+      label: "Recherche globale",
+      placeholder: "Rechercher des pages, des actions ou des enregistrements",
+      clearAriaLabel: "Effacer la recherche",
+      searching: "Recherche en cours...",
+      errorTitle: "Recherche indisponible",
+      errorMessage: "La recherche est temporairement indisponible. Veuillez réessayer.",
+      errorRetry: "Réessayer",
+      errorOr: "Ou essayez une autre requête.",
+      noMatchesTitle: "Aucun résultat",
+      noMatchesHint: "Essayez un autre nom de page, un verbe d'action ou un identifiant d'enregistrement.",
+      liveRegion: {
+        errorPrefix: "Erreur de recherche :",
+        noResults: "Aucun résultat trouvé pour",
+        resultsAvailable: "résultats disponibles. Utilisez les flèches pour naviguer.",
+        resultsAvailableSingular: "résultat disponible. Utilisez les flèches pour naviguer.",
+      },
+      groups: {
+        Pages: "Pages",
+        Actions: "Actions",
+        Records: "Enregistrements",
+      },
+    },
+    sidebar: {
+      ariaLabel: "Barre latérale du tableau de bord",
+      navigationAriaLabel: "Navigation de la barre latérale",
+      collapseSidebar: "Réduire la barre latérale",
+      expandSidebar: "Développer la barre latérale",
+      userFallback: "Utilisateur",
+    },
+    cookieBanner: {
+      ariaLabel: "Consentement aux cookies",
+      message: "Nous utilisons des cookies pour personnaliser votre expérience.",
+      privacyPolicy: "Politique de confidentialité",
+      options: "Options",
+      reject: "Refuser",
+      acceptAll: "Tout accepter",
+    },
+    topHeader: {
+      notificationsAriaLabel: "Notifications",
+    },
+    notifications: {
+      title: "Notifications",
+      preferencesTitle: "Préférences",
+      empty: "Aucune notification pour le moment.",
+      loadMore: "Charger plus",
+      markAllAsRead: "Tout marquer comme lu",
+      backToListAriaLabel: "Retour à la liste des notifications",
+      openPreferencesAriaLabel: "Ouvrir les préférences de notification",
+      regionAriaLabel: "Notifications",
+      unreadAriaLabel: "{{count}} non lue(s)",
+    },
+    strategyList: {
+      title: "Stratégies d'investissement",
+      results: "résultats",
+      noResults: "Aucune stratégie ne correspond aux filtres sélectionnés.",
+      statReturn: "RENDEMENT",
+      statParticipants: "PARTICIPANTS",
+      filters: {
+        lowRisk: "Risque faible",
+        mediumRisk: "Risque moyen",
+        highRisk: "Risque élevé",
+        growth: "Croissance",
+        income: "Revenu",
+        balanced: "Équilibrée",
+        defensive: "Défensive",
+        active: "Active",
+        paused: "En pause",
+        archived: "Archivée",
+      },
+    },
+    walletConnection: {
+      states: {
+        restoringTitle: "Vérification de la connexion du portefeuille...",
+        restoringSubtitle: "Restauration de votre session précédente",
+        connectedTitle: "Connecté",
+        connectedBody: "Votre portefeuille est connecté et prêt pour les transactions.",
+        disconnectedTitle: "Portefeuille non connecté",
+        disconnectedBody:
+          "Connectez votre portefeuille Stellar pour accéder aux stratégies d'investissement et gérer votre portefeuille.",
+        benefitsTitle: "Avantages :",
+        benefits: {
+          insights: "Consultez des analyses de portefeuille propulsées par l'IA",
+          strategies: "Exécutez des stratégies d'investissement automatisées",
+          tracking: "Suivez vos transactions et vos soldes",
+        },
+      },
+      guard: {
+        loading: "Chargement de l'état du portefeuille...",
+        requiredTitle: "Connexion du portefeuille requise",
+        requiredBody:
+          "Cette action nécessite que votre portefeuille soit connecté. Veuillez connecter votre portefeuille pour continuer.",
+      },
+      button: {
+        connect: "Connecter le wallet",
+        connecting: "Connexion...",
+        disconnecting: "Déconnexion...",
+        connectFailedTitle: "Échec de la connexion",
+        disconnectFailedTitle: "Échec de la déconnexion",
+        connectFailedFallback: "Impossible de connecter le portefeuille",
+        disconnectFailedFallback: "Impossible de déconnecter le portefeuille",
+        modalMessage:
+          "🧠 Connectez votre portefeuille Stellar pour accéder aux stratégies d'investissement et aux outils de gestion de portefeuille de NeuroWealth propulsés par l'IA.",
       },
     },
   },

@@ -26,13 +26,6 @@ function getApyFormatter() {
   });
 }
 
-function getCompactFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
-}
-
 function getPreciseCurrencyFormatter() {
   return new Intl.NumberFormat(getActiveIntlLocale(), {
     style: "currency",
@@ -57,12 +50,13 @@ export function formatCurrency(value: number): string {
 
 export function formatSignedCurrency(value: number): string {
   const absoluteValue = getCurrencyFormatter().format(Math.abs(value));
+  const roundedValue = Number(value.toFixed(2));
 
-  if (value > 0) {
+  if (roundedValue > 0) {
     return `+${absoluteValue}`;
   }
 
-  if (value < 0) {
+  if (roundedValue < 0) {
     return `-${absoluteValue}`;
   }
 
@@ -75,12 +69,13 @@ export function formatPercent(value: number): string {
 
 export function formatSignedPercent(value: number): string {
   const absoluteValue = `${getPercentFormatter().format(Math.abs(value))}%`;
+  const roundedValue = Number(value.toFixed(1));
 
-  if (value > 0) {
+  if (roundedValue > 0) {
     return `+${absoluteValue}`;
   }
 
-  if (value < 0) {
+  if (roundedValue < 0) {
     return `-${absoluteValue}`;
   }
 
@@ -120,13 +115,6 @@ export function formatApy(value: number): string {
  */
 export function formatApyRange(min: number, max: number): string {
   return `${formatApy(min)}–${formatApy(max)}`;
-}
-
-/**
- * Compact number formatting (e.g. 12.3K, 1.2M) for dense widgets. Locale-aware.
- */
-export function formatCompactNumber(value: number): string {
-  return getCompactFormatter().format(value);
 }
 
 /**

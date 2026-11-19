@@ -64,26 +64,110 @@ async function sameOriginStatus(headers: Record<string, string>): Promise<number
 
 test("requireSameOrigin allows a matching Origin", async () => {
   assert.equal(
-    await sameOriginStatus({ origin: "https://app.example.com", "sec-fetch-site": "same-origin" }),
+    await sameOriginStatus({
+      origin: "https://app.example.com",
+      host: "app.example.com",
+      "sec-fetch-site": "same-origin",
+    }),
     null,
   );
 });
 
 test("requireSameOrigin rejects a mismatched Origin", async () => {
-  assert.equal(await sameOriginStatus({ origin: "https://evil.example" }), 403);
+  assert.equal(
+    await sameOriginStatus({ origin: "https://evil.example", host: "app.example.com" }),
+    403,
+  );
 });
 
 test("requireSameOrigin rejects Sec-Fetch-Site: cross-site", async () => {
   assert.equal(
-    await sameOriginStatus({ origin: "https://app.example.com", "sec-fetch-site": "cross-site" }),
+    await sameOriginStatus({
+      origin: "https://app.example.com",
+      host: "app.example.com",
+      "sec-fetch-site": "cross-site",
+    }),
     403,
   );
 });
 
 test("requireSameOrigin fails closed when Origin and Sec-Fetch-Site are both absent", async () => {
-  assert.equal(await sameOriginStatus({}), 403);
+  assert.equal(await sameOriginStatus({ host: "app.example.com" }), 403);
 });
 
 test("requireSameOrigin rejects a missing Origin even with Sec-Fetch-Site: same-origin", async () => {
-  assert.equal(await sameOriginStatus({ "sec-fetch-site": "same-origin" }), 403);
+  assert.equal(
+    await sameOriginStatus({ host: "app.example.com", "sec-fetch-site": "same-origin" }),
+    403,
+  );
+});
+
+test("requireSameOrigin allows a matching Origin regardless of request.nextUrl's own host (#standalone-server)", async () => {
+  // Regression: request.nextUrl.origin reflects the server's bind address
+  // under the standalone server (e.g. 0.0.0.0), not the Host header the
+  // browser actually sent — the check must key off Host, not nextUrl.
+  assert.equal(
+    await sameOriginStatus({
+      origin: "http://localhost:3000",
+      host: "localhost:3000",
+      "sec-fetch-site": "same-origin",
+    }),
+    null,
+  );
+});
+
+// ── Token validation in requireAuth & getSessionFromRequest ───────────────
+
+test("requireAuth rejects empty and whitespace-only session tokens", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  for (const token of ["", "   ", "\t\r\n"]) {
+    const raw = encodeURIComponent(
+      JSON.stringify({ token, expiresAt: Date.now() + 60_000 }),
+    );
+    const req = new NextRequest("http://localhost:3000/api/strategy", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+    });
+    const res = requireAuth(req);
+    assert.ok(res, `token '${token}' should be rejected`);
+    assert.equal(res?.status, 401);
+  }
+});
+
+test("requireAuth rejects oversized session tokens", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth, MAX_SESSION_TOKEN_LENGTH } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  const raw = encodeURIComponent(
+    JSON.stringify({
+      token: "a".repeat(MAX_SESSION_TOKEN_LENGTH + 1),
+      expiresAt: Date.now() + 60_000,
+    }),
+  );
+  const req = new NextRequest("http://localhost:3000/api/strategy", {
+    headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+  });
+  const res = requireAuth(req);
+  assert.ok(res);
+  assert.equal(res?.status, 401);
+});
+
+test("requireAuth accepts valid non-empty tokens within length bound", async () => {
+  const { NextRequest } = await import("next/server");
+  const { requireAuth, MAX_SESSION_TOKEN_LENGTH } = await import("./api-auth");
+  const { SESSION_COOKIE_NAME } = await import("./auth-constants");
+
+  for (const token of ["valid-token", "t", "a".repeat(MAX_SESSION_TOKEN_LENGTH)]) {
+    const raw = encodeURIComponent(
+      JSON.stringify({ token, expiresAt: Date.now() + 60_000 }),
+    );
+    const req = new NextRequest("http://localhost:3000/api/strategy", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${raw}` },
+    });
+    const res = requireAuth(req);
+    assert.equal(res, null);
+  }
 });

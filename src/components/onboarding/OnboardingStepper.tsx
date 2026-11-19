@@ -21,7 +21,7 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
       <div className="mb-8">
         <div className="flex items-center justify-between relative">
           {/* Background Line */}
-          <div className="absolute left-0 top-1/2 h-0.5 bg-white/10 w-full -translate-y-1/2" />
+          <div className="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 bg-slate-200 dark:bg-white/10" />
           
           {/* Progress Line */}
           <div 
@@ -45,8 +45,8 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
                     ${isCompleted 
                       ? 'bg-green-500 border-green-500 text-white' 
                       : isCurrent 
-                        ? 'bg-white border-green-500 text-dark-900' 
-                        : 'bg-dark-800 border-white/20 text-slate-400'
+                        ? 'border-green-500 bg-white text-slate-900 dark:text-dark-900'
+                        : 'border-slate-300 bg-slate-100 text-slate-500 dark:border-white/20 dark:bg-dark-800 dark:text-slate-400'
                     }
                     ${isClickable ? 'hover:scale-110 cursor-pointer' : 'cursor-not-allowed'}
                   `}
@@ -65,11 +65,15 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
                 {/* Step Label */}
                 <div className="absolute top-12 text-center">
                   <p className={`text-sm font-medium ${
-                    isCurrent ? 'text-white' : isCompleted ? 'text-green-400' : 'text-slate-400'
+                    isCurrent
+                      ? 'text-slate-900 dark:text-white'
+                      : isCompleted
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-slate-600 dark:text-slate-400'
                   }`}>
                     {step.title}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-24 hidden sm:block">
+                  <p className="mt-1 hidden max-w-24 text-xs text-slate-500 dark:text-slate-400 sm:block">
                     {step.description}
                   </p>
                 </div>
@@ -81,7 +85,7 @@ export default function OnboardingStepper({ steps, currentStep, onStepClick }: O
       
       {/* Mobile Step Counter */}
       <div className="md:hidden text-center mb-6">
-        <span className="text-sm text-slate-400" aria-live="polite">
+        <span className="text-sm text-slate-600 dark:text-slate-400" aria-live="polite">
           Step {currentStep + 1} of {steps.length}
         </span>
       </div>

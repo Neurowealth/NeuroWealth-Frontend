@@ -1,6 +1,7 @@
 "use client";
 
 import { useWallet } from "@/contexts";
+import { useI18n } from "@/contexts/I18nContext";
 import { WalletStatusBadge } from "./WalletStatusBadge";
 import { WalletIcon, LockIcon, LinkIcon } from "./wallet-icons";
 
@@ -23,8 +24,9 @@ export function WalletConnectionStates({
   showDetails = true,
   compact = false,
 }: WalletConnectionStatesProps) {
-  const { connected, isRestoring, publicKey, walletName, networkStatus } =
-    useWallet();
+  const { connected, isRestoring } = useWallet();
+  const { messages } = useI18n();
+  const t = messages.walletConnection.states;
 
   if (compact && connected) {
     return <WalletStatusBadge size="sm" compact showNetwork={false} />;
@@ -44,10 +46,10 @@ export function WalletConnectionStates({
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-text-primary">
-              Checking wallet connection...
+              {t.restoringTitle}
             </p>
             <p className="text-xs text-text-muted mt-0.5">
-              Restoring your previous session
+              {t.restoringSubtitle}
             </p>
           </div>
         </div>
@@ -74,10 +76,10 @@ export function WalletConnectionStates({
               <LinkIcon className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-blue-900 uppercase">
-                  Connected
+                  {t.connectedTitle}
                 </p>
                 <p className="text-sm text-blue-800 mt-1">
-                  Your wallet is connected and ready for transactions.
+                  {t.connectedBody}
                 </p>
               </div>
             </div>
@@ -99,32 +101,31 @@ export function WalletConnectionStates({
         <div className="flex items-center gap-2">
           <LockIcon className="w-5 h-5 text-text-secondary" />
           <h3 className="text-sm font-semibold text-text-primary">
-            Wallet Not Connected
+            {t.disconnectedTitle}
           </h3>
         </div>
         <p className="text-sm text-text-secondary">
-          Connect your Stellar wallet to access investment strategies and manage
-          your portfolio.
+          {t.disconnectedBody}
         </p>
       </div>
 
       {showDetails && (
         <div className="space-y-2 pt-2 border-t border-surface-border">
           <p className="text-xs font-medium text-text-muted uppercase">
-            Benefits:
+            {t.benefitsTitle}
           </p>
           <ul className="space-y-1.5 text-sm text-text-secondary">
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">✓</span>
-              <span>View AI-powered portfolio insights</span>
+              <span>{t.benefits.insights}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">✓</span>
-              <span>Execute automated investment strategies</span>
+              <span>{t.benefits.strategies}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">✓</span>
-              <span>Track transactions and balances</span>
+              <span>{t.benefits.tracking}</span>
             </li>
           </ul>
         </div>
@@ -148,12 +149,14 @@ export function WalletRequiredGuard({
   fallback,
 }: WalletRequiredGuardProps) {
   const { connected, isRestoring } = useWallet();
+  const { messages } = useI18n();
+  const t = messages.walletConnection.guard;
 
   if (isRestoring) {
     return (
       <div className="rounded-lg border border-surface-border bg-surface p-4 text-center">
         <div className="animate-pulse">
-          <p className="text-sm text-text-secondary">Loading wallet status...</p>
+          <p className="text-sm text-text-secondary">{t.loading}</p>
         </div>
       </div>
     );
@@ -173,11 +176,10 @@ export function WalletRequiredGuard({
           <LockIcon className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
             <h4 className="text-sm font-semibold text-amber-900">
-              Wallet Connection Required
+              {t.requiredTitle}
             </h4>
             <p className="text-sm text-amber-800 mt-1">
-              This action requires your wallet to be connected. Please connect
-              your wallet to continue.
+              {t.requiredBody}
             </p>
           </div>
         </div>

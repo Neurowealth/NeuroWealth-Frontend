@@ -155,3 +155,17 @@ Error messages are auto-generated based on the `label` prop:
 - The error's actual message is displayed as secondary text
 
 If you need more context-specific error messages, handle the error state separately at the page level rather than relying on DataBoundary.
+
+### Current Usage
+
+The DataBoundary component is currently used in the following locations:
+
+1. **Transaction History Page** (`src/app/dashboard/history/page.tsx`)
+   - Wraps the transaction history list with loading skeleton and error handling
+   - Provides retry functionality for failed data fetches
+   - Handles empty state within the boundary
+
+2. **Notifications Page** (`src/app/dashboard/notifications/page.tsx`)
+   - Wraps the notification inbox component
+   - Manages loading states with custom skeleton
+   - Provides retry functionality for failed notification fetches

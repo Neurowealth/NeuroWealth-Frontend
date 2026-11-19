@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes } from "react";
+import React, { ButtonHTMLAttributes } from "react";
 
 // Spec: primary filled (#0EA5E9 = sky-500), secondary outline, radius 8px (rounded-lg)
 type Variant = "primary" | "secondary" | "ghost" | "destructive";

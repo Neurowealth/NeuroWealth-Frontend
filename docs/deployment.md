@@ -100,7 +100,7 @@ Monitor: **GitHub → Actions → Deploy to Production**
 - [ ] All CI checks green (typecheck, tests, lint, build)
 - [ ] Staging deploy verified — test deposit, balance check, withdrawal flows
 - [ ] No browser console errors or warnings on staging
-- [ ] `STELLAR_NETWORK=mainnet` confirmed in production Vercel env vars
+- [ ] `NEXT_PUBLIC_STELLAR_NETWORK=mainnet` (and `STELLAR_NETWORK=mainnet`) confirmed in production Vercel env vars
 - [ ] CHANGELOG updated
 - [ ] Smoke-test production URL after deploy
 

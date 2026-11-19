@@ -177,4 +177,47 @@ describe("useAsyncState error classification in run()", () => {
 
     assert.equal(result.current.state.data, 200);
   });
+
+  it("ignores stale error from older run after newer run succeeds", async () => {
+    const { result } = renderHook(() => useAsyncState<number>());
+
+    let resolveFirst!: (value: number) => void;
+    let rejectFirst!: (error: Error) => void;
+    let resolveSecond!: (value: number) => void;
+
+    const first = new Promise<number>((resolve, reject) => {
+      resolveFirst = resolve;
+      rejectFirst = reject;
+    });
+    const second = new Promise<number>((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    act(() => {
+      void result.current.run(() => first);
+      void result.current.run(() => second);
+    });
+
+    // New call succeeds first
+    await act(async () => {
+      resolveSecond(200);
+      await second;
+    });
+
+    assert.equal(result.current.state.status, "success");
+    assert.equal(result.current.state.data, 200);
+    assert.equal(result.current.state.error, null);
+
+    // Old call rejects after new call succeeded
+    // The error should be discarded because it's stale
+    await act(async () => {
+      rejectFirst(new ServiceError("NETWORK_ERROR", "this is from an old call", true));
+      await first.catch(() => {}); // Ignore the rejection in this context
+    });
+
+    // State should remain with the successful result from the newer call
+    assert.equal(result.current.state.status, "success", "should remain in success state");
+    assert.equal(result.current.state.data, 200, "should keep newer response data");
+    assert.equal(result.current.state.error, null, "should not update error from stale call");
+  });
 });

@@ -20,7 +20,15 @@ import { useI18n } from "@/contexts/I18nContext";
 import { LOCALE_OPTIONS as LOCALES } from "@/lib/locale-options";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
-import styles from "../settings.module.css";
+import rawStyles from "../settings.module.css";
+
+// CSS Modules resolve to undefined under the Node test runner (no bundler),
+// so fall back to an identity proxy there — see privacy/page.tsx.
+const styles: Record<string, string> =
+  rawStyles ||
+  new Proxy({}, {
+    get: (_target, prop) => (typeof prop === "string" ? prop : ""),
+  });
 
 interface PreferencesData {
   locale: string;
@@ -56,7 +64,7 @@ const DEFAULT: PreferencesData = {
 };
 
 export default function PreferencesPage() {
-  const { messages } = useI18n();
+  const { messages, setLocale } = useI18n();
   const { setTheme: setAppTheme } = useTheme();
   const t = messages.settings.preferences;
   const {
@@ -75,6 +83,7 @@ export default function PreferencesPage() {
     auditSection: "preferences",
     onSaveSuccess: (savedData) => {
       setAppTheme(savedData.theme);
+      setLocale(savedData.locale);
     },
   });
 
@@ -290,7 +299,7 @@ export default function PreferencesPage() {
         <div
           className={styles.settingsActionBar}
           role="group"
-          aria-label="Save or cancel changes"
+          aria-label={t.actions.groupLabel}
         >
           {isDirty && (
             <span className={styles.settingsDirtyIndicator}>

@@ -49,7 +49,7 @@ export function useTransactionForm(kind: TransactionKind, tDomain: any) {
 
         setFieldErrors({});
         return true;
-    }, [kind, formValues]);
+    }, [kind, formValues, tDomain]);
 
     const reset = useCallback(() => {
         setFormValues(getDefaultTransactionValues(kind));

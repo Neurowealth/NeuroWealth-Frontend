@@ -20,7 +20,7 @@ export const strategyUpdateSchema = z.object({
 
 export const transactionHistoryQuerySchema = z.object({
   kind: z.enum(["all", "deposit", "withdrawal", "rebalance"]).optional(),
-  status: z.enum(["all", "pending", "confirmed", "failed"]).optional(),
+  status: z.enum(["all", "pending", "success", "failed"]).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   page: z.coerce.number().int().min(1).optional(),

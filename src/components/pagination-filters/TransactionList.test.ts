@@ -4,9 +4,17 @@ import { readFileSync } from "node:fs";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import TransactionList from "./TransactionList";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { dictionaries } from "@/lib/i18n/messages";
+
+function renderWithI18n() {
+  return renderToStaticMarkup(
+    React.createElement(I18nProvider, null, React.createElement(TransactionList)),
+  );
+}
 
 test("TransactionList renders type, amount, and status columns", () => {
-  const markup = renderToStaticMarkup(React.createElement(TransactionList));
+  const markup = renderWithI18n();
 
   assert.match(markup, />Type</);
   assert.match(markup, />Amount</);
@@ -17,7 +25,24 @@ test("TransactionList renders type, amount, and status columns", () => {
   assert.match(markup, /caption=|Transaction history, 87 results/);
 
   const source = readFileSync(new URL("./TransactionList.tsx", import.meta.url), "utf8");
-  assert.match(source, /emptyMessage="No transactions match the selected filters\."/);
+  assert.match(source, /emptyMessage=\{t\.empty\}/);
+  assert.equal(
+    dictionaries.en.transactions.list.empty,
+    "No transactions match the selected filters.",
+  );
+});
+
+test("TransactionList copy is routed through useI18n (#1130)", () => {
+  const source = readFileSync(new URL("./TransactionList.tsx", import.meta.url), "utf8");
+  assert.match(source, /useI18n\(\)/);
+  // No hardcoded English column headers or heading remain in the component.
+  for (const literal of ['header: "Date"', 'header: "Amount"', 'header: "Status"', "} results"]) {
+    assert.ok(!source.includes(literal), `unexpected hardcoded copy: ${literal}`);
+  }
+
+  const markup = renderWithI18n();
+  assert.match(markup, />Transactions</);
+  assert.match(markup, /\d+ results/);
 });
 
 test("TransactionList status/type pills use the shared Badge component", () => {

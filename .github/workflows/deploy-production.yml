@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "yarn"
 
       - name: Install dependencies
@@ -50,6 +50,8 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.PROD_APP_URL }}
           STELLAR_NETWORK: mainnet
           STELLAR_HORIZON_URL: https://horizon.stellar.org
+          NEXT_PUBLIC_STELLAR_NETWORK: mainnet
+          NEXT_PUBLIC_STELLAR_HORIZON_URL: https://horizon.stellar.org
 
       - name: Deploy to Vercel (Production)
         run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes

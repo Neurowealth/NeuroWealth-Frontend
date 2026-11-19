@@ -8,7 +8,11 @@ import {
 import { parseTransactionPreviewSearchParams } from "@/lib/preview-route-query";
 import { ImageResponse } from "next/og";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
+import { ERROR_CODE, HTTP_STATUS, errorResponse } from "@/lib/api-response";
+import { dictionaries } from "@/lib/i18n/messages";
 
+const tDomain = dictionaries.en.transactions.domain;
 
 type ThemeMode = "light" | "dark";
 
@@ -55,19 +59,22 @@ export async function GET(request: Request) {
     windowMs: 60_000,
   });
   if (!limit.allowed) {
-    return new Response("Too many requests. Please try again later.", {
-      status: 429,
-      headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
-    });
+    return NextResponse.json(
+      errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
+      {
+        status: HTTP_STATUS.TOO_MANY_REQUESTS,
+        headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+      },
+    );
   }
 
   const { searchParams } = new URL(request.url);
   const { theme, kind, preview } =
     parseTransactionPreviewSearchParams(searchParams);
   const palette = getThemePalette(theme);
-  const context = getTransactionContext(kind);
-  const snapshot = buildPreviewSnapshot(kind, preview);
-  const chips = buildStatusChips(kind, snapshot.form);
+  const context = getTransactionContext(kind, tDomain.context);
+  const snapshot = buildPreviewSnapshot(kind, preview, tDomain);
+  const chips = buildStatusChips(kind, snapshot.form, tDomain);
 
   const imageResponse = new ImageResponse(
     <div

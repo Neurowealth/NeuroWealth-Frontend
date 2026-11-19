@@ -16,18 +16,32 @@ test("getStorageKey returns the registered value for onboarding keys", () => {
   assert.equal(getStorageKey("ONBOARDING_STATE"), "onboarding-state");
 });
 
-test("OnboardingSettings.tsx sources its localStorage keys from STORAGE_KEYS, not string literals", () => {
-  const source = fs.readFileSync(
+test("onboarding reset sources its localStorage keys from STORAGE_KEYS, not string literals", () => {
+  // #954 moved the step-scoped key clearing into lib/onboarding-state.ts so
+  // both reset paths share one implementation. The #581 guard now follows the
+  // code to its new home.
+  const sharedResetSource = fs.readFileSync(
+    path.join(process.cwd(), "src/lib/onboarding-state.ts"),
+    "utf8",
+  );
+
+  assert.match(sharedResetSource, /STORAGE_KEYS\.ONBOARDING_USER_STRATEGY/);
+  assert.match(sharedResetSource, /STORAGE_KEYS\.ONBOARDING_FIRST_DEPOSIT/);
+
+  // Guard against re-introducing the raw literals the registry replaced.
+  assert.doesNotMatch(sharedResetSource, /localStorage\.\w+\(\s*["']user-strategy["']/);
+  assert.doesNotMatch(sharedResetSource, /localStorage\.\w+\(\s*["']first-deposit["']/);
+
+  // OnboardingSettings must delegate to the shared reset instead of hand-rolling
+  // its own localStorage calls (#954 — one reset code path, not two).
+  const settingsSource = fs.readFileSync(
     path.join(process.cwd(), "src/components/settings/OnboardingSettings.tsx"),
     "utf8",
   );
 
-  assert.match(source, /STORAGE_KEYS\.ONBOARDING_USER_STRATEGY/);
-  assert.match(source, /STORAGE_KEYS\.ONBOARDING_FIRST_DEPOSIT/);
-
-  // Guard against re-introducing the raw literals the registry replaced.
-  assert.doesNotMatch(source, /localStorage\.\w+\(\s*["']user-strategy["']/);
-  assert.doesNotMatch(source, /localStorage\.\w+\(\s*["']first-deposit["']/);
+  assert.match(settingsSource, /resetOnboardingState/);
+  assert.doesNotMatch(settingsSource, /localStorage\.\w+\(\s*["']user-strategy["']/);
+  assert.doesNotMatch(settingsSource, /localStorage\.\w+\(\s*["']first-deposit["']/);
 });
 
 test("STORAGE_KEYS values are unique — no accidental key collisions", () => {

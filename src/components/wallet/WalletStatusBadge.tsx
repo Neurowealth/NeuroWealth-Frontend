@@ -1,6 +1,8 @@
 "use client";
 
 import { useWallet } from "@/contexts";
+import { truncateWalletAddress } from "@/lib/user";
+import { Badge } from "@/components/ui/Badge";
 import {
   WalletIcon,
   CheckCircleIcon,
@@ -24,7 +26,7 @@ export function WalletStatusBadge({
     return null;
   }
 
-  const truncatedAddress = `${publicKey.slice(0, 6)}...${publicKey.slice(-6)}`;
+  const truncatedAddress = truncateWalletAddress(publicKey);
 
   const sizeClasses = {
     sm: "px-2.5 py-1 text-xs",
@@ -40,37 +42,45 @@ export function WalletStatusBadge({
 
   if (compact) {
     return (
-      <div
-        className={`inline-flex items-center gap-2 rounded-full bg-green-50 border border-green-200 ${sizeClasses[size]}`}
+      <Badge
+        variant="success"
+        size="md"
+        className="gap-2"
         data-qa="wallet-status-badge"
       >
-        <CheckCircleIcon
-          className={`${iconSizeClasses[size]} text-green-600`}
-        />
-        <span className="font-medium text-green-900">{truncatedAddress}</span>
-      </div>
+        <CheckCircleIcon className={`${iconSizeClasses[size]}`} />
+        <span>{truncatedAddress}</span>
+      </Badge>
     );
   }
 
   return (
     <div
-      className="rounded-lg border border-surface-border bg-surface p-3 space-y-2"
+      className={`rounded-lg border border-surface-border bg-surface ${sizeClasses[size]} space-y-2`}
       data-qa="wallet-status-badge"
     >
       {/* Wallet Connection Status */}
       <div className="flex items-center gap-2">
-        <CheckCircleIcon className="w-4 h-4 text-success" />
+        <CheckCircleIcon className={`${iconSizeClasses[size]} text-success`} />
         <div className="flex-1">
-          <p className="text-xs text-text-muted font-medium uppercase">Wallet</p>
-          <p className="text-sm font-semibold text-text-primary">{walletName}</p>
+          <p className="text-xs text-text-muted font-medium uppercase">
+            Wallet
+          </p>
+          <p className="text-sm font-semibold text-text-primary">
+            {walletName}
+          </p>
         </div>
       </div>
 
       {/* Public Key / Address */}
       <div className="flex items-start gap-2 pt-2 border-t border-surface-border">
-        <WalletIcon className="w-4 h-4 text-text-secondary mt-0.5 flex-shrink-0" />
+        <WalletIcon
+          className={`${iconSizeClasses[size]} text-text-secondary mt-0.5 flex-shrink-0`}
+        />
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-text-muted font-medium uppercase">Address</p>
+          <p className="text-xs text-text-muted font-medium uppercase">
+            Address
+          </p>
           <code className="text-xs text-text-secondary break-all font-mono">
             {publicKey}
           </code>
@@ -86,17 +96,17 @@ export function WalletStatusBadge({
           }`}
         >
           {networkStatus.hasMismatch ? (
-            <WarningIcon className="w-4 h-4" />
+            <WarningIcon className={`${iconSizeClasses[size]}`} />
           ) : (
-            <CheckCircleIcon className="w-4 h-4" />
+            <CheckCircleIcon className={`${iconSizeClasses[size]}`} />
           )}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium uppercase">Network</p>
             <p className="text-sm font-semibold">
               {networkStatus.hasMismatch ? (
-                <span className="text-amber-600">Mismatch</span>
+                <span className="text-warning">Mismatch</span>
               ) : (
-                <span className="text-green-600">
+                <span className="text-success">
                   {networkStatus.appNetworkLabel}
                 </span>
               )}

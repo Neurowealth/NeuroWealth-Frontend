@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface DatePickerProps {
   value?: Date | null;
@@ -46,12 +47,23 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   const [viewMonth, setViewMonth] = useState((value ?? today).getMonth());
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dayBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Focus-trap the dialog panel while open
+  useFocusTrap(dialogRef, open);
+
+  // Move DOM focus to the focused day button whenever focusedIdx changes
+  useEffect(() => {
+    if (!open || focusedIdx === null) return;
+    dayBtnRefs.current[focusedIdx]?.focus();
+  }, [focusedIdx, open]);
 
   const grid = buildGrid(viewYear, viewMonth);
   const formatted = value ? value.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
@@ -70,12 +82,11 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
     const activeDays = grid.filter(Boolean) as Date[];
     const cur = focusedIdx ?? 0;
     if (e.key === "Escape") { setOpen(false); return; }
-    if (e.key === "ArrowRight") setFocusedIdx(Math.min(cur + 1, activeDays.length - 1));
-    if (e.key === "ArrowLeft") setFocusedIdx(Math.max(cur - 1, 0));
-    if (e.key === "ArrowDown") setFocusedIdx(Math.min(cur + 7, activeDays.length - 1));
-    if (e.key === "ArrowUp") setFocusedIdx(Math.max(cur - 7, 0));
-    if (e.key === "Enter" && focusedIdx !== null) select(activeDays[focusedIdx]);
-    e.preventDefault();
+    if (e.key === "ArrowRight") { e.preventDefault(); setFocusedIdx(Math.min(cur + 1, activeDays.length - 1)); return; }
+    if (e.key === "ArrowLeft") { e.preventDefault(); setFocusedIdx(Math.max(cur - 1, 0)); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); setFocusedIdx(Math.min(cur + 7, activeDays.length - 1)); return; }
+    if (e.key === "ArrowUp") { e.preventDefault(); setFocusedIdx(Math.max(cur - 7, 0)); return; }
+    if (e.key === "Enter" && focusedIdx !== null) { e.preventDefault(); select(activeDays[focusedIdx]); }
   };
 
   return (
@@ -106,10 +117,13 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
 
       {open && (
         <div
+          ref={dialogRef}
           role="dialog"
+          aria-modal="true"
           aria-label="Date picker"
+          className="z-dropdown"
           style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+            position: "absolute", top: "calc(100% + 6px)", left: 0,
             background: "#111827", border: "0.5px solid #374151",
             borderRadius: 10, padding: 12, width: 252,
             boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
@@ -130,36 +144,52 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
           </div>
 
           {/* Calendar grid — 7×6 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-            {grid.map((date, i) => {
-              if (!date) return <div key={`empty-${i}`} />;
-              const isToday = isSameDay(date, today);
-              const isSelected = value ? isSameDay(date, value) : false;
-              const dis = isDisabled(date, minDate, maxDate);
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => select(date)}
-                  disabled={dis}
-                  aria-label={date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                  aria-pressed={isSelected}
-                  style={{
-                    width: "100%", aspectRatio: "1", borderRadius: 6,
-                    border: isToday && !isSelected ? "0.5px solid #6366f1" : "none",
-                    background: isSelected ? "#6366f1" : "transparent",
-                    color: isSelected ? "#fff" : dis ? "#374151" : isToday ? "#a5b4fc" : "#d1d5db",
-                    fontSize: 12, cursor: dis ? "default" : "pointer",
-                    fontFamily: "inherit", transition: "background 0.1s",
-                    minHeight: 36, // ≥36px per spec
-                  }}
-                  onMouseEnter={e => { if (!isSelected && !dis) (e.currentTarget as HTMLButtonElement).style.background = "#1f2937"; }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                >
-                  {date.getDate()}
-                </button>
-              );
-            })}
+          <div
+            role="grid"
+            aria-label="Calendar"
+            style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}
+          >
+            {(() => {
+              let activeDayCount = 0;
+              return grid.map((date, i) => {
+                if (!date) return <div key={`empty-${i}`} role="gridcell" />;
+                const isToday = isSameDay(date, today);
+                const isSelected = value ? isSameDay(date, value) : false;
+                const dis = isDisabled(date, minDate, maxDate);
+                const activeIdx = activeDayCount++;
+                const isFocused = focusedIdx === activeIdx;
+                return (
+                  <div key={i} role="gridcell">
+                    <button
+                      type="button"
+                      ref={(el) => { dayBtnRefs.current[activeIdx] = el; }}
+                      onClick={() => select(date)}
+                      disabled={dis}
+                      tabIndex={isFocused ? 0 : -1}
+                      aria-label={date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                      aria-pressed={isSelected}
+                      aria-current={isToday ? "date" : undefined}
+                      style={{
+                        width: "100%", aspectRatio: "1", borderRadius: 6,
+                        border: isFocused
+                          ? "2px solid #6366f1"
+                          : isToday && !isSelected ? "0.5px solid #6366f1" : "none",
+                        background: isSelected ? "#6366f1" : isFocused && !isSelected ? "#1f2937" : "transparent",
+                        color: isSelected ? "#fff" : dis ? "#374151" : isToday ? "#a5b4fc" : "#d1d5db",
+                        fontSize: 12, cursor: dis ? "default" : "pointer",
+                        fontFamily: "inherit", transition: "background 0.1s",
+                        minHeight: 36, // ≥36px per spec
+                        outline: "none",
+                      }}
+                      onMouseEnter={e => { if (!isSelected && !dis) (e.currentTarget as HTMLButtonElement).style.background = "#1f2937"; }}
+                      onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                    >
+                      {date.getDate()}
+                    </button>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* Today shortcut */}

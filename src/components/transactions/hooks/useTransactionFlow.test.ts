@@ -11,8 +11,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import React from "react";
 import { renderHook, act } from "@/test-utils/render-hook";
+import { I18nProvider } from "@/contexts/I18nContext";
 import { useTransactionFlow, type RouteSearchParams, type FlowRouter } from "./useTransactionFlow";
+import { dictionaries } from "@/lib/i18n/messages";
+
+function renderFlowHook(callback: () => ReturnType<typeof useTransactionFlow>) {
+  return renderHook(callback, {
+    wrapper: ({ children }) => React.createElement(I18nProvider, null, children),
+  });
+}
+
+const tDomain = dictionaries.en.transactions.domain;
 
 const originalFetch = globalThis.fetch;
 
@@ -101,12 +112,13 @@ function mockErrorResponse(details: Record<string, string | string[]>) {
 }
 
 test("useTransactionFlow — derives theme/kind/preview from search params on mount", () => {
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "dark", kind: "withdrawal" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -118,12 +130,13 @@ test("useTransactionFlow — derives theme/kind/preview from search params on mo
 
 test("useTransactionFlow — changing kind syncs the route with the new kind", () => {
   const router = makeRouter();
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router,
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -140,12 +153,13 @@ test("useTransactionFlow — changing kind syncs the route with the new kind", (
 test("useTransactionFlow — submitting a valid review moves to the confirm stage with a quote", async () => {
   mockSuccessQuote();
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -168,12 +182,13 @@ test("useTransactionFlow — an invalid amount fails validation before any reque
     throw new Error("fetch should not be called for a client-side validation failure");
   };
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -193,12 +208,13 @@ test("useTransactionFlow — an invalid amount fails validation before any reque
 test("useTransactionFlow — a failed quote request moves to the error stage with recovery info", async () => {
   mockErrorResponse({ amount: ["Amount exceeds available balance"] });
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -218,12 +234,13 @@ test("useTransactionFlow — a failed quote request moves to the error stage wit
 test("useTransactionFlow — confirming a quote moves to pending, then to success once the completion timer fires", async (t) => {
   mockSuccessQuote();
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -256,12 +273,13 @@ test("useTransactionFlow — confirming a quote moves to pending, then to succes
 test("useTransactionFlow — recovery 'edit' returns to the form stage and clears the failure", async () => {
   mockErrorResponse({ amount: ["Amount exceeds available balance"] });
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -284,12 +302,13 @@ test("useTransactionFlow — recovery 'edit' returns to the form stage and clear
 test("useTransactionFlow — recovery 'retry' after a failed review re-submits the review", async () => {
   mockErrorResponse({ amount: ["Amount exceeds available balance"] });
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -319,12 +338,13 @@ test("useTransactionFlow — a non-interactive preview short-circuits to its sna
     throw new Error("preview snapshots must not hit the network");
   };
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit", preview: "confirm" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -357,12 +377,13 @@ test("useTransactionFlow — recovery 'support' navigates to a mailto link conta
   try {
     mockErrorResponse({ amount: ["Amount exceeds available balance"] });
 
-    const { result } = renderHook(() =>
+    const { result } = renderFlowHook(() =>
       useTransactionFlow({
         searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
         router: makeRouter(),
         isSandboxMode: false,
         scenario: "success",
+        tDomain,
       }),
     );
 
@@ -392,12 +413,13 @@ test("useTransactionFlow — submitReview and handleConfirm are no-ops while a n
     throw new Error("non-interactive preview must not hit the network");
   };
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit", preview: "success" }),
       router: makeRouter(),
       isSandboxMode: false,
       scenario: "success",
+      tDomain,
     }),
   );
 
@@ -416,12 +438,13 @@ test("useTransactionFlow — sandbox mode 'loading' scenario sets submitting sta
   const timers = t.mock.timers;
   timers.enable({ apis: ["setTimeout"] });
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: true,
       scenario: "loading",
+      tDomain,
     }),
   );
 
@@ -440,12 +463,13 @@ test("useTransactionFlow — sandbox mode 'timeout' scenario sets submitting sta
   const timers = t.mock.timers;
   timers.enable({ apis: ["setTimeout"] });
 
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: true,
       scenario: "timeout",
+      tDomain,
     }),
   );
 
@@ -464,12 +488,13 @@ test("useTransactionFlow — sandbox mode 'timeout' scenario sets submitting sta
 });
 
 test("useTransactionFlow — sandbox mode 'partial-failure' scenario sets stage to form and sets warning message", () => {
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: true,
       scenario: "partial-failure",
+      tDomain,
     }),
   );
 
@@ -481,12 +506,13 @@ test("useTransactionFlow — sandbox mode 'partial-failure' scenario sets stage 
 });
 
 test("useTransactionFlow — sandbox mode 'empty' scenario resets form, quote, pending, receipt, and sets empty message", () => {
-  const { result } = renderHook(() =>
+  const { result } = renderFlowHook(() =>
     useTransactionFlow({
       searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
       router: makeRouter(),
       isSandboxMode: true,
       scenario: "empty",
+      tDomain,
     }),
   );
 

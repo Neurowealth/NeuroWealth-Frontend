@@ -48,5 +48,22 @@ test("GET /api/transaction-preview rate limits repeated requests from the same I
   assert.equal(limited.status, 429);
   assert.ok(limited.headers.get("Retry-After"));
 
+  // Body must be the standard error envelope, not plain text
+  const body = await limited.json();
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, "RATE_LIMITED");
+
+  resetRateLimitStore();
+});
+
+test("GET /api/transaction-preview skips IP-based rate limiting when no IP headers are present", async () => {
+  resetRateLimitStore();
+
+  // Requests without IP headers should not share a single "unknown" bucket and get blocked
+  for (let i = 0; i < 35; i++) {
+    const res = await GET(makeRequest());
+    assert.equal(res.status, 200);
+  }
+
   resetRateLimitStore();
 });

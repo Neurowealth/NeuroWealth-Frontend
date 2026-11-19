@@ -20,13 +20,31 @@ const faqCategoryIds: Record<string, string> = {
   'gas-fees': 'transactions',
   'check-transaction-status': 'transactions',
   'supported-tokens': 'assets',
-  'add-custom-token': 'assets',
-  'staking-basics': 'staking',
-  'staking-rewards': 'staking',
+  'yield-strategies': 'assets',
   'contact-support': 'support',
 };
 
-const categories = ['all', 'gettingStarted', 'security', 'transactions', 'assets', 'staking', 'support'] as const;
+/** FAQs removed from i18n catalog — described staking / custom-token flows that do not exist. */
+const HIDDEN_FAQ_IDS = new Set(['add-custom-token', 'staking-basics', 'staking-rewards']);
+
+/** Rewrites for entries whose i18n copy still mentions non-product features. */
+const FAQ_CONTENT_REWRITES: Record<string, { q: string; a: string }> = {
+  'supported-tokens': {
+    q: 'What assets and strategies does NeuroWealth support?',
+    a: 'NeuroWealth supports USDC deposits and withdrawals and automated allocation across Conservative, Balanced, and Growth lending/DEX strategies from the dashboard. There is no in-app staking flow or “add token by contract address” feature.',
+  },
+};
+
+const EXTRA_FAQ_ITEMS: Omit<FAQItem, 'category'>[] = [
+  {
+    id: 'yield-strategies',
+    question: 'How do Conservative, Balanced, and Growth strategies work?',
+    answer:
+      'Each strategy allocates USDC across vetted lending and DEX venues at different risk/return profiles. You pick a strategy when depositing; rebalances shift capital between venues without a separate wallet action.',
+  },
+];
+
+const categories = ['all', 'gettingStarted', 'security', 'transactions', 'assets', 'support'] as const;
 
 export default function FAQSection() {
   const { messages } = useI18n();
@@ -35,16 +53,26 @@ export default function FAQSection() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  const faqData: FAQItem[] = useMemo(
-    () =>
-      t.items.map((item) => ({
-        id: item.id,
-        question: item.q,
-        answer: item.a,
-        category: faqCategoryIds[item.id],
-      })),
-    [t.items],
-  );
+  const faqData: FAQItem[] = useMemo(() => {
+    const fromMessages = t.items
+      .filter((item) => !HIDDEN_FAQ_IDS.has(item.id))
+      .map((item) => {
+        const rewrite = FAQ_CONTENT_REWRITES[item.id];
+        return {
+          id: item.id,
+          question: rewrite?.q ?? item.q,
+          answer: rewrite?.a ?? item.a,
+          category: faqCategoryIds[item.id] ?? 'support',
+        };
+      });
+
+    const extras = EXTRA_FAQ_ITEMS.map((item) => ({
+      ...item,
+      category: faqCategoryIds[item.id] ?? 'assets',
+    }));
+
+    return [...fromMessages, ...extras];
+  }, [t.items]);
 
   const filteredFAQs = useMemo(() => {
     return faqData.filter(faq => {

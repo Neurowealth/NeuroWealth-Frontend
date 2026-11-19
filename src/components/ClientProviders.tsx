@@ -17,6 +17,7 @@ import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { CookieBanner, PrivacyModal } from "@/components/cookie";
 import { composeProviders } from "@/lib/composeProviders";
 import { useErrorTracking } from "@/hooks/useErrorTracking";
+import { GlobalErrorDevTrigger } from "@/components/dev/GlobalErrorDevTrigger";
 
 /** Mounts global error tracking (window error + unhandledrejection → logger). */
 function ErrorTrackingMount() {
@@ -71,6 +72,7 @@ export function ClientProviders({ children }: { children: ReactNode }) {
   return (
     <Providers>
       <ErrorTrackingMount />
+      <GlobalErrorDevTrigger />
       {isWalletPossible ? (
         <WalletProvider network={stellarConfig.network} horizonUrl={stellarConfig.horizonUrl}>
           {children}

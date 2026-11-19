@@ -1,0 +1,44 @@
+# CODEOWNERS
+#
+# These paths are common targets for supply-chain / malicious-PR attacks
+# (config files with code appended after the export, VS Code / dev container
+# auto-run hooks, package.json lifecycle scripts, and binary/font blobs used
+# to smuggle payloads). Changes to them require review from a code owner,
+# in addition to the repo's standard required PR approval.
+#
+# See: https://docs.github.com/articles/about-codeowners
+
+# Editor / container auto-run surfaces
+/.vscode/            @Abidoyesimze
+/.devcontainer/       @Abidoyesimze
+
+# Dependency manifests and lockfiles
+/package.json         @Abidoyesimze
+/yarn.lock             @Abidoyesimze
+
+# Build/tooling config files (known injection targets: code appended after
+# `export default` / `module.exports`)
+/postcss.config.mjs    @Abidoyesimze
+/tailwind.config.ts    @Abidoyesimze
+/eslint.config.mjs     @Abidoyesimze
+/next.config.mjs       @Abidoyesimze
+jest.config.*          @Abidoyesimze
+vite.config.*          @Abidoyesimze
+
+# Git hooks
+/.husky/               @Abidoyesimze
+
+# CI/CD workflows
+/.github/workflows/    @Abidoyesimze
+
+# Binary and font files
+*.woff      @Abidoyesimze
+*.woff2     @Abidoyesimze
+*.ttf       @Abidoyesimze
+*.otf       @Abidoyesimze
+*.eot       @Abidoyesimze
+*.exe       @Abidoyesimze
+*.dll       @Abidoyesimze
+*.so        @Abidoyesimze
+*.dylib     @Abidoyesimze
+*.node      @Abidoyesimze

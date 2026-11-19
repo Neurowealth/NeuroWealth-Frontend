@@ -5,12 +5,15 @@ import { NotificationItem } from "./NotificationItem";
 import { NotificationPreferencesUI } from "./NotificationPreferences";
 import { Button } from "@/components/ui/Button";
 import { analytics } from "@/lib/analytics";
+import { useI18n } from "@/contexts/I18nContext";
 
 export function NotificationCenter() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const [view, setView] = useState<"list" | "preferences">("list");
   const [page, setPage] = useState(1);
   const itemsPerPage = 5;
+  const { messages } = useI18n();
+  const t = messages.notifications;
 
   const paginatedNotifications = notifications.slice(0, page * itemsPerPage);
   const hasMore = paginatedNotifications.length < notifications.length;
@@ -19,17 +22,17 @@ export function NotificationCenter() {
     <div
       className="w-80 bg-dark-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]"
       role="region"
-      aria-label="Notifications"
+      aria-label={t.regionAriaLabel}
     >
       <div className="p-4 border-b border-white/5 flex items-center justify-between bg-dark-900/50">
         <div className="flex items-center gap-2">
           <h3 className="font-bold text-white uppercase tracking-wider text-xs">
-            {view === "list" ? "Notifications" : "Preferences"}
+            {view === "list" ? t.title : t.preferencesTitle}
           </h3>
           {view === "list" && unreadCount > 0 && (
             <span
               className="bg-brand-400 text-dark-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-              aria-label={`${unreadCount} unread`}
+              aria-label={t.unreadAriaLabel.replace("{{count}}", String(unreadCount))}
             >
               {unreadCount}
             </span>
@@ -39,8 +42,8 @@ export function NotificationCenter() {
           <button
             onClick={() => setView(view === "list" ? "preferences" : "list")}
             className="text-slate-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 rounded"
-            aria-label={view === "list" ? "Open notification preferences" : "Back to notification list"}
-            title={view === "list" ? "Preferences" : "Back to List"}
+            aria-label={view === "list" ? t.openPreferencesAriaLabel : t.backToListAriaLabel}
+            title={view === "list" ? t.preferencesTitle : t.title}
           >
             <span aria-hidden="true">{view === "list" ? "⚙️" : "🔙"}</span>
           </button>
@@ -52,7 +55,7 @@ export function NotificationCenter() {
           <>
             {notifications.length === 0 ? (
               <div className="p-10 text-center text-slate-500 italic text-sm">
-                No notifications yet.
+                {t.empty}
               </div>
             ) : (
               <>
@@ -76,7 +79,7 @@ export function NotificationCenter() {
                         analytics.track("notification_load_more", { page: page + 1 });
                       }}
                     >
-                      Load More
+                      {t.loadMore}
                     </Button>
                   </div>
                 )}
@@ -97,7 +100,7 @@ export function NotificationCenter() {
             }}
             className="text-[10px] text-slate-500 hover:text-white transition-colors w-full text-center"
           >
-            Mark all as read
+            {t.markAllAsRead}
           </button>
         </div>
       )}

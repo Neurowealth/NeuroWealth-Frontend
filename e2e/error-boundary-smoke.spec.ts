@@ -23,4 +23,11 @@ test.describe("Dashboard error boundaries", () => {
     await expect(page.getByRole("heading", { name: /dashboard unavailable/i })).toBeVisible();
     await expect(page.getByText(/Your funds and wallet connection remain safe/i)).toBeVisible();
   });
+
+  test("global error boundary fallback renders on provider-level initialization failure", async ({ page }) => {
+    await page.goto("/dashboard/dev-errors/global-error");
+
+    await expect(page.getByRole("heading", { name: /(application error|we ran into an unexpected issue)/i })).toBeVisible();
+    await expect(page.getByText(/Your (account and )?funds remain safe/i)).toBeVisible();
+  });
 });

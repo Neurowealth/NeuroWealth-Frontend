@@ -38,7 +38,10 @@ export function GET(req: NextRequest) {
         "Query parameter validation failed.",
         zodErrorToDetails(parsedQuery.error),
       ),
-      { status: HTTP_STATUS.BAD_REQUEST },
+      {
+        status: HTTP_STATUS.BAD_REQUEST,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   }
 
@@ -55,5 +58,7 @@ export function GET(req: NextRequest) {
 
   const result = filterAndPaginateHistory(filter);
 
-  return NextResponse.json(successResponse(result));
+  return NextResponse.json(successResponse(result), {
+    headers: { "Cache-Control": "no-store" },
+  });
 }

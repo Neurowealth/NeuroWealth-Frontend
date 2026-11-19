@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { random } from '@/lib/seeded-rng';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface FirstDepositStepProps {
   onNext: () => void;
@@ -21,6 +23,9 @@ const assets = [
 ];
 
 export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDepositStepProps) {
+  const { messages } = useI18n();
+  const t = messages.onboardingSteps.firstDeposit;
+
   const [selectedAsset, setSelectedAsset] = useState('xlm');
   const [customAmount, setCustomAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(100);
@@ -44,20 +49,20 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
 
   const validateAmount = (): boolean => {
     if (!finalAmount || finalAmount <= 0) {
-      setDepositError('Please enter a valid amount');
+      setDepositError(t.errorInvalidAmount);
       return false;
     }
-    
+
     if (selectedAssetData && finalAmount > selectedAssetData.balance) {
-      setDepositError('Insufficient balance');
+      setDepositError(t.errorInsufficientBalance);
       return false;
     }
-    
+
     if (finalAmount < 10) {
-      setDepositError('Minimum deposit is 10');
+      setDepositError(t.errorMinDeposit);
       return false;
     }
-    
+
     return true;
   };
 
@@ -81,13 +86,13 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
           isFirstDeposit: true
         };
         localStorage.setItem(STORAGE_KEYS.ONBOARDING_FIRST_DEPOSIT, JSON.stringify(depositRecord));
-        
+
         onNext();
       } else {
-        throw new Error('Transaction failed. Please try again.');
+        throw new Error(t.errorTransactionFailed);
       }
     } catch (error) {
-      setDepositError(error instanceof Error ? error.message : 'Deposit failed');
+      setDepositError(error instanceof Error ? error.message : t.errorGeneric);
     } finally {
       setIsDepositing(false);
     }
@@ -102,15 +107,15 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Make Your First Deposit</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t.title}</h2>
         <p className="text-slate-400 max-w-md mx-auto">
-          Start your investment journey by depositing funds into your NeuroWealth account.
+          {t.description}
         </p>
       </div>
 
       {/* Asset Selection */}
       <div className="max-w-2xl mx-auto">
-        <h3 className="text-lg font-semibold text-white mb-3">Select Asset</h3>
+        <h3 className="text-lg font-semibold text-white mb-3">{t.selectAssetHeading}</h3>
         <div className="grid gap-3">
           {assets.map((asset) => (
             <div
@@ -141,7 +146,7 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
                   <div>
                     <h4 className="font-medium text-white">{asset.name}</h4>
                     <p className="text-sm text-slate-400">
-                      Balance: {asset.balance.toLocaleString()} {asset.symbol}
+                      {t.balancePrefix} {asset.balance.toLocaleString()} {asset.symbol}
                     </p>
                   </div>
                 </div>
@@ -158,7 +163,7 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
 
       {/* Amount Selection */}
       <div className="max-w-2xl mx-auto">
-        <h3 className="text-lg font-semibold text-white mb-3">Deposit Amount</h3>
+        <h3 className="text-lg font-semibold text-white mb-3">{t.depositAmountHeading}</h3>
         
         {/* Preset Amounts */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
@@ -188,7 +193,7 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
             type="number"
             value={customAmount}
             onChange={(e) => handleCustomAmount(e.target.value)}
-            placeholder="Enter custom amount"
+            placeholder={t.customAmountPlaceholder}
             className="w-full pl-16 pr-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
             min="10"
             step="0.01"
@@ -199,7 +204,7 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
         {finalAmount > 0 && (
           <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
             <div className="flex justify-between items-center">
-              <span className="text-white font-medium">Total to Deposit:</span>
+              <span className="text-white font-medium">{t.totalToDeposit}</span>
               <span className="text-2xl font-bold text-green-400">
                 {finalAmount.toLocaleString()} {selectedAssetData?.symbol}
               </span>
@@ -230,10 +235,9 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-white mb-1">Fee Information</h4>
+              <h4 className="font-medium text-white mb-1">{t.feeInfoTitle}</h4>
               <p className="text-sm text-slate-300">
-                Network fees: 0.00001 XLM per operation. No NeuroWealth deposit fees. 
-                Your deposit should arrive within 5-10 seconds.
+                {t.feeInfoBody}
               </p>
             </div>
           </div>
@@ -250,19 +254,16 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
         >
           {isDepositing ? (
             <span className="flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Depositing...
+              <Spinner />
+              {t.depositingButton}
             </span>
           ) : (
-            'Deposit Funds'
+            t.depositButton
           )}
         </Button>
         
         <Button variant="secondary" onClick={onSkip} data-qa="deposit-skip-button">
-          Skip for Now
+          {t.skipButton}
         </Button>
       </div>
 
@@ -273,6 +274,10 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
           <Link href="/help" className="text-green-400 hover:text-green-300 underline">
             View deposit guide
           </Link>
+          {t.questionsPrompt}{' '}
+          <button className="text-green-400 hover:text-green-300 underline">
+            {t.viewGuide}
+          </button>
         </p>
       </div>
     </div>

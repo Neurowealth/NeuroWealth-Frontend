@@ -237,7 +237,7 @@ function TransactionStateDemo() {
         />
       )}
 
-      {quoteState.state.status === "success" && quoteState.state.data && (
+      {quoteState.state.status === "success" && quoteState.state.data?.quote && (
         <div className="rounded-xl border border-sky-400/20 bg-sky-500/8 px-4 py-3 text-sm text-sky-300">
           Quote: <span className="font-mono font-semibold">{quoteState.state.data.quote.reference}</span>
           {" · "}net {quoteState.state.data.quote.netAmount} USDC · fee {quoteState.state.data.quote.fee} USDC

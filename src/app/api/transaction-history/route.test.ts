@@ -88,7 +88,7 @@ test("GET /api/transaction-history returns 200 with valid kind filter", async ()
 });
 
 test("GET /api/transaction-history returns 200 with valid status filter", async () => {
-  const statuses = ["all", "pending", "confirmed", "failed"];
+  const statuses = ["all", "pending", "success", "failed"];
 
   for (const status of statuses) {
     const req = makeRequest({ status });
@@ -97,6 +97,13 @@ test("GET /api/transaction-history returns 200 with valid status filter", async 
 
     assert.equal(res.status, 200, `Status ${status} should return 200`);
     assert.equal(body.success, true);
+
+    // Every item must match the requested status (when not "all")
+    if (status !== "all") {
+      body.data.items.forEach((item: { status: string }) => {
+        assert.equal(item.status, status, `Item should have status ${status}`);
+      });
+    }
   }
 });
 
@@ -190,4 +197,69 @@ test("GET /api/transaction-history returns 200 with date range", async () => {
       `Item date ${itemDate.toISOString()} should be within range`,
     );
   });
+});
+
+test("GET /api/transaction-history includes Cache-Control: no-store on success", async () => {
+  const req = makeRequest();
+  const res = await GET(req);
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+});
+
+test("GET /api/transaction-history includes Cache-Control: no-store on 400 validation error", async () => {
+  const req = makeRequest({ status: "invalid" });
+  const res = await GET(req);
+
+  assert.equal(res.status, 400);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+});
+
+test("GET /api/transaction-history status=success returns only success items", async () => {
+  const req = makeRequest({ status: "success", pageSize: "50" });
+  const res = await GET(req);
+  const body = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.equal(body.success, true);
+  assert.ok(body.data.items.length > 0, "should have at least one success item");
+  body.data.items.forEach((item: { status: string }) => {
+    assert.equal(item.status, "success", "every item should have status=success");
+  });
+});
+
+test("GET /api/transaction-history status=pending returns only pending items", async () => {
+  const req = makeRequest({ status: "pending", pageSize: "50" });
+  const res = await GET(req);
+  const body = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.equal(body.success, true);
+  assert.ok(body.data.items.length > 0, "should have at least one pending item");
+  body.data.items.forEach((item: { status: string }) => {
+    assert.equal(item.status, "pending", "every item should have status=pending");
+  });
+});
+
+test("GET /api/transaction-history status=failed returns only failed items", async () => {
+  const req = makeRequest({ status: "failed", pageSize: "50" });
+  const res = await GET(req);
+  const body = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.equal(body.success, true);
+  assert.ok(body.data.items.length > 0, "should have at least one failed item");
+  body.data.items.forEach((item: { status: string }) => {
+    assert.equal(item.status, "failed", "every item should have status=failed");
+  });
+});
+
+test("GET /api/transaction-history rejects status=confirmed (removed from schema)", async () => {
+  const req = makeRequest({ status: "confirmed" });
+  const res = await GET(req);
+  const body = await res.json();
+
+  assert.equal(res.status, 400);
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, "VALIDATION_ERROR");
 });

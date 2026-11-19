@@ -48,6 +48,8 @@ const INITIAL_STATE: TransactionAPIState = {
 
 import { useI18n } from "@/contexts/I18nContext";
 export function useTransactionAPI() {
+    const { messages } = useI18n();
+    const tDomain = messages.transactions.domain;
     const [state, setState] = useState<TransactionAPIState>(INITIAL_STATE);
     const requestControllerRef = useRef<AbortController | null>(null);
 
@@ -79,7 +81,7 @@ export function useTransactionAPI() {
             }));
 
             try {
-                const payload = await apiRequest<{ quote: TransactionQuote }>(
+                const payload = await apiRequest<{ quote?: TransactionQuote }>(
                     "/api/transactions",
                     {
                         method: "POST",
@@ -95,6 +97,10 @@ export function useTransactionAPI() {
 
                 setState((prev) => ({ ...prev, isSubmitting: false }));
 
+                if (!payload.quote) {
+                    return { status: "error", fieldErrors: {} };
+                }
+
                 return { status: "success", quote: payload.quote };
             } catch (error) {
                 if (controller.signal.aborted) {
@@ -103,7 +109,7 @@ export function useTransactionAPI() {
                 }
 
                 const copy = getApiErrorPresentation(error);
-                const recovery = getTransactionRecoveryUI(copy.code, tDomain, quoteReference);
+                const recovery = getTransactionRecoveryUI(copy.code, tDomain.recovery, quoteReference);
                 logger.error("transaction_quote_failed", {
                     code: copy.code,
                     status: copy.status,
@@ -131,7 +137,7 @@ export function useTransactionAPI() {
                 endApiRequest(controller);
             }
         },
-        [beginApiRequest, endApiRequest],
+        [beginApiRequest, endApiRequest, tDomain],
     );
 
     const submitTransaction = useCallback(
@@ -177,7 +183,7 @@ export function useTransactionAPI() {
                 }
 
                 const copy = getApiErrorPresentation(error);
-                const recovery = getTransactionRecoveryUI(copy.code, tDomain, quoteReference);
+                const recovery = getTransactionRecoveryUI(copy.code, tDomain.recovery, quoteReference);
                 logger.error("transaction_submit_failed", {
                     code: copy.code,
                     status: copy.status,
@@ -205,7 +211,7 @@ export function useTransactionAPI() {
                 endApiRequest(controller);
             }
         },
-        [beginApiRequest, endApiRequest],
+        [beginApiRequest, endApiRequest, tDomain],
     );
 
     const clearRecovery = useCallback(() => {

@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   ReactNode,
 } from "react";
 import {
@@ -47,7 +48,7 @@ export interface PaymentOptions {
   secret?: string;
 }
 
-interface WalletContextState {
+export interface WalletContextState {
   connected: boolean;
   isRestoring: boolean;
   publicKey?: string;
@@ -74,7 +75,7 @@ interface WalletProviderProps {
   network?: string;
 }
 
-const WalletContext = createContext<WalletContextState | undefined>(undefined);
+export const WalletContext = createContext<WalletContextState | undefined>(undefined);
 
 const WalletConfigContext = createContext<WalletConfigContextState | undefined>(undefined);
 
@@ -310,24 +311,42 @@ export function WalletProvider({
     void refreshNetworkStatus(walletProviderId);
   }, [connected, walletProviderId, refreshNetworkStatus]);
 
-  const walletValue: WalletContextState = {
-    connected,
-    isRestoring,
-    publicKey,
-    walletName,
-    walletProviderId,
-    networkStatus,
-    balances,
-    connect,
-    disconnect,
-    refreshBalances,
-    sendPayment: connected ? sendPayment : undefined,
-  };
+  const walletValue: WalletContextState = useMemo(
+    () => ({
+      connected,
+      isRestoring,
+      publicKey,
+      walletName,
+      walletProviderId,
+      networkStatus,
+      balances,
+      connect,
+      disconnect,
+      refreshBalances,
+      sendPayment: connected ? sendPayment : undefined,
+    }),
+    [
+      connected,
+      isRestoring,
+      publicKey,
+      walletName,
+      walletProviderId,
+      networkStatus,
+      balances,
+      connect,
+      disconnect,
+      refreshBalances,
+      sendPayment,
+    ],
+  );
 
-  const configValue: WalletConfigContextState = {
-    horizonUrl,
-    network,
-  };
+  const configValue: WalletConfigContextState = useMemo(
+    () => ({
+      horizonUrl,
+      network,
+    }),
+    [horizonUrl, network],
+  );
 
   return (
     <WalletConfigContext.Provider value={configValue}>

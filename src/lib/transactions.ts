@@ -9,6 +9,7 @@ export type TransactionPreviewState =
   | "failure";
 export type ValidationTone = "error" | "success" | "warning";
 
+import { logger } from "./logger";
 import { random } from "./seeded-rng";
 
 // Error recovery types
@@ -238,7 +239,23 @@ function generateReference(kind: TransactionKind): string {
 }
 
 export function parseTransactionKind(value: string | null): TransactionKind {
-  return value === "withdrawal" ? "withdrawal" : "deposit";
+  if (value === "withdrawal") {
+    return "withdrawal";
+  }
+  
+  if (value === "deposit") {
+    return "deposit";
+  }
+  
+  // Warn on unrecognized values to help catch typos like "withdraw" vs "withdrawal"
+  if (value !== null && value !== "") {
+    logger.warn(
+      'Unrecognized transaction kind value. Expected "deposit" or "withdrawal". Defaulting to "deposit".',
+      { kind: value },
+    );
+  }
+  
+  return "deposit";
 }
 
 export function parsePreviewState(value: string | null): TransactionPreviewState {
@@ -315,11 +332,13 @@ export function getDefaultTransactionValues(kind: TransactionKind): TransactionF
   };
 }
 
-function parseAmount(value: string): number {
+export function parseAmount(value: string): number {
   const normalized = value.replace(/,/g, "").trim();
 
-  // Reject hexadecimal (0x...), scientific notation (e/E), or anything not a simple decimal number
-  if (!/^-?\d*\.?\d+$/.test(normalized) || /^[+-]?(0x)?[0-9a-fA-F]+\.?[0-9a-fA-F]*(e[+-]?[0-9]+)?$/.test(normalized) && !/^-?\d*\.?\d+$/.test(normalized)) {
+  // Only a plain decimal number (optional leading "-", digits, optional "."):
+  // this alone rejects hexadecimal (0x...) and scientific notation (e/E)
+  // input, since neither can match a string made only of digits and ".".
+  if (!/^-?\d*\.?\d+$/.test(normalized)) {
     return Number.NaN;
   }
 
@@ -363,7 +382,7 @@ export function validateTransactionValues(kind: TransactionKind, values: Transac
 }
 
 export function buildTransactionQuote(kind: TransactionKind, values: TransactionFormValues, tContext: any, reference = generateReference(kind)): TransactionQuote {
-  const context = getTransactionContext(kind, t.context);
+  const context = getTransactionContext(kind, tContext);
   const amount = roundCurrency(parseAmount(values.amount));
   const fee = NETWORK_FEE[kind];
   const totalDebit = roundCurrency(kind === "deposit" ? amount + fee : amount);

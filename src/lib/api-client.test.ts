@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ApiRequestError, apiRequest, createServerApiClient } from "@/lib/api-client";
+import { ApiRequestError, apiRequest } from "@/lib/api-client";
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -136,12 +136,6 @@ test("apiRequest sets Content-Type and Accept headers automatically for JSON bod
   assert.equal(capturedHeaders.get("Accept"), "application/json");
 });
 
-test("createServerApiClient returns null when NEUROWEALTH_API_BASE_URL is not set", () => {
-  delete process.env.NEUROWEALTH_API_BASE_URL;
-  const client = createServerApiClient();
-  assert.equal(client, null);
-});
-
 test("apiRequest rejects timed-out requests with REQUEST_TIMEOUT", async () => {
   globalThis.fetch = async (_url, init) => {
     return new Promise((_resolve, reject) => {
@@ -186,28 +180,50 @@ test("apiRequest forwards external AbortSignal and rejects with NETWORK_ERROR wh
   );
 });
 
-test("createServerApiClient returns a callable client when base URL is set", async () => {
-  process.env.NEUROWEALTH_API_BASE_URL = "https://api.example.com";
-  process.env.NEUROWEALTH_API_AUTH_TOKEN = "test-token";
+// ── server-side timeout tests ────────────────────────────────────────────────
 
-  let capturedUrl: string | URL | Request | undefined;
-  let capturedHeaders!: Headers;
+import {
+  createServerFetcher,
+  ServerFetchTimeoutError,
+  SERVER_FETCH_TIMEOUT_MS,
+} from "@/lib/api-client";
 
-  globalThis.fetch = async (url, init) => {
-    capturedUrl = url as string;
-    capturedHeaders = new Headers(init?.headers);
-    return new Response(JSON.stringify({ success: true, data: { ok: true } }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+test("createServerFetcher returns null when NEUROWEALTH_API_BASE_URL is not set", () => {
+  const saved = process.env.NEUROWEALTH_API_BASE_URL;
+  delete process.env.NEUROWEALTH_API_BASE_URL;
+  assert.equal(createServerFetcher(), null);
+  if (saved !== undefined) process.env.NEUROWEALTH_API_BASE_URL = saved;
+});
+
+test("createServerFetcher throws ServerFetchTimeoutError for a never-resolving backend", async () => {
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-backend.test";
+
+  globalThis.fetch = async (_url, init) =>
+    new Promise((_resolve, reject) => {
+      const signal = (init as RequestInit)?.signal;
+      if (!signal) return; // should never happen — always provided
+      signal.addEventListener(
+        "abort",
+        () => reject(new DOMException("The operation was aborted.", "AbortError")),
+        { once: true },
+      );
     });
-  };
 
-  const client = createServerApiClient();
-  assert.ok(client !== null);
+  const fetcher = createServerFetcher(undefined, 50); // very short timeout for speed
+  assert.ok(fetcher, "fetcher should be non-null when base URL is set");
 
-  const result = await client<{ ok: boolean }>("/health");
+  await assert.rejects(
+    () => fetcher!("/api/data"),
+    (error: unknown) => {
+      assert.ok(error instanceof ServerFetchTimeoutError);
+      assert.match(error.message, /timed out/i);
+      return true;
+    },
+  );
 
-  assert.equal(result.ok, true);
-  assert.ok(String(capturedUrl).includes("api.example.com"));
-  assert.equal(capturedHeaders.get("Authorization"), "Bearer test-token");
+  delete process.env.NEUROWEALTH_API_BASE_URL;
+});
+
+test("createServerFetcher exposes SERVER_FETCH_TIMEOUT_MS default of 10 000", () => {
+  assert.equal(SERVER_FETCH_TIMEOUT_MS, 10_000);
 });

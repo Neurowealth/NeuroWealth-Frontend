@@ -104,6 +104,12 @@ const appRouteDefinitions: AppRouteDefinition[] = [
     devOnly: true,
   },
   {
+    href: "/dashboard/dev-errors/global-error",
+    label: "Global Error",
+    icon: AlertTriangle,
+    devOnly: true,
+  },
+  {
     href: "/dashboard/help",
     label: "Help",
     icon: HelpCircle,
