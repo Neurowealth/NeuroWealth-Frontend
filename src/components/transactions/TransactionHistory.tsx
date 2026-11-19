@@ -702,8 +702,8 @@ export function TransactionHistory({ embedded = false }: TransactionHistoryProps
         {/* One coherent loading announcement with its visual indicator. */}
         {loading && (
           <div className="flex justify-end mb-2">
-            <div role="status" aria-live="polite" aria-label="Loading transactions" className="sr-only">
-              Loading transaction historyâ€¦
+            <div role="status" aria-live="polite" aria-label={t.loadingLabel} className="sr-only">
+              {t.loadingText}
             </div>
             <Loader2 size={14} className="text-slate-400 dark:text-slate-600 animate-spin" aria-hidden />
           </div>

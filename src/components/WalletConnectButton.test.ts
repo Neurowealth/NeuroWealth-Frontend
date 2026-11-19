@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { setupDomGlobals } from "@/test-setup";
-import { findSwkModal } from "./WalletConnectButton";
+import { findSwkModal, isSwkBoilerplateText } from "./WalletConnectButton";
 
 setupDomGlobals();
 
@@ -30,4 +30,14 @@ test("findSwkModal — finds matching element directly or as a descendant", () =
   const plainChild = document.createElement("p");
   plainEl.appendChild(plainChild);
   assert.equal(findSwkModal(plainEl), null);
+});
+
+test("isSwkBoilerplateText — matches the vendor modal boilerplate only (#1128)", () => {
+  assert.equal(isSwkBoilerplateText("Learn more"), true);
+  assert.equal(isSwkBoilerplateText("What is a Wallet?"), true);
+  assert.equal(isSwkBoilerplateText("Stellar is a decentralized network"), true);
+  // Our own (localized) copy must never be hidden by the filter.
+  assert.equal(isSwkBoilerplateText("Connect Wallet"), false);
+  assert.equal(isSwkBoilerplateText("Connecter le wallet"), false);
+  assert.equal(isSwkBoilerplateText("Freighter"), false);
 });
