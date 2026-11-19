@@ -14,6 +14,20 @@ interface RequireAuthOptions {
   requireSameOrigin?: boolean;
 }
 
+export const MAX_SESSION_TOKEN_LENGTH = 4096;
+
+/**
+ * Validates that a session token is a non-empty string, not whitespace-only,
+ * and within reasonable length bounds.
+ */
+export function isValidSessionToken(token: unknown): token is string {
+  return (
+    typeof token === "string" &&
+    token.trim().length > 0 &&
+    token.length <= MAX_SESSION_TOKEN_LENGTH
+  );
+}
+
 /**
  * Checks cookie shape and expiry only — no signature verification.
  *
@@ -34,7 +48,7 @@ export function isSessionCookieValid(rawCookie: string | undefined): boolean {
     };
 
     return (
-      typeof session.token === "string" &&
+      isValidSessionToken(session.token) &&
       typeof session.expiresAt === "number" &&
       Date.now() < session.expiresAt
     );
@@ -62,7 +76,7 @@ export function getSessionFromRequest(request: NextRequest): {
     };
 
     if (
-      typeof session.token === "string" &&
+      isValidSessionToken(session.token) &&
       typeof session.expiresAt === "number" &&
       Date.now() < session.expiresAt
     ) {

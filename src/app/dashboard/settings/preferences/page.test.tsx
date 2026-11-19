@@ -4,8 +4,9 @@ import React, { type ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setupDomGlobals } from "@/test-setup";
-import { I18nProvider } from "@/contexts/I18nContext";
+import { I18nProvider, normalizeLocale } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeProvider";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
 
 setupDomGlobals();
 (globalThis as typeof globalThis & { React?: typeof React }).React = React;
@@ -55,6 +56,118 @@ test("Preferences page loads with defaults and displays read-only view", async (
   container.remove();
 });
 
+test("normalizeLocale correctly normalizes standard BCP47 tags and falls back safely", () => {
+  assert.equal(normalizeLocale("en-US"), "en");
+  assert.equal(normalizeLocale("en-GB"), "en");
+  assert.equal(normalizeLocale("en"), "en");
+  assert.equal(normalizeLocale("en_US"), "en");
+  assert.equal(normalizeLocale("fr-FR"), "fr");
+  assert.equal(normalizeLocale("fr-CA"), "fr");
+  assert.equal(normalizeLocale("fr"), "fr");
+  assert.equal(normalizeLocale("de-DE"), "en");
+  assert.equal(normalizeLocale("ja-JP"), "en");
+  assert.equal(normalizeLocale(""), "en");
+  assert.equal(normalizeLocale(null), "en");
+  assert.equal(normalizeLocale(undefined), "en");
+  assert.equal(normalizeLocale("unknown", "fr"), "fr");
+});
+
+test("Saving French locale in PreferencesPage immediately switches UI copy, document.documentElement.lang, and persists to LOCALE_STORAGE_KEY", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "en-US";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  // Wait for initial load
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  // Enter edit mode
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  // Find locale select
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect, "locale select field should exist");
+
+  // Select French (fr-FR)
+  act(() => {
+    localeSelect.value = "fr-FR";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Find Save button and click
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton, "Save button should exist");
+
+  await act(async () => {
+    saveButton?.click();
+    // Wait for save delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // document.documentElement.lang should immediately switch to French
+  assert.equal(document.documentElement.lang, "fr-FR");
+
+  // LOCALE_STORAGE_KEY should be set to "fr"
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "fr");
+
+  // UI copy should immediately switch to French (e.g. "Préférences" or French localisation header)
+  assert.match(
+    container.textContent ?? "",
+    /Préférences|Localisation|Enregistré|Enregistrer/i,
+    "UI text should switch to French copy",
+  );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("Saving an unsupported locale in PreferencesPage safely falls back to English", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "fr-FR";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect);
+
+  // Select unsupported German locale
+  act(() => {
+    localeSelect.value = "de-DE";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton);
+
+  await act(async () => {
+    saveButton?.click();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // Should safely fall back to English
+  assert.equal(document.documentElement.lang, "en-US");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "en");
+
+  act(() => root.unmount());
+  container.remove();
+});
+
 test("Preferences page enters edit mode and shows theme selection", async () => {
   localStorage.clear();
 
@@ -93,6 +206,118 @@ test("Preferences page enters edit mode and shows theme selection", async () => 
   );
   assert.ok(saveButton, "should show Save button in edit mode");
   assert.ok(cancelButton, "should show Cancel button in edit mode");
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("normalizeLocale correctly normalizes standard BCP47 tags and falls back safely", () => {
+  assert.equal(normalizeLocale("en-US"), "en");
+  assert.equal(normalizeLocale("en-GB"), "en");
+  assert.equal(normalizeLocale("en"), "en");
+  assert.equal(normalizeLocale("en_US"), "en");
+  assert.equal(normalizeLocale("fr-FR"), "fr");
+  assert.equal(normalizeLocale("fr-CA"), "fr");
+  assert.equal(normalizeLocale("fr"), "fr");
+  assert.equal(normalizeLocale("de-DE"), "en");
+  assert.equal(normalizeLocale("ja-JP"), "en");
+  assert.equal(normalizeLocale(""), "en");
+  assert.equal(normalizeLocale(null), "en");
+  assert.equal(normalizeLocale(undefined), "en");
+  assert.equal(normalizeLocale("unknown", "fr"), "fr");
+});
+
+test("Saving French locale in PreferencesPage immediately switches UI copy, document.documentElement.lang, and persists to LOCALE_STORAGE_KEY", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "en-US";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  // Wait for initial load
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  // Enter edit mode
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  // Find locale select
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect, "locale select field should exist");
+
+  // Select French (fr-FR)
+  act(() => {
+    localeSelect.value = "fr-FR";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Find Save button and click
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton, "Save button should exist");
+
+  await act(async () => {
+    saveButton?.click();
+    // Wait for save delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // document.documentElement.lang should immediately switch to French
+  assert.equal(document.documentElement.lang, "fr-FR");
+
+  // LOCALE_STORAGE_KEY should be set to "fr"
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "fr");
+
+  // UI copy should immediately switch to French (e.g. "Préférences" or French localisation header)
+  assert.match(
+    container.textContent ?? "",
+    /Préférences|Localisation|Enregistré|Enregistrer/i,
+    "UI text should switch to French copy",
+  );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("Saving an unsupported locale in PreferencesPage safely falls back to English", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "fr-FR";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect);
+
+  // Select unsupported German locale
+  act(() => {
+    localeSelect.value = "de-DE";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton);
+
+  await act(async () => {
+    saveButton?.click();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // Should safely fall back to English
+  assert.equal(document.documentElement.lang, "en-US");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "en");
 
   act(() => root.unmount());
   container.remove();
@@ -150,6 +375,118 @@ test("Preferences page allows theme selection with live preview and cancel rever
   container.remove();
 });
 
+test("normalizeLocale correctly normalizes standard BCP47 tags and falls back safely", () => {
+  assert.equal(normalizeLocale("en-US"), "en");
+  assert.equal(normalizeLocale("en-GB"), "en");
+  assert.equal(normalizeLocale("en"), "en");
+  assert.equal(normalizeLocale("en_US"), "en");
+  assert.equal(normalizeLocale("fr-FR"), "fr");
+  assert.equal(normalizeLocale("fr-CA"), "fr");
+  assert.equal(normalizeLocale("fr"), "fr");
+  assert.equal(normalizeLocale("de-DE"), "en");
+  assert.equal(normalizeLocale("ja-JP"), "en");
+  assert.equal(normalizeLocale(""), "en");
+  assert.equal(normalizeLocale(null), "en");
+  assert.equal(normalizeLocale(undefined), "en");
+  assert.equal(normalizeLocale("unknown", "fr"), "fr");
+});
+
+test("Saving French locale in PreferencesPage immediately switches UI copy, document.documentElement.lang, and persists to LOCALE_STORAGE_KEY", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "en-US";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  // Wait for initial load
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  // Enter edit mode
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  // Find locale select
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect, "locale select field should exist");
+
+  // Select French (fr-FR)
+  act(() => {
+    localeSelect.value = "fr-FR";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Find Save button and click
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton, "Save button should exist");
+
+  await act(async () => {
+    saveButton?.click();
+    // Wait for save delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // document.documentElement.lang should immediately switch to French
+  assert.equal(document.documentElement.lang, "fr-FR");
+
+  // LOCALE_STORAGE_KEY should be set to "fr"
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "fr");
+
+  // UI copy should immediately switch to French (e.g. "Préférences" or French localisation header)
+  assert.match(
+    container.textContent ?? "",
+    /Préférences|Localisation|Enregistré|Enregistrer/i,
+    "UI text should switch to French copy",
+  );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("Saving an unsupported locale in PreferencesPage safely falls back to English", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "fr-FR";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect);
+
+  // Select unsupported German locale
+  act(() => {
+    localeSelect.value = "de-DE";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton);
+
+  await act(async () => {
+    saveButton?.click();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // Should safely fall back to English
+  assert.equal(document.documentElement.lang, "en-US");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "en");
+
+  act(() => root.unmount());
+  container.remove();
+});
+
 test("Preferences page displays unsaved indicator when changes are made", async () => {
   localStorage.clear();
 
@@ -181,6 +518,118 @@ test("Preferences page displays unsaved indicator when changes are made", async 
     /unsaved|pending|changes/i,
     "should show unsaved indicator when form is dirty"
   );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("normalizeLocale correctly normalizes standard BCP47 tags and falls back safely", () => {
+  assert.equal(normalizeLocale("en-US"), "en");
+  assert.equal(normalizeLocale("en-GB"), "en");
+  assert.equal(normalizeLocale("en"), "en");
+  assert.equal(normalizeLocale("en_US"), "en");
+  assert.equal(normalizeLocale("fr-FR"), "fr");
+  assert.equal(normalizeLocale("fr-CA"), "fr");
+  assert.equal(normalizeLocale("fr"), "fr");
+  assert.equal(normalizeLocale("de-DE"), "en");
+  assert.equal(normalizeLocale("ja-JP"), "en");
+  assert.equal(normalizeLocale(""), "en");
+  assert.equal(normalizeLocale(null), "en");
+  assert.equal(normalizeLocale(undefined), "en");
+  assert.equal(normalizeLocale("unknown", "fr"), "fr");
+});
+
+test("Saving French locale in PreferencesPage immediately switches UI copy, document.documentElement.lang, and persists to LOCALE_STORAGE_KEY", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "en-US";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  // Wait for initial load
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  // Enter edit mode
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  // Find locale select
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect, "locale select field should exist");
+
+  // Select French (fr-FR)
+  act(() => {
+    localeSelect.value = "fr-FR";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Find Save button and click
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton, "Save button should exist");
+
+  await act(async () => {
+    saveButton?.click();
+    // Wait for save delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // document.documentElement.lang should immediately switch to French
+  assert.equal(document.documentElement.lang, "fr-FR");
+
+  // LOCALE_STORAGE_KEY should be set to "fr"
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "fr");
+
+  // UI copy should immediately switch to French (e.g. "Préférences" or French localisation header)
+  assert.match(
+    container.textContent ?? "",
+    /Préférences|Localisation|Enregistré|Enregistrer/i,
+    "UI text should switch to French copy",
+  );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("Saving an unsupported locale in PreferencesPage safely falls back to English", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "fr-FR";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect);
+
+  // Select unsupported German locale
+  act(() => {
+    localeSelect.value = "de-DE";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton);
+
+  await act(async () => {
+    saveButton?.click();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // Should safely fall back to English
+  assert.equal(document.documentElement.lang, "en-US");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "en");
 
   act(() => root.unmount());
   container.remove();
@@ -225,6 +674,118 @@ test("Preferences page handles locale and timezone selection", async () => {
     /unsaved|pending|changes/i,
     "should show unsaved indicator after timezone change"
   );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("normalizeLocale correctly normalizes standard BCP47 tags and falls back safely", () => {
+  assert.equal(normalizeLocale("en-US"), "en");
+  assert.equal(normalizeLocale("en-GB"), "en");
+  assert.equal(normalizeLocale("en"), "en");
+  assert.equal(normalizeLocale("en_US"), "en");
+  assert.equal(normalizeLocale("fr-FR"), "fr");
+  assert.equal(normalizeLocale("fr-CA"), "fr");
+  assert.equal(normalizeLocale("fr"), "fr");
+  assert.equal(normalizeLocale("de-DE"), "en");
+  assert.equal(normalizeLocale("ja-JP"), "en");
+  assert.equal(normalizeLocale(""), "en");
+  assert.equal(normalizeLocale(null), "en");
+  assert.equal(normalizeLocale(undefined), "en");
+  assert.equal(normalizeLocale("unknown", "fr"), "fr");
+});
+
+test("Saving French locale in PreferencesPage immediately switches UI copy, document.documentElement.lang, and persists to LOCALE_STORAGE_KEY", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "en-US";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  // Wait for initial load
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  // Enter edit mode
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  // Find locale select
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect, "locale select field should exist");
+
+  // Select French (fr-FR)
+  act(() => {
+    localeSelect.value = "fr-FR";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Find Save button and click
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton, "Save button should exist");
+
+  await act(async () => {
+    saveButton?.click();
+    // Wait for save delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // document.documentElement.lang should immediately switch to French
+  assert.equal(document.documentElement.lang, "fr-FR");
+
+  // LOCALE_STORAGE_KEY should be set to "fr"
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "fr");
+
+  // UI copy should immediately switch to French (e.g. "Préférences" or French localisation header)
+  assert.match(
+    container.textContent ?? "",
+    /Préférences|Localisation|Enregistré|Enregistrer/i,
+    "UI text should switch to French copy",
+  );
+
+  act(() => root.unmount());
+  container.remove();
+});
+
+test("Saving an unsupported locale in PreferencesPage safely falls back to English", async () => {
+  localStorage.clear();
+  document.documentElement.lang = "fr-FR";
+
+  const PreferencesPage = (await import("./page")).default;
+  const { root, container } = mount(React.createElement(PreferencesPage));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  const editButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Edit") || b.textContent?.includes("edit")
+  );
+  act(() => editButton?.click());
+
+  const localeSelect = container.querySelector("select#locale") as HTMLSelectElement;
+  assert.ok(localeSelect);
+
+  // Select unsupported German locale
+  act(() => {
+    localeSelect.value = "de-DE";
+    localeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const saveButton = Array.from(container.querySelectorAll("button")).find(
+    (b) => b.textContent?.includes("Save")
+  );
+  assert.ok(saveButton);
+
+  await act(async () => {
+    saveButton?.click();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+
+  // Should safely fall back to English
+  assert.equal(document.documentElement.lang, "en-US");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.LOCALE), "en");
 
   act(() => root.unmount());
   container.remove();

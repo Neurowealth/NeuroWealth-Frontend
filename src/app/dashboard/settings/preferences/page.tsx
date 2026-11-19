@@ -64,7 +64,7 @@ const DEFAULT: PreferencesData = {
 };
 
 export default function PreferencesPage() {
-  const { messages } = useI18n();
+  const { messages, setLocale } = useI18n();
   const { setTheme: setAppTheme } = useTheme();
   const t = messages.settings.preferences;
   const {
@@ -83,6 +83,7 @@ export default function PreferencesPage() {
     auditSection: "preferences",
     onSaveSuccess: (savedData) => {
       setAppTheme(savedData.theme);
+      setLocale(savedData.locale);
     },
   });
 
