@@ -9,6 +9,8 @@ import { buildScenarioPayload } from "@/lib/portfolio";
 import { parseWidgetPreviewSearchParams } from "@/lib/preview-route-query";
 import { ImageResponse } from "next/og";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
+import { ERROR_CODE, HTTP_STATUS, errorResponse } from "@/lib/api-response";
 
 type ThemeMode = "light" | "dark";
 

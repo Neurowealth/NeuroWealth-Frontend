@@ -179,3 +179,51 @@ test("apiRequest forwards external AbortSignal and rejects with NETWORK_ERROR wh
     },
   );
 });
+
+// ── server-side timeout tests ────────────────────────────────────────────────
+
+import {
+  createServerFetcher,
+  ServerFetchTimeoutError,
+  SERVER_FETCH_TIMEOUT_MS,
+} from "@/lib/api-client";
+
+test("createServerFetcher returns null when NEUROWEALTH_API_BASE_URL is not set", () => {
+  const saved = process.env.NEUROWEALTH_API_BASE_URL;
+  delete process.env.NEUROWEALTH_API_BASE_URL;
+  assert.equal(createServerFetcher(), null);
+  if (saved !== undefined) process.env.NEUROWEALTH_API_BASE_URL = saved;
+});
+
+test("createServerFetcher throws ServerFetchTimeoutError for a never-resolving backend", async () => {
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-backend.test";
+
+  globalThis.fetch = async (_url, init) =>
+    new Promise((_resolve, reject) => {
+      const signal = (init as RequestInit)?.signal;
+      if (!signal) return; // should never happen — always provided
+      signal.addEventListener(
+        "abort",
+        () => reject(new DOMException("The operation was aborted.", "AbortError")),
+        { once: true },
+      );
+    });
+
+  const fetcher = createServerFetcher(undefined, 50); // very short timeout for speed
+  assert.ok(fetcher, "fetcher should be non-null when base URL is set");
+
+  await assert.rejects(
+    () => fetcher!("/api/data"),
+    (error: unknown) => {
+      assert.ok(error instanceof ServerFetchTimeoutError);
+      assert.match(error.message, /timed out/i);
+      return true;
+    },
+  );
+
+  delete process.env.NEUROWEALTH_API_BASE_URL;
+});
+
+test("createServerFetcher exposes SERVER_FETCH_TIMEOUT_MS default of 10 000", () => {
+  assert.equal(SERVER_FETCH_TIMEOUT_MS, 10_000);
+});

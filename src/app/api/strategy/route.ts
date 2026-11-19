@@ -12,7 +12,7 @@ import {
   successResponse,
 } from "@/lib/api-response";
 import { strategyUpdateSchema, zodErrorToDetails } from "@/lib/validation/api";
-import { createServerFetcher } from "@/lib/api-client";
+import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 
@@ -39,16 +39,14 @@ export async function GET(request: NextRequest) {
           { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
         );
       }
-
-      const data = (await res.json()) as StrategyPreference;
-      return NextResponse.json(successResponse(data), {
-        headers: { "Cache-Control": "no-store" },
-      });
-    } catch {
-      return NextResponse.json(
-        errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
-        { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
-      );
+    } catch (error) {
+      if (error instanceof ServerFetchTimeoutError) {
+        return NextResponse.json(
+          errorResponse(ERROR_CODE.SERVICE_UNAVAILABLE, "Strategy service timed out. Please try again."),
+          { status: 408, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+      // fall through to local fallback
     }
   }
 
@@ -139,11 +137,14 @@ export async function PUT(request: NextRequest) {
         httpOnly: false,
       });
       return response;
-    } catch {
-      return NextResponse.json(
-        errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
-        { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
-      );
+    } catch (error) {
+      if (error instanceof ServerFetchTimeoutError) {
+        return NextResponse.json(
+          errorResponse(ERROR_CODE.SERVICE_UNAVAILABLE, "Strategy service timed out. Please try again."),
+          { status: 408, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+      // fall through to local fallback
     }
   }
 

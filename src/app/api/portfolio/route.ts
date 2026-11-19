@@ -10,7 +10,7 @@ import {
   successResponse,
 } from "@/lib/api-response";
 import { portfolioQuerySchema, zodErrorToDetails } from "@/lib/validation/api";
-import { createServerFetcher } from "@/lib/api-client";
+import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 import { requireAuth } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -79,6 +79,19 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof ServerFetchTimeoutError) {
+      return NextResponse.json(
+        errorResponse(
+          ERROR_CODE.SERVICE_UNAVAILABLE,
+          "Portfolio service timed out. Please try again.",
+        ),
+        {
+          status: 408,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch portfolio data";
 
@@ -90,9 +103,7 @@ export async function GET(request: NextRequest) {
       ),
       {
         status: HTTP_STATUS.SERVICE_UNAVAILABLE,
-        headers: {
-          "Cache-Control": "no-store",
-        },
+        headers: { "Cache-Control": "no-store" },
       },
     );
   }
