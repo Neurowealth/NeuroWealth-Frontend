@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useId } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 import { formatNumber } from "@/lib/formatters";
 
 export interface PaginationProps {
@@ -56,6 +57,7 @@ export default function Pagination({
   showJump = true,
   className = "",
 }: PaginationProps) {
+  const { messages: { pagination } } = useI18n();
   const jumpId = useId();
   const [internalPage, setInternalPage] = useState(1);
   const [jumpVal, setJumpVal] = useState("");
@@ -80,16 +82,16 @@ export default function Pagination({
   const end = Math.min(current * itemsPerPage, totalItems);
 
   return (
-    <nav aria-label="Pagination" className={className} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+    <nav aria-label={pagination.label} className={className} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       {/* Live region announces page changes to screen readers */}
       <span role="status" aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
-        Page {current} of {totalPages}
+        {pagination.status.replace("{page}", String(current)).replace("{total}", String(totalPages))}
       </span>
       {/* Prev */}
       <button
         onClick={() => go(current - 1)}
         disabled={current === 1}
-        aria-label="Previous page"
+        aria-label={pagination.previousPage}
         style={{
           ...BTN_BASE,
           borderColor: current === 1 ? "rgba(55,65,81,0.4)" : "#374151",
@@ -117,7 +119,7 @@ export default function Pagination({
             <button
               key={p}
               onClick={() => go(p)}
-              aria-label={`Page ${p}`}
+              aria-label={pagination.page.replace("{page}", String(p))}
               aria-current={isActive ? "page" : undefined}
               style={{
                 ...BTN_BASE,
@@ -141,7 +143,7 @@ export default function Pagination({
       <button
         onClick={() => go(current + 1)}
         disabled={current === totalPages}
-        aria-label="Next page"
+        aria-label={pagination.nextPage}
         style={{
           ...BTN_BASE,
           borderColor: current === totalPages ? "rgba(55,65,81,0.4)" : "#374151",
@@ -157,7 +159,7 @@ export default function Pagination({
       {/* Jump */}
       {showJump && totalPages > 5 && (
         <form onSubmit={handleJump} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label htmlFor={jumpId} style={{ fontSize: 12, color: "#6b7280" }}>Go to</label>
+          <label htmlFor={jumpId} style={{ fontSize: 12, color: "#6b7280" }}>{pagination.goTo}</label>
           <input
             id={jumpId}
             type="number"
@@ -166,7 +168,7 @@ export default function Pagination({
             value={jumpVal}
             onChange={(e) => setJumpVal(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleJump(e); }}
-            aria-label="Jump to page"
+            aria-label={pagination.jumpToPage}
             style={{
               width: 52, height: 36, borderRadius: 8, border: "0.5px solid #374151",
               background: "transparent", color: "#e5e7eb", fontSize: 13,
@@ -180,7 +182,10 @@ export default function Pagination({
 
       {/* Count */}
       <span style={{ fontSize: 12, color: "#6b7280", marginLeft: "auto" }}>
-        {start}–{end} of {formatNumber(totalItems)}
+        {pagination.resultRange
+          .replace("{start}", String(start))
+          .replace("{end}", String(end))
+          .replace("{total}", formatNumber(totalItems))}
       </span>
     </nav>
   );
