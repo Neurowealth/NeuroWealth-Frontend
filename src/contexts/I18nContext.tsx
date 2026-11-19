@@ -78,6 +78,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }, [locale]);
 
+  // Cross-tab sync: when another tab changes the locale, apply it here.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== LOCALE_STORAGE_KEY) return;
+      if (e.newValue === null) return;
+      if (isSupportedLocale(e.newValue) && e.newValue !== locale) {
+        setLocaleState(e.newValue);
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [locale]);
+
+  const setLocale = useCallback((nextLocale: AppLocale) => {
+    setLocaleState(nextLocale);
   const setLocale = useCallback((nextLocale: AppLocale | string) => {
     const normalized = normalizeLocale(nextLocale);
     setLocaleState(normalized);

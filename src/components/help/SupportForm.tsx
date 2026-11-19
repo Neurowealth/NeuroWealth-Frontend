@@ -85,6 +85,9 @@ export default function SupportForm() {
   const [asyncValidationState, setAsyncValidationState] =
     useState<AsyncValidationState>({ transactionId: "idle" });
   const debouncedAsyncCheckRef = useRef(createDebouncedAsyncCheck(300));
+  // Ref mirror of errors.transactionId so handleSubmit can read the latest value
+  // synchronously (setErrors updater hasn't flushed by the time we check).
+  const transactionIdErrorRef = useRef<string | undefined>(undefined);
 
   const validateSync = () => {
     const nextErrors: ValidationErrors<SupportField> = {
@@ -140,8 +143,10 @@ export default function SupportForm() {
 
     setAsyncValidationState({ transactionId: "done" });
     if (error) {
+      transactionIdErrorRef.current = error;
       setErrors((current) => ({ ...current, transactionId: error }));
     } else {
+      transactionIdErrorRef.current = undefined;
       setErrors((current) => ({ ...current, transactionId: undefined }));
     }
   };
@@ -173,13 +178,9 @@ export default function SupportForm() {
     }
 
     // Check if there are any async validation errors
-    setErrors((current) => {
-      if (current.transactionId) {
-        setSubmissionState({ status: "idle" });
-        return current;
-      }
-      return current;
-    });
+    if (transactionIdErrorRef.current) {
+      return;
+    }
 
     setSubmissionState({ status: "submitting" });
 
@@ -228,6 +229,7 @@ export default function SupportForm() {
 
     // Trigger async validation for transaction ID
     if (field === "transactionId") {
+      transactionIdErrorRef.current = undefined;
       validateTransactionIdAsync(value);
     }
   };
