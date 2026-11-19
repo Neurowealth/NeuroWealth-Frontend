@@ -261,6 +261,45 @@ test("rate-limit key prefers trusted headers over a spoofed x-forwarded-for", ()
   assert.equal(getRateLimitKey(req), "203.0.113.42");
 });
 
+test("POST /api/transactions rate limiting isolates clients by session when IP headers are absent", async () => {
+  resetRateLimitStore();
+
+  const userA = encodeURIComponent(
+    JSON.stringify({ token: "user_a_token", expiresAt: Date.now() + 3600_000 }),
+  );
+  const userB = encodeURIComponent(
+    JSON.stringify({ token: "user_b_token", expiresAt: Date.now() + 3600_000 }),
+  );
+
+  function makeUserPostRequest(sessionCookie: string) {
+    const headers = new Headers({
+      "Content-Type": "application/json",
+      Origin: "http://localhost:3000",
+      Host: "localhost:3000",
+      Cookie: `nw_session=${sessionCookie}`,
+    });
+    return new NextRequest("http://localhost:3000/api/transactions", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(validDeposit),
+    });
+  }
+
+  // Exhaust limit for user A (20 requests)
+  for (let i = 0; i < 20; i++) {
+    const res = await POST(makeUserPostRequest(userA));
+    assert.equal(res.status, 200);
+  }
+
+  // User A should now be rate limited
+  const blockedA = await POST(makeUserPostRequest(userA));
+  assert.equal(blockedA.status, 429);
+
+  // User B should NOT be rate limited (separate session identity)
+  const allowedB = await POST(makeUserPostRequest(userB));
+  assert.equal(allowedB.status, 200);
+});
+
 test.afterEach(() => {
   resetRateLimitStore();
 });

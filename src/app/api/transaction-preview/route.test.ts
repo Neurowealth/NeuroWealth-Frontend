@@ -50,3 +50,15 @@ test("GET /api/transaction-preview rate limits repeated requests from the same I
 
   resetRateLimitStore();
 });
+
+test("GET /api/transaction-preview skips IP-based rate limiting when no IP headers are present", async () => {
+  resetRateLimitStore();
+
+  // Requests without IP headers should not share a single "unknown" bucket and get blocked
+  for (let i = 0; i < 35; i++) {
+    const res = await GET(makeRequest());
+    assert.equal(res.status, 200);
+  }
+
+  resetRateLimitStore();
+});

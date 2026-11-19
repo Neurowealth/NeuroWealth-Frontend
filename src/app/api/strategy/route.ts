@@ -14,7 +14,7 @@ import {
 import { strategyUpdateSchema, zodErrorToDetails } from "@/lib/validation/api";
 import { createServerFetcher } from "@/lib/api-client";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
-import { requireAuth } from "@/lib/api-auth";
+import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 
 const STRATEGY_COOKIE_KEY = STORAGE_KEYS.STRATEGY_PREFERENCE;
 
@@ -33,14 +33,22 @@ export async function GET(request: NextRequest) {
         headers: { Accept: "application/json" },
       });
 
-      if (res.ok) {
-        const data = (await res.json()) as StrategyPreference;
-        return NextResponse.json(successResponse(data), {
-          headers: { "Cache-Control": "no-store" },
-        });
+      if (!res.ok) {
+        return NextResponse.json(
+          errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
+          { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+        );
       }
+
+      const data = (await res.json()) as StrategyPreference;
+      return NextResponse.json(successResponse(data), {
+        headers: { "Cache-Control": "no-store" },
+      });
     } catch {
-      // fall through to local fallback
+      return NextResponse.json(
+        errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
+        { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+      );
     }
   }
 
@@ -56,19 +64,24 @@ export async function PUT(request: NextRequest) {
   const authError = requireAuth(request, { requireSameOrigin: true });
   if (authError) return authError;
 
+  const session = getSessionFromRequest(request);
   const ip = getRateLimitKey(request);
-  const limit = checkRateLimit(`PUT:/api/strategy:${ip}`, {
-    maxRequests: 10,
-    windowMs: 60_000,
-  });
-  if (!limit.allowed) {
-    return NextResponse.json(
-      errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
-      {
-        status: HTTP_STATUS.TOO_MANY_REQUESTS,
-        headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
-      },
-    );
+  const clientId = ip ?? (session?.token ? `session:${session.token}` : null);
+
+  if (clientId) {
+    const limit = checkRateLimit(`PUT:/api/strategy:${clientId}`, {
+      maxRequests: 10,
+      windowMs: 60_000,
+    });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
+        {
+          status: HTTP_STATUS.TOO_MANY_REQUESTS,
+          headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+        },
+      );
+    }
   }
 
   const bodyResult = await readJsonBody(request);
@@ -127,7 +140,10 @@ export async function PUT(request: NextRequest) {
       });
       return response;
     } catch {
-      // fall through to local fallback
+      return NextResponse.json(
+        errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
+        { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+      );
     }
   }
 

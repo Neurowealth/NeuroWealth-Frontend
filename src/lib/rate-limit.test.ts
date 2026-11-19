@@ -84,6 +84,16 @@ test("getRateLimitKey ignores spoofed vendor-specific headers (cf-connecting-ip,
     "x-client-ip": "13.14.15.16",
   });
   const key = getRateLimitKey(headers);
-  // Vendor headers must not be used as trusted keys
-  assert.equal(key, "unknown");
+  // Vendor headers must not be used as trusted keys; returns null without trusted headers
+  assert.equal(key, null);
+});
+
+test("getRateLimitKey returns null when no IP headers are present", () => {
+  const headers = new Headers();
+  assert.equal(getRateLimitKey(headers), null);
+});
+
+test("getRateLimitKey uses fallback when provided and no IP headers are present", () => {
+  const headers = new Headers();
+  assert.equal(getRateLimitKey(headers, "session:xyz"), "session:xyz");
 });

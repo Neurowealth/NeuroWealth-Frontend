@@ -57,15 +57,17 @@ function chartColor(index: number) {
 
 export async function GET(request: Request) {
   const ip = getRateLimitKey(request);
-  const limit = checkRateLimit(`GET:/api/widget-preview:${ip}`, {
-    maxRequests: 30,
-    windowMs: 60_000,
-  });
-  if (!limit.allowed) {
-    return new Response("Too many requests. Please try again later.", {
-      status: 429,
-      headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+  if (ip) {
+    const limit = checkRateLimit(`GET:/api/widget-preview:${ip}`, {
+      maxRequests: 30,
+      windowMs: 60_000,
     });
+    if (!limit.allowed) {
+      return new Response("Too many requests. Please try again later.", {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+      });
+    }
   }
 
   const { searchParams } = new URL(request.url);
