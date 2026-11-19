@@ -768,6 +768,16 @@ export interface AppMessages {
     nextPage: string;
     pageLabel: string;
   };
+  pagination: {
+    label: string;
+    status: string;
+    previousPage: string;
+    nextPage: string;
+    page: string;
+    goTo: string;
+    jumpToPage: string;
+    resultRange: string;
+  };
   profile: {
     pageTitleFallback: string;
     pageSubtitle: string;
@@ -2012,6 +2022,16 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       previousPage: "Previous page",
       nextPage: "Next page",
       pageLabel: "Page {page}",
+    },
+    pagination: {
+      label: "Pagination",
+      status: "Page {page} of {total}",
+      previousPage: "Previous page",
+      nextPage: "Next page",
+      page: "Page {page}",
+      goTo: "Go to",
+      jumpToPage: "Jump to page",
+      resultRange: "{start}–{end} of {total}",
     },
     profile: {
       pageTitleFallback: "Your Profile",
@@ -3450,6 +3470,16 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       previousPage: "Page précédente",
       nextPage: "Page suivante",
       pageLabel: "Page {page}",
+    },
+    pagination: {
+      label: "Pagination",
+      status: "Page {page} sur {total}",
+      previousPage: "Page précédente",
+      nextPage: "Page suivante",
+      page: "Page {page}",
+      goTo: "Aller à",
+      jumpToPage: "Aller à la page",
+      resultRange: "{start}–{end} sur {total}",
     },
     profile: {
       pageTitleFallback: "Votre profil",

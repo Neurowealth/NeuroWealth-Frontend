@@ -1,7 +1,7 @@
 "use client";
 
 import { TransactionHistory } from "@/components/transactions/TransactionHistory";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Clock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -16,14 +16,17 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  const retryTimer = useRef<ReturnType<typeof setTimeout>>();
   const scenario = getCurrentScenario("history");
 
   const handleRetry = () => {
+    clearTimeout(retryTimer.current);
     setError(null);
     setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    retryTimer.current = setTimeout(() => setLoading(false), 1000);
   };
+
+  useEffect(() => () => clearTimeout(retryTimer.current), []);
 
   useEffect(() => {
     if (scenario === "loading") {
