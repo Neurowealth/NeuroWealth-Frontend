@@ -10,6 +10,7 @@ import WalletConnectStep from './steps/WalletConnectStep';
 import StrategyOverviewStep from './steps/StrategyOverviewStep';
 import FirstDepositStep from './steps/FirstDepositStep';
 import { useOnboardingFlow } from '@/hooks/useOnboardingFlow';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface OnboardingStep {
   id: string;
@@ -22,26 +23,12 @@ interface OnboardingStep {
   }>;
 }
 
-const onboardingSteps: OnboardingStep[] = [
-  {
-    id: 'wallet',
-    title: 'Connect Wallet',
-    description: 'Secure your account',
-    component: WalletConnectStep,
-  },
-  {
-    id: 'strategy',
-    title: 'Choose Strategy',
-    description: 'Set your preferences',
-    component: StrategyOverviewStep,
-  },
-  {
-    id: 'deposit',
-    title: 'Make Deposit',
-    description: 'Start investing',
-    component: FirstDepositStep,
-  },
-];
+// Non-translatable step config — titles/descriptions are sourced from i18n messages.
+const stepConfig = [
+  { id: 'wallet', component: WalletConnectStep },
+  { id: 'strategy', component: StrategyOverviewStep },
+  { id: 'deposit', component: FirstDepositStep },
+] as const;
 
 interface OnboardingFlowProps {
   onComplete?: () => void;
@@ -64,11 +51,20 @@ export default function OnboardingFlow({
     handleStepClick,
     resetFlow,
   } = useOnboardingFlow({
-    totalSteps: onboardingSteps.length,
+    totalSteps: stepConfig.length,
     initialStep,
     onComplete,
     onSkip,
   });
+
+  const { messages } = useI18n();
+  const flowMessages = messages.onboardingFlow;
+
+  const onboardingSteps: OnboardingStep[] = [
+    { ...stepConfig[0], ...flowMessages.steps.wallet },
+    { ...stepConfig[1], ...flowMessages.steps.strategy },
+    { ...stepConfig[2], ...flowMessages.steps.deposit },
+  ];
 
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
 
@@ -89,16 +85,16 @@ export default function OnboardingFlow({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome to NeuroWealth!</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">{flowMessages.completion.title}</h2>
             <p className="text-slate-400 mb-6">
-              You&apos;ve successfully completed the onboarding process. You&apos;re all set to start your investment journey.
+              {flowMessages.completion.description}
             </p>
             <div className="space-y-3">
               <Button onClick={onComplete} className="w-full">
-                Go to Dashboard
+                {flowMessages.completion.goToDashboard}
               </Button>
               <Button variant="ghost" onClick={resetFlow} className="w-full">
-                Review Onboarding
+                {flowMessages.completion.reviewOnboarding}
               </Button>
             </div>
           </div>
@@ -113,9 +109,9 @@ export default function OnboardingFlow({
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Get Started with NeuroWealth</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">{flowMessages.heading}</h1>
           <p className="text-slate-400">
-            Complete these simple steps to set up your investment account
+            {flowMessages.subtitle}
           </p>
         </div>
 
@@ -148,18 +144,20 @@ export default function OnboardingFlow({
             <div>
               {currentStep > 0 && (
                 <Button variant="ghost" onClick={handleBack}>
-                  ← Back
+                  ← {flowMessages.back}
                 </Button>
               )}
             </div>
 
             <div className="text-sm text-slate-400" aria-live="polite">
-              Step {currentStep + 1} of {onboardingSteps.length}
+              {flowMessages.stepProgress
+                .replace('{current}', String(currentStep + 1))
+                .replace('{total}', String(onboardingSteps.length))}
             </div>
 
             <div>
               <Button variant="ghost" onClick={handleSkip}>
-                Skip All
+                {flowMessages.skipAll}
               </Button>
             </div>
           </div>
