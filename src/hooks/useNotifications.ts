@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Notification, MOCK_NOTIFICATIONS } from "@/lib/mock-notifications";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { useStorageSync } from "@/hooks/useStorageSync";
@@ -70,6 +70,13 @@ export function useNotifications() {
     return MOCK_NOTIFICATIONS;
   });
   const [loading] = useState(false);
+  const shouldPersistRef = useRef(false);
+
+  useEffect(() => {
+    if (!shouldPersistRef.current) return;
+    shouldPersistRef.current = false;
+    persistNotifications(notifications);
+  }, [notifications]);
 
   // Rehydrate when another tab marks/clears notifications. Read-only here:
   // writing back from a storage event would echo between open tabs.
@@ -112,23 +119,20 @@ export function useNotifications() {
   }, [syncNotifications]);
 
   const markAsRead = (id: string) => {
-    const updated = notifications.map((n) =>
-      n.id === id ? { ...n, isRead: true } : n
+    shouldPersistRef.current = true;
+    setNotifications((current) =>
+      current.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
-    setNotifications(updated);
-    persistNotifications(updated);
   };
 
   const markAllAsRead = () => {
-    const updated = notifications.map((n) => ({ ...n, isRead: true }));
-    setNotifications(updated);
-    persistNotifications(updated);
+    shouldPersistRef.current = true;
+    setNotifications((current) => current.map((n) => ({ ...n, isRead: true })));
   };
 
   const clearNotifications = () => {
-    const updated: Notification[] = [];
-    setNotifications(updated);
-    persistNotifications(updated);
+    shouldPersistRef.current = true;
+    setNotifications(() => []);
   };
 
   return {
