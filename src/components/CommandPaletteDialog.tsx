@@ -6,6 +6,7 @@ import { Search, Settings } from "lucide-react";
 import { commandPaletteRoutes } from "@/lib/routeMetadata";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useI18n } from "@/contexts/I18nContext";
 
 type Command = {
   id: string;
@@ -40,6 +41,7 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+  const { messages } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const liveRegionRef = useRef<HTMLDivElement>(null);
@@ -161,6 +163,7 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
             ref={inputRef}
             type="text"
             placeholder="Search routes and actions... (Cmd+K)"
+            aria-label={messages.commandPalette.searchAriaLabel}
             className="flex-1 border-none bg-transparent pt-[1px] text-slate-900 dark:text-slate-200 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
