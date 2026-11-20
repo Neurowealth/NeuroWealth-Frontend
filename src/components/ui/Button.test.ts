@@ -1,81 +1,94 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { afterEach, describe, it } from "node:test";
+import React, { createElement } from "react";
+import { cleanup, render } from "@testing-library/react";
+import { setupDomGlobals } from "@/test-setup";
+import { Button } from "./Button";
 
-type Variant = "primary" | "secondary" | "ghost" | "destructive";
-type Size = "sm" | "md" | "lg";
+setupDomGlobals();
+Object.assign(globalThis, { React });
 
-interface ButtonProps {
-  variant?: Variant;
-  size?: Size;
-  disabled?: boolean;
-  className?: string;
-}
+describe("Button component", () => {
+  afterEach(cleanup);
 
-const variants: Record<Variant, string> = {
-  primary: "bg-sky-500",
-  secondary: "border border-sky-500/60",
-  ghost: "text-slate-400",
-  destructive: "bg-red-500",
-};
+  it("renders the default primary variant and medium size", () => {
+    const { getByRole } = render(createElement(Button, null, "Continue"));
+    const button = getByRole("button", { name: "Continue" });
 
-const sizes: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-5 py-2.5 text-sm",
-  lg: "px-7 py-3.5 text-base",
-};
+    assert.ok(button.classList.contains("bg-sky-500"));
+    assert.ok(button.classList.contains("hover:bg-sky-400"));
+    assert.ok(button.classList.contains("text-white"));
+    assert.ok(button.classList.contains("px-5"));
+    assert.ok(button.classList.contains("py-2.5"));
+  });
 
-function resolveButtonClasses({
-  variant = "primary",
-  size = "md",
-  disabled = false,
-  className = "",
-}: ButtonProps): string {
-  const base = "inline-flex items-center justify-center gap-2 text-center whitespace-normal leading-snug transition-all duration-200";
-  const state = disabled ? "opacity-50 cursor-not-allowed" : "";
-  return [base, variants[variant], sizes[size], state, className].join(" ");
-}
+  it("renders rounded-lg and disabled modifiers", () => {
+    const { getByRole } = render(
+      createElement(Button, { disabled: true }, "Unavailable"),
+    );
+    const button = getByRole("button", { name: "Unavailable" }) as HTMLButtonElement;
 
-test("Button — default variant is primary", () => {
-  const classes = resolveButtonClasses({});
-  assert.ok(classes.includes(variants.primary));
-});
+    assert.equal(button.disabled, true);
+    assert.ok(button.classList.contains("rounded-lg"));
+    assert.ok(button.classList.contains("disabled:opacity-50"));
+    assert.ok(button.classList.contains("disabled:cursor-not-allowed"));
+  });
 
-test("Button — size md is default", () => {
-  const classes = resolveButtonClasses({});
-  assert.ok(classes.includes(sizes.md));
-});
+  it("renders secondary hover and border classes", () => {
+    const { getByRole } = render(
+      createElement(Button, { variant: "secondary" }, "Secondary"),
+    );
+    const button = getByRole("button", { name: "Secondary" });
 
-test("Button — disabled adds opacity class", () => {
-  const classes = resolveButtonClasses({ disabled: true });
-  assert.ok(classes.includes("opacity-50"));
-  assert.ok(classes.includes("cursor-not-allowed"));
-});
+    assert.ok(button.classList.contains("border"));
+    assert.ok(button.classList.contains("border-sky-500/60"));
+    assert.ok(button.classList.contains("text-sky-400"));
+    assert.ok(button.classList.contains("hover:bg-sky-500/10"));
+  });
 
-test("Button — all variants produce distinct class sets", () => {
-  const allVariants: Variant[] = ["primary", "secondary", "ghost", "destructive"];
-  const classSets = allVariants.map((v) => resolveButtonClasses({ variant: v }));
-  assert.equal(new Set(classSets).size, allVariants.length);
-});
+  it("renders ghost hover and dark classes", () => {
+    const { getByRole } = render(
+      createElement(Button, { variant: "ghost" }, "Ghost"),
+    );
+    const button = getByRole("button", { name: "Ghost" });
 
-test("Button — all sizes produce distinct class sets", () => {
-  const allSizes: Size[] = ["sm", "md", "lg"];
-  const classSets = allSizes.map((s) => resolveButtonClasses({ size: s }));
-  assert.equal(new Set(classSets).size, allSizes.length);
-});
+    assert.ok(button.classList.contains("hover:text-slate-100"));
+    assert.ok(button.classList.contains("hover:bg-white/5"));
+    assert.ok(button.classList.contains("dark:text-slate-400"));
+    assert.ok(button.classList.contains("dark:hover:text-white"));
+  });
 
-test("Button — custom className is appended", () => {
-  const classes = resolveButtonClasses({ className: "my-custom-class" });
-  assert.ok(classes.includes("my-custom-class"));
-});
+  it("renders destructive hover classes", () => {
+    const { getByRole } = render(
+      createElement(Button, { variant: "destructive" }, "Delete"),
+    );
+    const button = getByRole("button", { name: "Delete" });
 
-test("Button — variant classes are mutually exclusive", () => {
-  const allVariants: Variant[] = ["primary", "secondary", "ghost", "destructive"];
-  for (const v of allVariants) {
-    const classes = resolveButtonClasses({ variant: v });
-    for (const other of allVariants) {
-      if (other !== v) {
-        assert.ok(!classes.includes(variants[other]), `${v} should not contain ${other} classes`);
-      }
-    }
-  }
+    assert.ok(button.classList.contains("bg-red-500"));
+    assert.ok(button.classList.contains("hover:bg-red-400"));
+  });
+
+  it("renders small and large size classes", () => {
+    const small = render(createElement(Button, { size: "sm" }, "Small"));
+    const smallButton = small.getByRole("button", { name: "Small" });
+    assert.ok(smallButton.classList.contains("px-3"));
+    assert.ok(smallButton.classList.contains("py-1.5"));
+    assert.ok(smallButton.classList.contains("rounded-lg"));
+    small.unmount();
+
+    const large = render(createElement(Button, { size: "lg" }, "Large"));
+    const largeButton = large.getByRole("button", { name: "Large" });
+    assert.ok(largeButton.classList.contains("px-7"));
+    assert.ok(largeButton.classList.contains("py-3.5"));
+    assert.ok(largeButton.classList.contains("rounded-lg"));
+  });
+
+  it("appends custom className to rendered classes", () => {
+    const { getByRole } = render(
+      createElement(Button, { className: "my-custom-class" }, "Custom"),
+    );
+    const button = getByRole("button", { name: "Custom" });
+
+    assert.ok(button.classList.contains("my-custom-class"));
+  });
 });
