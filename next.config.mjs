@@ -88,8 +88,13 @@ const nextConfig = {
 };
 
 // Bundle analyzer (dev-only, enabled via ANALYZE=true)
-import withBundleAnalyzer from '@next/bundle-analyzer';
+let config = nextConfig;
 
-export default withBundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-})(nextConfig);
+if (process.env.ANALYZE === "true") {
+  const withBundleAnalyzer = (await import("@next/bundle-analyzer")).default;
+  config = withBundleAnalyzer({
+    enabled: true,
+  })(config);
+}
+
+export default config;
