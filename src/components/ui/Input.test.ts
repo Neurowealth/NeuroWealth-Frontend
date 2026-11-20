@@ -1,77 +1,84 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { afterEach, describe, it } from "node:test";
+import React, { createElement } from "react";
+import { cleanup, render } from "@testing-library/react";
+import { setupDomGlobals } from "@/test-setup";
+import { Input } from "./Input";
 
-type InputVariant = "default" | "error" | "success";
+setupDomGlobals();
+Object.assign(globalThis, { React });
 
-interface InputProps {
-  variant?: InputVariant;
-  error?: string;
-  label?: string;
-  hint?: string;
-  disabled?: boolean;
-}
+describe("Input component", () => {
+  afterEach(cleanup);
 
-const inputVariants: Record<InputVariant, string> = {
-  default: "border-slate-200 focus:border-brand-500",
-  error: "border-accent-red focus:border-accent-red",
-  success: "border-brand-500 focus:border-brand-500",
-};
+  it("uses an explicit id for the label and input", () => {
+    const { getByText, getByRole } = render(
+      createElement(Input, { id: "wallet-address", label: "Wallet Address" }),
+    );
 
-function resolveInputVariant(variant: InputVariant, error?: string): InputVariant {
-  return error ? "error" : variant;
-}
+    const label = getByText("Wallet Address") as HTMLLabelElement;
+    const input = getByRole("textbox") as HTMLInputElement;
 
-function deriveInputId(label?: string): string | undefined {
-  return label ? label.toLowerCase().replace(/\s+/g, "-") : undefined;
-}
+    assert.equal(label.htmlFor, "wallet-address");
+    assert.equal(input.id, "wallet-address");
+  });
 
-function getHintText(error?: string, hint?: string): string | undefined {
-  if (error) return error;
-  return hint;
-}
+  it("derives an id from the label when id is omitted", () => {
+    const { getByText, getByRole } = render(
+      createElement(Input, { label: "Full Name" }),
+    );
 
-test("Input — error variant overrides default", () => {
-  const resolved = resolveInputVariant("default", "This field is required");
-  assert.equal(resolved, "error");
-});
+    const label = getByText("Full Name") as HTMLLabelElement;
+    const input = getByRole("textbox") as HTMLInputElement;
 
-test("Input — no error preserves variant", () => {
-  const resolved = resolveInputVariant("success");
-  assert.equal(resolved, "success");
-});
+    assert.equal(label.htmlFor, "full-name");
+    assert.equal(input.id, "full-name");
+  });
 
-test("Input — error text takes precedence over hint", () => {
-  const text = getHintText("Error message", "Helpful hint");
-  assert.equal(text, "Error message");
-});
+  it("renders the default variant classes", () => {
+    const { getByRole } = render(createElement(Input));
+    const input = getByRole("textbox") as HTMLInputElement;
 
-test("Input — hint shown when no error", () => {
-  const text = getHintText(undefined, "Helpful hint");
-  assert.equal(text, "Helpful hint");
-});
+    assert.ok(input.classList.contains("border-slate-200"));
+    assert.ok(input.classList.contains("focus:border-brand-500"));
+    assert.ok(input.classList.contains("focus:ring-brand-500/20"));
+    assert.ok(input.classList.contains("dark:border-white/10"));
+    assert.ok(input.classList.contains("dark:focus:border-brand-500"));
+  });
 
-test("Input — no hint or error returns undefined", () => {
-  const text = getHintText();
-  assert.equal(text, undefined);
-});
+  it("renders the success variant classes", () => {
+    const { getByRole } = render(createElement(Input, { variant: "success" }));
+    const input = getByRole("textbox") as HTMLInputElement;
 
-test("Input — label derives id correctly", () => {
-  const id = deriveInputId("Full Name");
-  assert.equal(id, "full-name");
-});
+    assert.ok(input.classList.contains("border-brand-500"));
+    assert.ok(input.classList.contains("focus:ring-brand-500/20"));
+    assert.ok(input.classList.contains("dark:border-brand-500/60"));
+    assert.ok(input.classList.contains("dark:focus:border-brand-500"));
+  });
 
-test("Input — no label returns undefined id", () => {
-  const id = deriveInputId();
-  assert.equal(id, undefined);
-});
+  it("renders error variant classes and makes error text take precedence over hint", () => {
+    const { getByRole, getByText, queryByText } = render(
+      createElement(Input, {
+        variant: "success",
+        error: "This field is required",
+        hint: "Helpful hint",
+      }),
+    );
+    const input = getByRole("textbox") as HTMLInputElement;
 
-test("Input — label with special chars derives clean id", () => {
-  const id = deriveInputId("Wallet Address (Stellar)");
-  assert.equal(id, "wallet-address-(stellar)");
-});
+    assert.ok(input.classList.contains("border-accent-red"));
+    assert.ok(input.classList.contains("focus:border-accent-red"));
+    assert.ok(input.classList.contains("focus:ring-red-400/20"));
+    assert.ok(input.classList.contains("dark:border-red-400/60"));
+    assert.ok(getByText("This field is required"));
+    assert.equal(queryByText("Helpful hint"), null);
+  });
 
-test("Input — error variant classes differ from default", () => {
-  assert.ok(inputVariants.error !== inputVariants.default);
-  assert.ok(inputVariants.error.includes("accent-red"));
-  assert.ok(inputVariants.default.includes("brand-500"));
+  it("renders the hint when there is no error", () => {
+    const { getByText } = render(
+      createElement(Input, { hint: "Helpful hint" }),
+    );
+
+    assert.ok(getByText("Helpful hint"));
+  });
 });
