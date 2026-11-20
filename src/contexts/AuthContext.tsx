@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      * them in sync without a full page reload.
      */
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === SESSION_STORAGE_KEY) {
+      if (e.key === null || e.key === SESSION_STORAGE_KEY) {
         syncFromStorage();
       }
     };
