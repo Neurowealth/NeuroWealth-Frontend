@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type FormEvent, useRef } from "react";
+import { useState, useMemo, type FormEvent, useRef, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import {
@@ -85,6 +85,19 @@ export default function SupportForm() {
   const [asyncValidationState, setAsyncValidationState] =
     useState<AsyncValidationState>({ transactionId: "idle" });
   const debouncedAsyncCheckRef = useRef(createDebouncedAsyncCheck(300));
+  const isMountedRef = useRef(true);
+  const validationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (validationIntervalRef.current) {
+        clearInterval(validationIntervalRef.current);
+        validationIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const validateSync = () => {
     const nextErrors: ValidationErrors<SupportField> = {
@@ -161,15 +174,30 @@ export default function SupportForm() {
     if (asyncValidationState.transactionId === "validating") {
       await new Promise((resolve) => {
         const checkInterval = setInterval(() => {
+          if (!isMountedRef.current) {
+            clearInterval(checkInterval);
+            if (validationIntervalRef.current === checkInterval) {
+              validationIntervalRef.current = null;
+            }
+            return;
+          }
           setAsyncValidationState((current) => {
             if (current.transactionId !== "validating") {
               clearInterval(checkInterval);
+              if (validationIntervalRef.current === checkInterval) {
+                validationIntervalRef.current = null;
+              }
               resolve(null);
             }
             return current;
           });
         }, 50);
+        validationIntervalRef.current = checkInterval;
       });
+    }
+
+    if (!isMountedRef.current) {
+      return;
     }
 
     // Check if there are any async validation errors
