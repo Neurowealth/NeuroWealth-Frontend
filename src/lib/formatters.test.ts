@@ -330,3 +330,9 @@ describe("formatters", () => {
     });
   });
 });
+
+describe("test environment", () => {
+  it("yarn test pins TZ to UTC", () => {
+    assert.equal(process.env.TZ, "UTC");
+  });
+});
