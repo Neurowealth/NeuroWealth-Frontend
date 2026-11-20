@@ -1096,6 +1096,9 @@ export interface AppMessages {
   topHeader: {
     notificationsAriaLabel: string;
   };
+  commandPalette: {
+    searchAriaLabel: string;
+  };
   notifications: {
     title: string;
     preferencesTitle: string;
@@ -2570,6 +2573,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
     topHeader: {
       notificationsAriaLabel: "Notifications",
     },
+    commandPalette: {
+      searchAriaLabel: "Search routes and actions",
+    },
     notifications: {
       title: "Notifications",
       preferencesTitle: "Preferences",
@@ -4041,6 +4047,9 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
     },
     topHeader: {
       notificationsAriaLabel: "Notifications",
+    },
+    commandPalette: {
+      searchAriaLabel: "Rechercher des pages et des actions",
     },
     notifications: {
       title: "Notifications",

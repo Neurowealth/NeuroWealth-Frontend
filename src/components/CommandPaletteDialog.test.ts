@@ -335,6 +335,7 @@ test("CommandPaletteDialog — rendered dialog, divider, options and icons carry
     "next/dist/shared/lib/app-router-context.shared-runtime"
   );
   const { CommandPaletteDialog } = await import("./CommandPaletteDialog");
+  const { I18nProvider } = await import("@/contexts/I18nContext");
 
   const router = {
     push: () => {},
@@ -348,7 +349,11 @@ test("CommandPaletteDialog — rendered dialog, divider, options and icons carry
     createElement(
       AppRouterContext.Provider,
       { value: router },
-      createElement(CommandPaletteDialog, { onClose: () => {} }),
+      createElement(
+        I18nProvider,
+        null,
+        createElement(CommandPaletteDialog, { onClose: () => {} }),
+      ),
     ),
   );
 
@@ -424,5 +429,73 @@ test("CommandPaletteDialog — rendered dialog, divider, options and icons carry
     hasClasses(empty, ["text-slate-600", "dark:text-slate-500"], "empty state");
   } finally {
     cleanup();
+  }
+});
+
+// ── Search input accessible name (#1173) ─────────────────────────────────
+
+test("CommandPaletteDialog — search input has a non-empty accessible name in every locale, and search/arrows/Escape still work", async () => {
+  setupDomGlobals();
+  Object.assign(globalThis, { React });
+  const { cleanup, fireEvent, render } = await import("@testing-library/react");
+  window.HTMLElement.prototype.scrollIntoView ??= () => {};
+  const { AppRouterContext } = await import(
+    "next/dist/shared/lib/app-router-context.shared-runtime"
+  );
+  const { CommandPaletteDialog } = await import("./CommandPaletteDialog");
+  const { I18nProvider } = await import("@/contexts/I18nContext");
+  const { dictionaries } = await import("@/lib/i18n/messages");
+  const { STORAGE_KEYS } = await import("@/lib/storage-keys");
+
+  const router = {
+    push: () => {},
+    replace: () => {},
+    refresh: () => {},
+    prefetch: () => {},
+    back: () => {},
+    forward: () => {},
+  };
+
+  for (const locale of Object.keys(dictionaries) as Array<keyof typeof dictionaries>) {
+    const expected = dictionaries[locale].commandPalette.searchAriaLabel;
+    assert.ok(expected.trim().length > 0, `${locale} searchAriaLabel must be non-empty`);
+
+    window.localStorage.setItem(STORAGE_KEYS.LOCALE, locale);
+    let closed = 0;
+    const view = render(
+      createElement(
+        AppRouterContext.Provider,
+        { value: router },
+        createElement(
+          I18nProvider,
+          null,
+          createElement(CommandPaletteDialog, { onClose: () => void closed++ }),
+        ),
+      ),
+    );
+
+    try {
+      // The accessible name comes from the catalog, not the placeholder.
+      const input = await view.findByRole("textbox", { name: expected });
+      assert.equal(input.getAttribute("aria-label"), expected);
+      assert.notEqual(input.getAttribute("aria-label"), input.getAttribute("placeholder"));
+
+      // Arrow navigation still moves the active descendant.
+      const options = view.getAllByRole("option");
+      assert.equal(input.getAttribute("aria-activedescendant"), options[0].id);
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      assert.equal(input.getAttribute("aria-activedescendant"), options[1].id);
+
+      // Search still filters.
+      fireEvent.change(input, { target: { value: "zzz-no-such-command" } });
+      assert.equal(view.queryAllByRole("option").length, 0);
+
+      // Escape still closes.
+      fireEvent.keyDown(input, { key: "Escape" });
+      assert.equal(closed, 1);
+    } finally {
+      cleanup();
+      window.localStorage.removeItem(STORAGE_KEYS.LOCALE);
+    }
   }
 });
