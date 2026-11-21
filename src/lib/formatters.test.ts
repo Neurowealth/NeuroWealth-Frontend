@@ -13,6 +13,8 @@ import {
   formatTimestamp,
   formatSyncLabel,
   formatDate,
+  formatNumber,
+  clearFormatterCache,
 } from "./formatters";
 import { setActiveLocale, getActiveLocale } from "./i18n/locale-state";
 
@@ -327,6 +329,102 @@ describe("formatters", () => {
       assert.ok(frResult.length > 0);
       // Both should produce distinct output for different locales
       assert.notEqual(enResult, frResult);
+    });
+  });
+
+  // Formatter caching tests (Issue #1187)
+  describe("formatter instance caching", () => {
+    it("reuses Intl.NumberFormat for repeated calls with the same locale and options", () => {
+      clearFormatterCache();
+      const OriginalNumberFormat = Intl.NumberFormat;
+      let constructCount = 0;
+
+      const TrackedNumberFormat = function (
+        this: unknown,
+        locales?: string | string[],
+        options?: Intl.NumberFormatOptions,
+      ) {
+        constructCount += 1;
+        return new OriginalNumberFormat(locales, options);
+      } as unknown as typeof Intl.NumberFormat;
+
+      Intl.NumberFormat = TrackedNumberFormat;
+      try {
+        formatCurrency(100);
+        formatCurrency(200);
+        formatSignedCurrency(-50);
+        assert.equal(constructCount, 1);
+
+        formatNumber(1234.5, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        formatNumber(6789.1, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+        assert.equal(constructCount, 2);
+
+        formatCompactCurrency(15000);
+        formatCompactCurrency(25000);
+        assert.equal(constructCount, 3);
+      } finally {
+        Intl.NumberFormat = OriginalNumberFormat;
+      }
+    });
+
+    it("reuses Intl.DateTimeFormat for repeated calls with the same locale and options", () => {
+      clearFormatterCache();
+      const OriginalDateTimeFormat = Intl.DateTimeFormat;
+      let constructCount = 0;
+
+      const TrackedDateTimeFormat = function (
+        this: unknown,
+        locales?: string | string[],
+        options?: Intl.DateTimeFormatOptions,
+      ) {
+        constructCount += 1;
+        return new OriginalDateTimeFormat(locales, options);
+      } as unknown as typeof Intl.DateTimeFormat;
+
+      Intl.DateTimeFormat = TrackedDateTimeFormat;
+      try {
+        formatTimestamp("2024-06-15T14:30:00Z");
+        formatTimestamp("2024-07-01T08:00:00Z");
+        formatSyncLabel("2024-07-02T09:00:00Z");
+        assert.equal(constructCount, 1);
+
+        formatDate("2024-06-15", { month: "long", year: "numeric" });
+        formatDate("2024-07-15", { year: "numeric", month: "long" });
+        assert.equal(constructCount, 2);
+      } finally {
+        Intl.DateTimeFormat = OriginalDateTimeFormat;
+      }
+    });
+
+    it("invalidates cached formatters when active locale changes", () => {
+      clearFormatterCache();
+      const OriginalNumberFormat = Intl.NumberFormat;
+      let constructCount = 0;
+
+      const TrackedNumberFormat = function (
+        this: unknown,
+        locales?: string | string[],
+        options?: Intl.NumberFormatOptions,
+      ) {
+        constructCount += 1;
+        return new OriginalNumberFormat(locales, options);
+      } as unknown as typeof Intl.NumberFormat;
+
+      Intl.NumberFormat = TrackedNumberFormat;
+      try {
+        setActiveLocale("en");
+        const enValue = formatCurrency(1234.56);
+        formatCurrency(9876.54);
+        assert.equal(constructCount, 1);
+
+        setActiveLocale("fr");
+        const frValue = formatCurrency(1234.56);
+        formatCurrency(9876.54);
+        assert.equal(constructCount, 2);
+        assert.notEqual(enValue, frValue);
+      } finally {
+        Intl.NumberFormat = OriginalNumberFormat;
+      }
     });
   });
 });

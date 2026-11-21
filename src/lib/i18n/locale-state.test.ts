@@ -1,6 +1,11 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { setActiveLocale, getActiveLocale, getActiveIntlLocale } from "./locale-state";
+import {
+  setActiveLocale,
+  getActiveLocale,
+  getActiveIntlLocale,
+  subscribeToLocaleChange,
+} from "./locale-state";
 import type { AppLocale } from "./messages";
 
 describe("locale-state", () => {
@@ -47,6 +52,25 @@ describe("locale-state", () => {
 
       setActiveLocale("en");
       assert.equal(getActiveIntlLocale(), "en-US");
+    });
+  });
+
+  describe("subscribeToLocaleChange", () => {
+    it("notifies listeners when locale changes and stops after unsubscribe", () => {
+      const seen: AppLocale[] = [];
+      const unsubscribe = subscribeToLocaleChange((locale) => {
+        seen.push(locale);
+      });
+
+      setActiveLocale("en"); // no-op, already "en"
+      setActiveLocale("fr");
+      setActiveLocale("fr"); // no-op, already "fr"
+      setActiveLocale("en");
+
+      unsubscribe();
+      setActiveLocale("fr");
+
+      assert.deepEqual(seen, ["fr", "en"]);
     });
   });
 });

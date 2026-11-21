@@ -1,47 +1,130 @@
-import { getActiveIntlLocale } from "@/lib/i18n/locale-state";
+import {
+  getActiveIntlLocale,
+  getActiveLocale,
+  subscribeToLocaleChange,
+} from "@/lib/i18n/locale-state";
 import { dictionaries } from "@/lib/i18n/messages";
-import { getActiveLocale } from "@/lib/i18n/locale-state";
+
+const numberFormatCache = new Map<string, Intl.NumberFormat>();
+const dateTimeFormatCache = new Map<string, Intl.DateTimeFormat>();
+
+export function clearFormatterCache(): void {
+  numberFormatCache.clear();
+  dateTimeFormatCache.clear();
+}
+
+subscribeToLocaleChange(() => {
+  clearFormatterCache();
+});
+
+function buildCacheKey(
+  locale: string,
+  options?: Record<string, unknown>,
+): string {
+  if (!options) {
+    return locale;
+  }
+
+  const entries = Object.entries(options)
+    .filter(([, value]) => value !== undefined)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  if (entries.length === 0) {
+    return locale;
+  }
+
+  return `${locale}|${JSON.stringify(entries)}`;
+}
+
+function getCachedNumberFormat(
+  options?: Intl.NumberFormatOptions,
+): Intl.NumberFormat {
+  const locale = getActiveIntlLocale();
+  const key = buildCacheKey(
+    locale,
+    options as Record<string, unknown> | undefined,
+  );
+  let formatter = numberFormatCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, options);
+    numberFormatCache.set(key, formatter);
+  }
+  return formatter;
+}
+
+function getCachedDateTimeFormat(
+  options?: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const locale = getActiveIntlLocale();
+  const key = buildCacheKey(
+    locale,
+    options as Record<string, unknown> | undefined,
+  );
+  let formatter = dateTimeFormatCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateTimeFormatCache.set(key, formatter);
+  }
+  return formatter;
+}
+
+const CURRENCY_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+};
+
+const PERCENT_OPTIONS: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+};
+
+// Spec (Issue 468): 2–4 dp for APY.
+const APY_OPTIONS: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+};
+
+const PRECISE_CURRENCY_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 8,
+};
+
+const COMPACT_CURRENCY_OPTIONS: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+};
+
+const TIMESTAMP_OPTIONS: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 function getCurrencyFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return getCachedNumberFormat(CURRENCY_OPTIONS);
 }
 
 function getPercentFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  return getCachedNumberFormat(PERCENT_OPTIONS);
 }
 
 function getApyFormatter() {
-  // Spec (Issue 468): 2–4 dp for APY.
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  });
+  return getCachedNumberFormat(APY_OPTIONS);
 }
 
 function getPreciseCurrencyFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 8,
-  });
+  return getCachedNumberFormat(PRECISE_CURRENCY_OPTIONS);
 }
 
 function getTimestampFormatter() {
-  return new Intl.DateTimeFormat(getActiveIntlLocale(), {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return getCachedDateTimeFormat(TIMESTAMP_OPTIONS);
 }
 
 export function formatCurrency(value: number): string {
@@ -121,12 +204,7 @@ export function formatApyRange(min: number, max: number): string {
  * Compact currency for dense widgets (e.g. $12.3K). Locale-aware.
  */
 export function formatCompactCurrency(value: number): string {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    style: "currency",
-    currency: "USD",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
+  return getCachedNumberFormat(COMPACT_CURRENCY_OPTIONS).format(value);
 }
 
 export function formatTimestamp(value: string): string {
@@ -139,7 +217,7 @@ export function formatSyncLabel(value: string): string {
 }
 
 function getDateFormatter(options?: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat(getActiveIntlLocale(), {
+  return getCachedDateTimeFormat({
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -148,9 +226,7 @@ function getDateFormatter(options?: Intl.DateTimeFormatOptions) {
 }
 
 function getNumberFormatter(options?: Intl.NumberFormatOptions) {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
-    ...options,
-  });
+  return getCachedNumberFormat(options);
 }
 
 export function formatDate(value: string | Date, options?: Intl.DateTimeFormatOptions): string {
