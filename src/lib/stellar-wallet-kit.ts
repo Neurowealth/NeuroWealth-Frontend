@@ -19,11 +19,19 @@ const KIT_NETWORK =
     ? WalletNetwork.PUBLIC
     : WalletNetwork.TESTNET;
 
+export const SSR_KIT_UNAVAILABLE_ERROR =
+  "StellarWalletsKit is unavailable on the server (window is undefined). Only call getKit() in a browser environment.";
+
 let kitInstance: StellarWalletsKit | null = null;
+
+/** Resets the cached kit singleton (intended for unit tests). */
+export const resetKitInstance = (): void => {
+  kitInstance = null;
+};
 
 export const getKit = (): StellarWalletsKit => {
   if (typeof window === "undefined") {
-    return {} as StellarWalletsKit;
+    throw new Error(SSR_KIT_UNAVAILABLE_ERROR);
   }
 
   if (!kitInstance) {

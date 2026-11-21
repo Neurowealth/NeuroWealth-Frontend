@@ -19,7 +19,7 @@ import {
   BASE_FEE,
 } from "@stellar/stellar-sdk";
 import { ISupportedWallet } from "@creit.tech/stellar-wallets-kit";
-import { kit } from "../lib/stellar-wallet-kit";
+import { kit } from "@/lib/stellar-wallet-kit";
 import {
   clearPersistedWalletState,
   persistWalletState,
@@ -240,7 +240,7 @@ export function WalletProvider({
           transaction.sign(keypair);
           signedTxXdr = transaction.toXDR();
         } else {
-          const { signTransaction } = await import("../lib/stellar-wallet-kit");
+          const { signTransaction } = await import("@/lib/stellar-wallet-kit");
           signedTxXdr = await signTransaction({
             unsignedTransaction: transaction.toXDR(),
             address: publicKey,
