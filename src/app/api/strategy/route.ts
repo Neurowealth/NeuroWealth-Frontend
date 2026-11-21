@@ -11,8 +11,10 @@ import {
   readJsonBody,
   successResponse,
 } from "@/lib/api-response";
+<<<<<<< HEAD
 import {
   strategyPreferencePayloadSchema,
+  strategyKindSchema,
   strategyUpdateSchema,
   zodErrorToDetails,
 } from "@/lib/validation/api";
@@ -46,9 +48,27 @@ export async function GET(request: NextRequest) {
       if (!res.ok) {
         return NextResponse.json(
           errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
-          { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+          { status: HTTP_STATUS.BAD_GATEWAY, headers: { "Cache-Control": "no-store" } },
         );
       }
+
+      const backendData = await res.json();
+      const validated = strategyKindSchema.safeParse(backendData?.strategy);
+
+      if (!validated.success) {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.VALIDATION_ERROR,
+            "Backend response has invalid shape.",
+            zodErrorToDetails(validated.error),
+          ),
+          { status: HTTP_STATUS.BAD_REQUEST, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
+      return NextResponse.json(successResponse<StrategyPreference>({ strategy: validated.data }), {
+        headers: { "Cache-Control": "no-store" },
+      });
     } catch (error) {
       if (error instanceof ServerFetchTimeoutError) {
         return NextResponse.json(
