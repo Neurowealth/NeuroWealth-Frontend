@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
 
-import { POST } from "./route";
+import { POST, resolveTransactionClientId } from "./route";
 import { NextRequest } from "next/server";
 import { getRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { ERROR_CODE, HTTP_STATUS, MAX_BODY_BYTES } from "@/lib/api-response";
@@ -69,7 +68,14 @@ test("POST /api/transactions returns 200 for valid deposit quote", async () => {
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.quote);
+  assert.equal(body.data.quote.kind, "deposit");
+  assert.equal(body.data.quote.amount, 100);
+  assert.equal(body.data.quote.fee, 0.06);
+  assert.equal(body.data.quote.netAmount, 100);
+  assert.equal(body.data.quote.totalDebit, 100.06);
+  assert.equal(body.data.quote.walletAddress, VALID_STELLAR_ADDRESS);
+  assert.equal(body.data.quote.strategyLabel, "Balanced");
+  assert.match(body.data.quote.reference, /^NW-DEP-/);
 });
 
 test("POST /api/transactions returns 200 for valid withdrawal quote", async () => {
@@ -79,7 +85,14 @@ test("POST /api/transactions returns 200 for valid withdrawal quote", async () =
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.quote);
+  assert.equal(body.data.quote.kind, "withdrawal");
+  assert.equal(body.data.quote.amount, 50);
+  assert.equal(body.data.quote.fee, 0.38);
+  assert.equal(body.data.quote.netAmount, 49.62);
+  assert.equal(body.data.quote.totalDebit, 50);
+  assert.equal(body.data.quote.walletAddress, VALID_STELLAR_ADDRESS);
+  assert.equal(body.data.quote.strategyLabel, "Balanced");
+  assert.match(body.data.quote.reference, /^NW-WDR-/);
 });
 
 test("POST /api/transactions returns 200 for submit intent", async () => {
@@ -89,7 +102,15 @@ test("POST /api/transactions returns 200 for submit intent", async () => {
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.pending);
+  assert.equal(body.data.pending.kind, "deposit");
+  assert.equal(body.data.pending.nextStatus, "success");
+  assert.equal(body.data.pending.failureReason, null);
+  assert.equal(body.data.pending.quote.kind, "deposit");
+  assert.equal(body.data.pending.quote.amount, 100);
+  assert.equal(body.data.pending.quote.fee, 0.06);
+  assert.equal(body.data.pending.quote.totalDebit, 100.06);
+  assert.match(body.data.pending.reference, /^NW-DEP-/);
+  assert.equal(body.data.pending.reference, body.data.pending.quote.reference);
 });
 
 test("POST /api/transactions returns 400 for missing kind", async () => {
@@ -180,7 +201,14 @@ test("POST /api/transactions simulation failure returns failure outcome", async 
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.pending);
+  assert.equal(body.data.pending.kind, "deposit");
+  assert.equal(body.data.pending.nextStatus, "failure");
+  assert.ok(
+    typeof body.data.pending.failureReason === "string" &&
+      body.data.pending.failureReason.length > 0,
+  );
+  assert.equal(body.data.pending.quote.amount, 100);
+  assert.match(body.data.pending.reference, /^NW-DEP-/);
 });
 
 test("POST /api/transactions validates negative amount before backend proxy", async () => {
@@ -241,12 +269,36 @@ test("POST /api/transactions validates invalid wallet address for withdrawals", 
 });
 
 test("rate-limit key uses getRateLimitKey, not a raw spoofable x-forwarded-for read", () => {
-  const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
-  assert.match(source, /getRateLimitKey\(request\)/);
-  assert.doesNotMatch(
-    source,
-    /headers\.get\(["']x-forwarded-for["']\)\s*\?\?\s*["']unknown["']/,
-  );
+  const spoofedVendorReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "cf-connecting-ip": "198.51.100.99",
+      "true-client-ip": "198.51.100.98",
+      "x-client-ip": "198.51.100.97",
+    },
+  });
+  assert.equal(getRateLimitKey(spoofedVendorReq), null);
+  assert.equal(resolveTransactionClientId(spoofedVendorReq), null);
+
+  const sessionFallbackReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "cf-connecting-ip": "198.51.100.99",
+      Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
+    },
+  });
+  assert.equal(getRateLimitKey(sessionFallbackReq), null);
+  assert.equal(resolveTransactionClientId(sessionFallbackReq), "session:test_token");
+
+  const xffReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "x-forwarded-for": "198.51.100.88, 10.0.0.5",
+      Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
+    },
+  });
+  assert.equal(getRateLimitKey(xffReq), "198.51.100.88");
+  assert.equal(resolveTransactionClientId(xffReq), "198.51.100.88");
 });
 
 test("rate-limit key prefers trusted headers over a spoofed x-forwarded-for", () => {
