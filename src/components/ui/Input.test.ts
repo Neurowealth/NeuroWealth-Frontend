@@ -58,7 +58,7 @@ describe("Input component", () => {
     assert.ok(input.classList.contains("dark:focus:border-brand-500"));
   });
 
-  it("renders error variant classes and makes error text take precedence over hint", () => {
+  it("renders error variant classes and gives error text precedence over hint", () => {
     const { getByRole, getByText, queryByText } = render(
       createElement(Input, {
         variant: "success",
