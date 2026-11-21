@@ -14,6 +14,8 @@ export interface RateLimitResult {
 
 interface RateLimitEntry {
   timestamps: number[];
+  /** Window of the limiter that last used this key; sweeps prune with it. */
+  windowMs: number;
 }
 
 export interface RateLimiterOptions {
@@ -31,7 +33,7 @@ const SWEEP_INTERVAL_MS = 30_000;
 /**
  * Sweep stale/expired entries from the rate limit store to prevent memory exhaustion.
  */
-function sweepStaleEntries(windowMs: number = 60_000, force = false): void {
+function sweepStaleEntries(force = false): void {
   const now = Date.now();
   if (!force && now - lastSweepTime < SWEEP_INTERVAL_MS && store.size < MAX_MAP_SIZE) {
     return;
@@ -39,7 +41,9 @@ function sweepStaleEntries(windowMs: number = 60_000, force = false): void {
 
   lastSweepTime = now;
   for (const [key, entry] of store.entries()) {
-    entry.timestamps = entry.timestamps.filter((t) => t > now - windowMs);
+    // Prune with the entry's own window, not the caller's, so a short-window
+    // limiter cannot discard timestamps that a longer-window limiter relies on.
+    entry.timestamps = entry.timestamps.filter((t) => t > now - entry.windowMs);
     if (entry.timestamps.length === 0) {
       store.delete(key);
     }
@@ -65,19 +69,26 @@ export function checkRateLimit(
   const now = Date.now();
   const windowStart = now - options.windowMs;
 
-  sweepStaleEntries(options.windowMs);
+  sweepStaleEntries();
 
   let entry = store.get(key);
   if (!entry) {
-    entry = { timestamps: [] };
+    entry = { timestamps: [], windowMs: options.windowMs };
     store.set(key, entry);
   }
+  // A key can be shared by limiters with different windows. Keep the longest
+  // so timestamps are retained for as long as any of them may need them.
+  entry.windowMs = Math.max(entry.windowMs, options.windowMs);
 
-  // Prune timestamps outside the current window.
-  entry.timestamps = entry.timestamps.filter((t) => t > windowStart);
+  // Drop timestamps no limiter sharing this key can still need (the entry
+  // keeps the longest window), then count only those inside *this* caller's
+  // window. Pruning with the caller's window would erase the history a
+  // longer-window limiter on the same key depends on.
+  entry.timestamps = entry.timestamps.filter((t) => t > now - entry.windowMs);
+  const inWindow = entry.timestamps.filter((t) => t > windowStart);
 
-  if (entry.timestamps.length >= options.maxRequests) {
-    const oldestInWindow = entry.timestamps[0];
+  if (inWindow.length >= options.maxRequests) {
+    const oldestInWindow = inWindow[0];
     const retryAfterMs = oldestInWindow + options.windowMs - now;
     return {
       allowed: false,
@@ -89,7 +100,7 @@ export function checkRateLimit(
   entry.timestamps.push(now);
   return {
     allowed: true,
-    remaining: options.maxRequests - entry.timestamps.length,
+    remaining: options.maxRequests - (inWindow.length + 1),
     retryAfterMs: 0,
   };
 }
