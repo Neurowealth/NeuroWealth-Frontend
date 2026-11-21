@@ -32,6 +32,22 @@ test("GET /api/transaction-history returns 401 when unauthenticated", async () =
   assert.equal(body.error.code, "UNAUTHORIZED");
 });
 
+test("GET /api/transaction-history sets Cache-Control: no-store on success", async () => {
+  const req = makeRequest();
+  const res = await GET(req);
+
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+});
+
+test("GET /api/transaction-history sets Cache-Control: no-store on validation errors", async () => {
+  const req = makeRequest({ kind: "invalid" });
+  const res = await GET(req);
+
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  const body = await res.json();
+  assert.equal(body.error.code, "VALIDATION_ERROR");
+});
+
 test("GET /api/transaction-history returns 200 with default params", async () => {
   const req = makeRequest();
   const res = await GET(req);
