@@ -44,6 +44,7 @@ describe("Input component", () => {
     assert.ok(input.classList.contains("focus:ring-brand-500/20"));
     assert.ok(input.classList.contains("dark:border-white/10"));
     assert.ok(input.classList.contains("dark:focus:border-brand-500"));
+    assert.ok(input.classList.contains("dark:focus:ring-brand-500/20"));
   });
 
   it("renders the success variant classes", () => {
@@ -51,6 +52,7 @@ describe("Input component", () => {
     const input = getByRole("textbox") as HTMLInputElement;
 
     assert.ok(input.classList.contains("border-brand-500"));
+    assert.ok(input.classList.contains("focus:border-brand-500"));
     assert.ok(input.classList.contains("focus:ring-brand-500/20"));
     assert.ok(input.classList.contains("dark:border-brand-500/60"));
     assert.ok(input.classList.contains("dark:focus:border-brand-500"));
@@ -70,6 +72,7 @@ describe("Input component", () => {
     assert.ok(input.classList.contains("focus:border-accent-red"));
     assert.ok(input.classList.contains("focus:ring-red-400/20"));
     assert.ok(input.classList.contains("dark:border-red-400/60"));
+    assert.ok(input.classList.contains("dark:focus:border-accent-red"));
     assert.ok(getByText("This field is required"));
     assert.equal(queryByText("Helpful hint"), null);
   });
