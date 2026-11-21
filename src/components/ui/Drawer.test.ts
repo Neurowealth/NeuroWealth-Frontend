@@ -1,105 +1,161 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
-import test, { describe } from "node:test";
+import test, { afterEach, describe } from "node:test";
+import React, { createElement, useState } from "react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { setupDomGlobals } from "@/test-setup";
+import { Drawer } from "./Drawer";
 
-describe("Drawer focus management", () => {
-  test("delegates open-state focus management to useFocusTrap", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
+setupDomGlobals();
+Object.assign(globalThis, { React });
 
-    assert.match(source, /const containerRef = useRef<HTMLDivElement>\(null\);/);
-    assert.match(source, /useFocusTrap\(containerRef, isOpen\);/);
+function DrawerHarness({
+  preventClose = false,
+  initialOpen = false,
+  side = "right",
+}: {
+  preventClose?: boolean;
+  initialOpen?: boolean;
+  side?: "left" | "right";
+}) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
+
+  return createElement(
+    "div",
+    null,
+    createElement(
+      "button",
+      {
+        type: "button",
+        "data-testid": "drawer-trigger",
+        onClick: () => setIsOpen(true),
+      },
+      "Open Drawer",
+    ),
+    createElement(
+      Drawer,
+      {
+        isOpen,
+        onClose: () => setIsOpen(false),
+        title: "Activity Details",
+        preventClose,
+        side,
+        footer: createElement(
+          "button",
+          {
+            type: "button",
+            "data-testid": "drawer-apply-btn",
+            onClick: () => setIsOpen(false),
+          },
+          "Apply",
+        ),
+      },
+      createElement(
+        "div",
+        null,
+        createElement("input", {
+          type: "text",
+          "data-testid": "drawer-input",
+          "aria-label": "Filter text",
+        }),
+      ),
+    ),
+  );
+}
+
+describe("Drawer focus management and keyboard interactions (#1182)", () => {
+  afterEach(() => {
+    cleanup();
+    document.body.style.overflow = "";
   });
 
-  test("traps focus within drawer container when open", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
+  test("renders dialog with role='dialog', aria-modal='true', and aria-labelledby matching the title node", () => {
+    const view = render(createElement(DrawerHarness, { initialOpen: true }));
+    const dialog = view.getByRole("dialog");
 
-    // Verify useFocusTrap is passed the containerRef and isOpen state
-    assert.match(source, /useFocusTrap\(containerRef,\s*isOpen\);/);
-    // Verify the container has a ref that is passed to useFocusTrap
-    assert.match(source, /ref=\{containerRef\}/);
+    assert.equal(dialog.getAttribute("role"), "dialog");
+    assert.equal(dialog.getAttribute("aria-modal"), "true");
+    assert.equal(dialog.getAttribute("aria-labelledby"), "drawer-title");
+
+    const titleEl = document.getElementById("drawer-title");
+    assert.ok(titleEl, "drawer-title element must exist in the DOM");
+    assert.equal(titleEl.textContent, "Activity Details");
   });
 
-  test("returns focus to trigger when drawer closes", () => {
-    // Verify the focus trap cleanup is implemented in createFocusTrap
-    const focusTrapSource = fs.readFileSync(
-      path.join(process.cwd(), "src/hooks/focusTrap.ts"),
-      "utf8",
-    );
+  test("moves focus into the drawer on open, traps Tab and Shift+Tab inside the container, and returns focus to trigger on close", () => {
+    const view = render(createElement(DrawerHarness));
+    const trigger = view.getByTestId("drawer-trigger");
 
-    // Verify focus is stored before trap is created
-    assert.match(
-      focusTrapSource,
-      /const previouslyFocusedElement = ownerDocument\.activeElement;/,
-    );
-    // Verify focus is restored in cleanup
-    assert.match(
-      focusTrapSource,
-      /previouslyFocusedElement instanceof HTMLElement/,
-    );
-    assert.match(focusTrapSource, /previouslyFocusedElement\.focus\(\);/);
+    trigger.focus();
+    assert.equal(document.activeElement, trigger);
+
+    // Open drawer
+    fireEvent.click(trigger);
+
+    const closeBtn = view.getByRole("button", { name: "Close drawer" });
+    const input = view.getByTestId("drawer-input");
+    const applyBtn = view.getByTestId("drawer-apply-btn");
+
+    // Focus moves to first focusable element inside the drawer
+    assert.equal(document.activeElement, closeBtn);
+    assert.equal(document.body.style.overflow, "hidden");
+
+    // Shift+Tab from first wraps to last element
+    fireEvent.keyDown(closeBtn, { key: "Tab", shiftKey: true });
+    assert.equal(document.activeElement, applyBtn);
+
+    // Tab from last wraps back to first element
+    fireEvent.keyDown(applyBtn, { key: "Tab", shiftKey: false });
+    assert.equal(document.activeElement, closeBtn);
+
+    // Middle input can receive focus
+    input.focus();
+    assert.equal(document.activeElement, input);
+
+    // Closing returns focus to trigger and cleans up overflow
+    fireEvent.click(closeBtn);
+    assert.equal(view.queryByRole("dialog"), null);
+    assert.equal(document.activeElement, trigger);
+    assert.equal(document.body.style.overflow, "");
   });
 
-  test("closes with Escape key when not preventClose", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
+  test("closes with Escape key when preventClose is false and returns focus to trigger", () => {
+    const view = render(createElement(DrawerHarness, { preventClose: false }));
+    const trigger = view.getByTestId("drawer-trigger");
 
-    // Verify Escape handler is set up
-    assert.match(source, /if \(e\.key === "Escape" && !preventClose\) onClose\(\);/);
+    trigger.focus();
+    fireEvent.click(trigger);
+    assert.ok(view.getByRole("dialog"));
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    assert.equal(view.queryByRole("dialog"), null);
+    assert.equal(document.activeElement, trigger);
   });
 
-  test("handles preventClose prop correctly", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
+  test("does not close on Escape or render close button when preventClose is true", () => {
+    const view = render(createElement(DrawerHarness, { preventClose: true }));
+    const trigger = view.getByTestId("drawer-trigger");
 
-    // Verify preventClose prop is used
-    assert.match(source, /preventClose = false/);
-    assert.match(source, /preventClose/);
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    assert.ok(view.getByRole("dialog"));
+    assert.equal(view.queryByRole("button", { name: "Close drawer" }), null);
+
+    const input = view.getByTestId("drawer-input");
+    assert.equal(document.activeElement, input);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    assert.ok(view.getByRole("dialog"));
   });
 
-  test("has proper ARIA attributes for accessibility", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
+  test("applies right and left side positioning classes on the rendered panel", () => {
+    const rightView = render(createElement(DrawerHarness, { initialOpen: true, side: "right" }));
+    const rightDialog = rightView.getByRole("dialog");
+    assert.ok(rightDialog.querySelector(".right-0"), "right drawer panel should have right-0 class");
+    cleanup();
 
-    // Verify drawer has proper ARIA attributes
-    assert.match(source, /role="dialog"/);
-    assert.match(source, /aria-modal="true"/);
-    assert.match(source, /aria-labelledby="drawer-title"/);
-  });
-
-  test("renders title with correct id for aria-labelledby", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
-
-    // Verify title element has id matching aria-labelledby
-    assert.match(source, /id="drawer-title"/);
-  });
-
-  test("supports both left and right side positioning", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Drawer.tsx"),
-      "utf8",
-    );
-
-    // Verify side prop defaults to "right"
-    assert.match(source, /side = "right"/);
-    // Verify side prop is used for positioning
-    assert.match(source, /side === "right"/);
-    // Left positioning is handled via ternary (right-0 / left-0)
-    assert.match(source, /left-0/);
+    const leftView = render(createElement(DrawerHarness, { initialOpen: true, side: "left" }));
+    const leftDialog = leftView.getByRole("dialog");
+    assert.ok(leftDialog.querySelector(".left-0"), "left drawer panel should have left-0 class");
   });
 });

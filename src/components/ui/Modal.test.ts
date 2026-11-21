@@ -1,91 +1,150 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
-import test, { describe } from "node:test";
+import test, { afterEach, describe } from "node:test";
+import React, { createElement, useState } from "react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { setupDomGlobals } from "@/test-setup";
+import { Modal } from "./Modal";
 
-describe("Modal focus management", () => {
-  test("delegates open-state focus management to useFocusTrap", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
+setupDomGlobals();
+Object.assign(globalThis, { React });
 
-    assert.match(source, /const containerRef = useRef<HTMLDivElement>\(null\);/);
-    assert.match(source, /useFocusTrap\(containerRef, isOpen\);/);
+function ModalHarness({
+  preventClose = false,
+  initialOpen = false,
+}: {
+  preventClose?: boolean;
+  initialOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
+
+  return createElement(
+    "div",
+    null,
+    createElement(
+      "button",
+      {
+        type: "button",
+        "data-testid": "modal-trigger",
+        onClick: () => setIsOpen(true),
+      },
+      "Open Modal",
+    ),
+    createElement(
+      Modal,
+      {
+        isOpen,
+        onClose: () => setIsOpen(false),
+        title: "Transfer Confirmation",
+        preventClose,
+        footer: createElement(
+          "button",
+          {
+            type: "button",
+            "data-testid": "modal-confirm-btn",
+            onClick: () => setIsOpen(false),
+          },
+          "Confirm",
+        ),
+      },
+      createElement(
+        "div",
+        null,
+        createElement("input", {
+          type: "text",
+          "data-testid": "modal-input",
+          "aria-label": "Transfer note",
+        }),
+      ),
+    ),
+  );
+}
+
+describe("Modal focus management and keyboard interactions (#1182)", () => {
+  afterEach(() => {
+    cleanup();
+    document.body.style.overflow = "";
   });
 
-  test("traps focus within modal container when open", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
+  test("renders dialog with role='dialog', aria-modal='true', and aria-labelledby matching the title node", () => {
+    const view = render(createElement(ModalHarness, { initialOpen: true }));
+    const dialog = view.getByRole("dialog");
 
-    // Verify useFocusTrap is passed the containerRef and isOpen state
-    assert.match(source, /useFocusTrap\(containerRef,\s*isOpen\);/);
-    // Verify the container has a ref that is passed to useFocusTrap
-    assert.match(source, /ref=\{containerRef\}/);
+    assert.equal(dialog.getAttribute("role"), "dialog");
+    assert.equal(dialog.getAttribute("aria-modal"), "true");
+    assert.equal(dialog.getAttribute("aria-labelledby"), "modal-title");
+
+    const titleEl = document.getElementById("modal-title");
+    assert.ok(titleEl, "modal-title element must exist in the DOM");
+    assert.equal(titleEl.textContent, "Transfer Confirmation");
   });
 
-  test("returns focus to trigger when modal closes", () => {
-    // Verify the focus trap cleanup is implemented in createFocusTrap
-    const focusTrapSource = fs.readFileSync(
-      path.join(process.cwd(), "src/hooks/focusTrap.ts"),
-      "utf8",
-    );
+  test("moves focus into the modal on open, traps Tab and Shift+Tab inside the container, and returns focus to trigger on close", () => {
+    const view = render(createElement(ModalHarness));
+    const trigger = view.getByTestId("modal-trigger");
 
-    // Verify focus is stored before trap is created
-    assert.match(
-      focusTrapSource,
-      /const previouslyFocusedElement = ownerDocument\.activeElement;/,
-    );
-    // Verify focus is restored in cleanup
-    assert.match(
-      focusTrapSource,
-      /previouslyFocusedElement instanceof HTMLElement/,
-    );
-    assert.match(focusTrapSource, /previouslyFocusedElement\.focus\(\);/);
+    trigger.focus();
+    assert.equal(document.activeElement, trigger);
+
+    // Open the modal via the trigger button
+    fireEvent.click(trigger);
+
+    const closeBtn = view.getByRole("button", { name: "Close modal" });
+    const input = view.getByTestId("modal-input");
+    const confirmBtn = view.getByTestId("modal-confirm-btn");
+
+    // Focus automatically enters the first focusable element inside the modal
+    assert.equal(document.activeElement, closeBtn);
+    assert.equal(document.body.style.overflow, "hidden");
+
+    // Shift+Tab from the first focusable element wraps around to the last element
+    fireEvent.keyDown(closeBtn, { key: "Tab", shiftKey: true });
+    assert.equal(document.activeElement, confirmBtn);
+
+    // Tab from the last focusable element wraps back to the first element
+    fireEvent.keyDown(confirmBtn, { key: "Tab", shiftKey: false });
+    assert.equal(document.activeElement, closeBtn);
+
+    // Middle element can receive focus inside the dialog
+    input.focus();
+    assert.equal(document.activeElement, input);
+
+    // Closing via the close button restores focus to the trigger and resets body overflow
+    fireEvent.click(closeBtn);
+    assert.equal(view.queryByRole("dialog"), null);
+    assert.equal(document.activeElement, trigger);
+    assert.equal(document.body.style.overflow, "");
   });
 
-  test("closes with Escape key when not preventClose", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
+  test("closes with Escape key when preventClose is false and returns focus to trigger", () => {
+    const view = render(createElement(ModalHarness, { preventClose: false }));
+    const trigger = view.getByTestId("modal-trigger");
 
-    // Verify Escape handler is set up
-    assert.match(source, /if \(e\.key === "Escape" && !preventClose\) onClose\(\);/);
+    trigger.focus();
+    fireEvent.click(trigger);
+    assert.ok(view.getByRole("dialog"));
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    assert.equal(view.queryByRole("dialog"), null);
+    assert.equal(document.activeElement, trigger);
   });
 
-  test("handles preventClose prop correctly", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
+  test("does not close on Escape or render close button when preventClose is true", () => {
+    const view = render(createElement(ModalHarness, { preventClose: true }));
+    const trigger = view.getByTestId("modal-trigger");
 
-    // Verify preventClose prop is used
-    assert.match(source, /preventClose = false/);
-    assert.match(source, /preventClose/);
-  });
+    trigger.focus();
+    fireEvent.click(trigger);
 
-  test("has proper ARIA attributes for accessibility", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
+    const dialog = view.getByRole("dialog");
+    assert.ok(dialog);
+    assert.equal(view.queryByRole("button", { name: "Close modal" }), null);
 
-    // Verify modal has proper ARIA attributes
-    assert.match(source, /role="dialog"/);
-    assert.match(source, /aria-modal="true"/);
-    assert.match(source, /aria-labelledby="modal-title"/);
-  });
+    // First focusable element when close button is hidden is the input
+    const input = view.getByTestId("modal-input");
+    assert.equal(document.activeElement, input);
 
-  test("renders title with correct id for aria-labelledby", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "src/components/ui/Modal.tsx"),
-      "utf8",
-    );
-
-    // Verify title element has id matching aria-labelledby
-    assert.match(source, /id="modal-title"/);
+    // Pressing Escape must not close the modal
+    fireEvent.keyDown(document, { key: "Escape" });
+    assert.ok(view.getByRole("dialog"));
   });
 });

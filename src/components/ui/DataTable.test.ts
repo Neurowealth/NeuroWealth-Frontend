@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { setupDomGlobals } from "@/test-setup";
 
 import { DataTable, type DataTableColumn } from "./DataTable";
 import {
@@ -166,4 +168,63 @@ test("interactive rows expose keyboard semantics", () => {
 
   assert.match(markup, /role="button"/);
   assert.match(markup, /tabindex="0"/);
+});
+
+test("column menu moves focus in on open, supports ArrowDown/ArrowUp/Home/End/Escape, and returns focus to trigger on close", (t) => {
+  setupDomGlobals();
+  Object.assign(globalThis, { React });
+  t.after(cleanup);
+
+  const columns: DataTableColumn<Row>[] = [
+    { key: "name", header: "Name", accessor: (r) => r.name },
+    { key: "amount", header: "Amount", accessor: (r) => r.amount },
+    { key: "status", header: "Status", accessor: (r) => r.status },
+  ];
+
+  const { getByRole, getAllByRole, queryByRole } = render(
+    React.createElement(DataTable<Row>, {
+      data: rows,
+      columns,
+      rowKey: (r) => r.name,
+      searchable: false,
+    }),
+  );
+
+  const trigger = getByRole("button", { name: /Columns/i });
+  trigger.focus();
+  assert.equal(document.activeElement, trigger);
+
+  // Open menu
+  fireEvent.click(trigger);
+  const menu = getByRole("menu", { name: "Toggle columns" });
+  const items = getAllByRole("menuitemcheckbox");
+  assert.equal(items.length, 3);
+
+  // Focus moves to first menuitemcheckbox on open
+  assert.equal(document.activeElement, items[0]);
+
+  // ArrowDown moves to next item
+  fireEvent.keyDown(menu, { key: "ArrowDown" });
+  assert.equal(document.activeElement, items[1]);
+
+  // End jumps to last item
+  fireEvent.keyDown(menu, { key: "End" });
+  assert.equal(document.activeElement, items[2]);
+
+  // ArrowDown from last wraps to first
+  fireEvent.keyDown(menu, { key: "ArrowDown" });
+  assert.equal(document.activeElement, items[0]);
+
+  // ArrowUp from first wraps to last
+  fireEvent.keyDown(menu, { key: "ArrowUp" });
+  assert.equal(document.activeElement, items[2]);
+
+  // Home jumps back to first
+  fireEvent.keyDown(menu, { key: "Home" });
+  assert.equal(document.activeElement, items[0]);
+
+  // Escape closes the menu and restores focus to trigger
+  fireEvent.keyDown(menu, { key: "Escape" });
+  assert.equal(queryByRole("menu"), null);
+  assert.equal(document.activeElement, trigger);
 });

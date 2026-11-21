@@ -96,7 +96,9 @@ const FOCUS_RING =
  *
  * - Sortable columns with `aria-sort` (none → asc → desc → none).
  * - Global search + per-column dropdown filters.
- * - Keyboard-accessible column-visibility menu with visible focus rings.
+ * - Keyboard-accessible column-visibility menu (`role="menu"` / `menuitemcheckbox`)
+ *   supporting ArrowDown, ArrowUp, Home, End, Escape, automatic focus entry on open,
+ *   focus return to the trigger on close, and visible focus rings.
  * - Sticky header on desktop; responsive card layout on mobile (<768px).
  * - All interaction is local state over the provided dataset.
  */
@@ -127,20 +129,64 @@ export function DataTable<T extends object>({
   const [currentPage, setCurrentPage] = useState(1);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuItemRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const wasMenuOpenRef = useRef(false);
   const menuId = useId();
   const captionId = useId();
 
-  // Close the column menu on outside click.
+  // Move focus into the menu on open, return focus to the trigger on close,
+  // and close the column menu on outside click.
   useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
+    if (menuOpen) {
+      wasMenuOpenRef.current = true;
+      menuItemRefs.current[0]?.focus();
+
+      const onPointerDown = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setMenuOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", onPointerDown);
+      return () => document.removeEventListener("mousedown", onPointerDown);
+    }
+
+    if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
+      menuButtonRef.current?.focus();
+    }
   }, [menuOpen]);
+
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const items = menuItemRefs.current.filter(
+      (item): item is HTMLInputElement => item !== null,
+    );
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setMenuOpen(false);
+      return;
+    }
+    if (items.length === 0) return;
+
+    const currentIndex = items.findIndex((item) => item === document.activeElement);
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length;
+      items[nextIndex]?.focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const prevIndex =
+        currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+      items[prevIndex]?.focus();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  };
 
   const accessorsByKey = useMemo(
     () => Object.fromEntries(columns.map((c) => [c.key, c.accessor])),
@@ -311,9 +357,10 @@ export function DataTable<T extends object>({
         {hideableColumns.length > 0 && (
           <div className="relative" ref={menuRef}>
             <button
+              ref={menuButtonRef}
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              aria-haspopup="true"
+              aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-controls={menuId}
               className={cn(
@@ -335,15 +382,13 @@ export function DataTable<T extends object>({
                 id={menuId}
                 role="menu"
                 aria-label="Toggle columns"
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setMenuOpen(false);
-                }}
+                onKeyDown={handleMenuKeyDown}
                 className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1.5 shadow-xl dark:border-white/10 dark:bg-slate-800"
               >
                 <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Visible columns
                 </p>
-                {hideableColumns.map((column) => (
+                {hideableColumns.map((column, index) => (
                   <label
                     key={column.key}
                     className={cn(
@@ -351,6 +396,9 @@ export function DataTable<T extends object>({
                     )}
                   >
                     <input
+                      ref={(el) => {
+                        menuItemRefs.current[index] = el;
+                      }}
                       type="checkbox"
                       role="menuitemcheckbox"
                       checked={!hidden.has(column.key)}

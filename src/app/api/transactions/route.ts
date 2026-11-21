@@ -24,13 +24,17 @@ import { dictionaries } from "@/lib/i18n/messages";
 
 const tDomain = dictionaries.en.transactions.domain;
 
+export function resolveTransactionClientId(request: NextRequest): string | null {
+  const session = getSessionFromRequest(request);
+  const ip = getRateLimitKey(request);
+  return ip ?? (session?.token ? `session:${session.token}` : null);
+}
+
 export async function POST(request: NextRequest) {
   const authError = requireAuth(request, { requireSameOrigin: true });
   if (authError) return authError;
 
-  const session = getSessionFromRequest(request);
-  const ip = getRateLimitKey(request);
-  const clientId = ip ?? (session?.token ? `session:${session.token}` : null);
+  const clientId = resolveTransactionClientId(request);
 
   if (clientId) {
     const limit = checkRateLimit(`POST:/api/transactions:${clientId}`, {
