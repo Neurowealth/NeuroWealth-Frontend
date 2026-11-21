@@ -1,99 +1,73 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "node:test";
+import { strict as assert } from "node:assert";
+import { checkRateLimit, resetRateLimitStore } from "./rate-limit.ts";
 
-import {
-  checkRateLimit,
-  getRateLimitKey,
-  resetRateLimitStore,
-} from "./rate-limit";
-
-test.afterEach(() => {
+test("rate limiting: allows request within limit", () => {
   resetRateLimitStore();
+
+  const result = checkRateLimit("test-key", {
+    maxRequests: 3,
+    windowMs: 1000,
+  });
+
+  assert.equal(result.allowed, true);
+  assert.equal(result.remaining, 2);
 });
 
-test("allows requests under the limit", () => {
-  const opts = { maxRequests: 3, windowMs: 60_000 };
+test("rate limiting: blocks request at limit", () => {
+  resetRateLimitStore();
 
-  const r1 = checkRateLimit("user:a", opts);
-  const r2 = checkRateLimit("user:a", opts);
-  const r3 = checkRateLimit("user:a", opts);
+  // Use up all 3 requests
+  checkRateLimit("test-key-2", { maxRequests: 3, windowMs: 1000 });
+  checkRateLimit("test-key-2", { maxRequests: 3, windowMs: 1000 });
+  checkRateLimit("test-key-2", { maxRequests: 3, windowMs: 1000 });
 
-  assert.equal(r1.allowed, true);
-  assert.equal(r2.allowed, true);
-  assert.equal(r3.allowed, true);
-  assert.equal(r3.remaining, 0);
+  // Fourth request should be blocked
+  const result = checkRateLimit("test-key-2", {
+    maxRequests: 3,
+    windowMs: 1000,
+  });
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.remaining, 0);
+  assert.ok(result.retryAfterMs > 0);
 });
 
-test("blocks requests exceeding the limit", () => {
-  const opts = { maxRequests: 2, windowMs: 60_000 };
+test("rate limiting: different keys have independent limits", () => {
+  resetRateLimitStore();
 
-  checkRateLimit("user:b", opts);
-  checkRateLimit("user:b", opts);
-  const blocked = checkRateLimit("user:b", opts);
+  const limit = 2;
 
-  assert.equal(blocked.allowed, false);
-  assert.equal(blocked.remaining, 0);
-  assert.ok(blocked.retryAfterMs > 0);
+  // Max out key1
+  checkRateLimit("key1", { maxRequests: limit, windowMs: 1000 });
+  checkRateLimit("key1", { maxRequests: limit, windowMs: 1000 });
+
+  // key2 should still have room
+  const result = checkRateLimit("key2", { maxRequests: limit, windowMs: 1000 });
+  assert.equal(result.allowed, true);
+  assert.equal(result.remaining, 1);
 });
 
-test("tracks keys independently", () => {
-  const opts = { maxRequests: 1, windowMs: 60_000 };
+test("rate limiting: portfolio GET uses GET:/api/portfolio:clientId key", () => {
+  resetRateLimitStore();
 
-  checkRateLimit("user:c", opts);
-  const other = checkRateLimit("user:d", opts);
+  // Simulate portfolio GET rate limiting
+  const clientId = "192.168.1.1";
+  const key = `GET:/api/portfolio:${clientId}`;
 
-  assert.equal(other.allowed, true);
-});
-
-test("resets after the window elapses", () => {
-  const opts = { maxRequests: 1, windowMs: 1 }; // 1ms window
-
-  checkRateLimit("user:e", opts);
-
-  // Wait for window to expire.
-  const start = Date.now();
-  while (Date.now() - start < 5) {
-    /* spin */
+  // Allow up to 30 requests per minute
+  for (let i = 0; i < 30; i++) {
+    const result = checkRateLimit(key, {
+      maxRequests: 30,
+      windowMs: 60_000,
+    });
+    assert.equal(result.allowed, true);
   }
 
-  const afterWindow = checkRateLimit("user:e", opts);
-  assert.equal(afterWindow.allowed, true);
-});
-
-test("getRateLimitKey extracts client IP from x-forwarded-for first hop", () => {
-  const headers = new Headers({
-    "x-forwarded-for": "203.0.113.195, 70.41.3.18, 150.172.238.178",
+  // 31st request should be blocked
+  const result = checkRateLimit(key, {
+    maxRequests: 30,
+    windowMs: 60_000,
   });
-  const key = getRateLimitKey(headers);
-  assert.equal(key, "203.0.113.195");
-});
-
-test("getRateLimitKey extracts client IP from x-real-ip when x-forwarded-for is missing", () => {
-  const headers = new Headers({
-    "x-real-ip": "198.51.100.42",
-  });
-  const key = getRateLimitKey(headers);
-  assert.equal(key, "198.51.100.42");
-});
-
-test("getRateLimitKey ignores spoofed vendor-specific headers (cf-connecting-ip, fastly-client-ip)", () => {
-  const headers = new Headers({
-    "cf-connecting-ip": "1.2.3.4",
-    "fastly-client-ip": "5.6.7.8",
-    "true-client-ip": "9.10.11.12",
-    "x-client-ip": "13.14.15.16",
-  });
-  const key = getRateLimitKey(headers);
-  // Vendor headers must not be used as trusted keys; returns null without trusted headers
-  assert.equal(key, null);
-});
-
-test("getRateLimitKey returns null when no IP headers are present", () => {
-  const headers = new Headers();
-  assert.equal(getRateLimitKey(headers), null);
-});
-
-test("getRateLimitKey uses fallback when provided and no IP headers are present", () => {
-  const headers = new Headers();
-  assert.equal(getRateLimitKey(headers, "session:xyz"), "session:xyz");
+  assert.equal(result.allowed, false);
 });

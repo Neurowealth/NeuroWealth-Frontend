@@ -139,10 +139,14 @@ function normalizeKind(kind: unknown): ActivityKind {
 function normalizeAllocationItem(item: unknown, index: number): AllocationItem {
   const record = (item ?? {}) as Record<string, unknown>;
 
+  const label = readString(record.label ?? record.name ?? record.asset, "Unassigned");
+  const symbol = readString(record.symbol ?? record.asset, "N/A");
+  const detail = readString(record.detail ?? record.description, "");
+
   return {
     id: readString(record.id, `allocation-${index}`),
-    label: readString(record.label ?? record.name ?? record.asset, "Unassigned"),
-    symbol: readString(record.symbol ?? record.asset, "N/A"),
+    label: label.length > 256 ? label.slice(0, 256) : label,
+    symbol: symbol.length > 256 ? symbol.slice(0, 256) : symbol,
     amount: readNumber(record.amount ?? record.value),
     share: readNumber(record.share ?? record.percentage ?? record.weight),
     change: readNumber(record.change ?? record.changePercent),
@@ -153,11 +157,14 @@ function normalizeAllocationItem(item: unknown, index: number): AllocationItem {
 function normalizeActivityItem(item: unknown, index: number): ActivityItem {
   const record = (item ?? {}) as Record<string, unknown>;
 
+  const title = readString(record.title ?? record.name, "Portfolio event");
+  const detail = readString(record.detail ?? record.description, "Portfolio activity recorded.");
+
   return {
     id: readString(record.id, `activity-${index}`),
     kind: normalizeKind(record.kind ?? record.type),
-    title: readString(record.title ?? record.name, "Portfolio event"),
-    detail: readString(record.detail ?? record.description, "Portfolio activity recorded."),
+    title: title.length > 256 ? title.slice(0, 256) : title,
+    detail: detail.length > 512 ? detail.slice(0, 512) : detail,
     occurredAt: readString(record.occurredAt ?? record.createdAt, new Date().toISOString()),
     amount: record.amount == null ? null : readNumber(record.amount),
     status: normalizeStatus(record.status),
@@ -409,6 +416,10 @@ export function normalizePortfolioPayload(
           ? record.history
           : [];
 
+  // Enforce max 100 items per array
+  const allocations = allocationSource.slice(0, 100).map((item, index) => normalizeAllocationItem(item, index));
+  const activities = activitySource.slice(0, 100).map((item, index) => normalizeActivityItem(item, index));
+
   return {
     summary: {
       totalBalance: readNumber(summaryRecord.totalBalance ?? summaryRecord.balance ?? record.totalBalance),
@@ -424,8 +435,8 @@ export function normalizePortfolioPayload(
         STRATEGY_DESCRIPTIONS[strategy] ?? STRATEGY_DESCRIPTIONS[DEFAULT_STRATEGY],
       ),
     },
-    allocation: allocationSource.map((item, index) => normalizeAllocationItem(item, index)),
-    activity: activitySource.map((item, index) => normalizeActivityItem(item, index)),
+    allocation: allocations,
+    activity: activities,
     updatedAt: readString(record.updatedAt, new Date().toISOString()),
     source,
     notice: readOptionalString(record.notice),
