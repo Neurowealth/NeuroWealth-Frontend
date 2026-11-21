@@ -15,6 +15,11 @@ import {
   formatDate,
 } from "./formatters";
 import { setActiveLocale, getActiveLocale } from "./i18n/locale-state";
+import {
+  resetDisplayPreferences,
+  setDisplayPreferences,
+} from "./i18n/display-preferences";
+import { formatNumber } from "./formatters";
 
 describe("formatters", () => {
   // Mock locale to ensure consistent test results
@@ -334,5 +339,72 @@ describe("formatters", () => {
 describe("test environment", () => {
   it("yarn test pins TZ to UTC", () => {
     assert.equal(process.env.TZ, "UTC");
+  });
+});
+
+// #1278 — formatters follow the saved profile locale and currency.
+describe("formatters honour the saved display locale and currency", () => {
+  beforeEach(() => {
+    setActiveLocale("en");
+    resetDisplayPreferences();
+  });
+
+  it("keeps USD and the UI locale when no preference is saved", () => {
+    assert.equal(formatCurrency(1234.56), "$1,234.56");
+  });
+
+  it("formats Nigerian Naira for en-NG / NGN", () => {
+    setDisplayPreferences({ locale: "en-NG", currency: "NGN" });
+    const result = formatCurrency(1234.56);
+    assert.ok(result.includes("1,234.56"), result);
+    assert.match(result, /₦|NGN/);
+    assert.ok(!result.includes("$"), result);
+  });
+
+  it("formats euros with German separators for de-DE / EUR", () => {
+    setDisplayPreferences({ locale: "de-DE", currency: "EUR" });
+    const result = formatCurrency(1234.56);
+    assert.ok(result.includes("1.234,56"), result);
+    assert.ok(result.includes("€"), result);
+  });
+
+  it("applies the saved currency to signed, precise and compact output", () => {
+    setDisplayPreferences({ locale: "de-DE", currency: "EUR" });
+    assert.ok(formatSignedCurrency(-5).includes("€"));
+    assert.ok(formatSignedCurrency(5).startsWith("+"));
+    assert.ok(formatCurrencyPrecise(0.12345678).includes("€"));
+    assert.ok(formatCompactCurrency(12345).includes("€"));
+  });
+
+  it("formats numbers, percentages and APY with the saved locale", () => {
+    setDisplayPreferences({ locale: "de-DE", currency: "EUR" });
+    assert.equal(formatNumber(1234567.891), "1.234.567,891");
+    assert.equal(formatPercent(12.3), "12,3%");
+    assert.equal(formatApy(4.5), "4,50%");
+  });
+
+  it("formats dates with the saved locale", () => {
+    const iso = "2026-03-05T00:00:00Z";
+    assert.equal(formatDate(iso), "Mar 5, 2026");
+    setDisplayPreferences({ locale: "en-GB", currency: "GBP" });
+    assert.equal(formatDate(iso), "5 Mar 2026");
+  });
+
+  it("lets a call override the saved preference", () => {
+    setDisplayPreferences({ locale: "en-NG", currency: "NGN" });
+    const result = formatCurrency(1234.56, { locale: "de-DE", currency: "EUR" });
+    assert.ok(result.includes("1.234,56") && result.includes("€"), result);
+  });
+
+  it("ignores an invalid override and uses the saved preference", () => {
+    setDisplayPreferences({ locale: "de-DE", currency: "EUR" });
+    const result = formatCurrency(1234.56, { locale: "bad locale!!", currency: "??" });
+    assert.ok(result.includes("1.234,56") && result.includes("€"), result);
+  });
+
+  it("falls back to the defaults after the preference is reset", () => {
+    setDisplayPreferences({ locale: "de-DE", currency: "EUR" });
+    resetDisplayPreferences();
+    assert.equal(formatCurrency(1234.56), "$1,234.56");
   });
 });

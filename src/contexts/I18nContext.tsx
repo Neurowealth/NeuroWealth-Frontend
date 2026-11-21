@@ -11,6 +11,10 @@ import React, {
 } from "react";
 import { AppLocale, dictionaries, localeToIntl } from "@/lib/i18n/messages";
 import { setActiveLocale } from "@/lib/i18n/locale-state";
+import {
+  applyStoredDisplayPreferences,
+  subscribeDisplayPreferences,
+} from "@/lib/i18n/display-preferences";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 
 /**
@@ -50,6 +54,17 @@ export function normalizeLocale(
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<AppLocale>("en");
+  // Bumped when the saved display locale/currency changes so consumers of this
+  // context re-render and the shared formatters are called again (#1278).
+  const [displayVersion, setDisplayVersion] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = subscribeDisplayPreferences(() =>
+      setDisplayVersion((version) => version + 1),
+    );
+    applyStoredDisplayPreferences();
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -107,7 +122,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocale,
       messages: dictionaries[locale],
     }),
-    [locale, setLocale],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, setLocale, displayVersion],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
