@@ -12,13 +12,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { setupDomGlobals } from "@/test-setup";
+import { LEGACY_WALLET_STORAGE_KEYS, STORAGE_KEYS } from "@/lib/storage-keys";
+import {
+  clearPersistedWalletState,
+  migrateLegacyWalletStorage,
+  persistWalletState,
+  readPersistedWalletState,
+  type PersistedWalletState,
+} from "@/lib/wallet-persistence";
 import {
   attemptWalletRestore,
   type Balance,
   type WalletRestoreDeps,
   type WalletRestoreOutcome,
 } from "@/lib/wallet-restore";
-import type { PersistedWalletState } from "@/lib/wallet-persistence";
+setupDomGlobals();
 
 const NETWORK = "Test SDF Network ; September 2015";
 
@@ -220,5 +229,129 @@ test("wallet-restore: balance loader rejects with a plain Error (no .response) �
   if (outcome.kind === "restored") {
     assert.equal(outcome.accountNotFound, false);
     assert.deepEqual(outcome.balances, []);
+  }
+});
+
+// ── legacy wallet persistence migration ────────────────────────────────────
+
+function setLegacyWalletStorage(values: {
+  connected: string;
+  provider?: string;
+  publicKey?: string;
+  displayName?: string;
+}): void {
+  localStorage.setItem(LEGACY_WALLET_STORAGE_KEYS.CONNECTED, values.connected);
+  if (values.provider) {
+    localStorage.setItem(LEGACY_WALLET_STORAGE_KEYS.PROVIDER, values.provider);
+  }
+  if (values.publicKey) {
+    localStorage.setItem(LEGACY_WALLET_STORAGE_KEYS.PUBLIC_KEY, values.publicKey);
+  }
+  if (values.displayName) {
+    localStorage.setItem(LEGACY_WALLET_STORAGE_KEYS.DISPLAY_NAME, values.displayName);
+  }
+}
+
+function assertLegacyWalletKeysRemoved(): void {
+  for (const key of Object.values(LEGACY_WALLET_STORAGE_KEYS)) {
+    assert.equal(localStorage.getItem(key), null, `legacy key ${key} should be removed`);
+  }
+}
+
+test.beforeEach(() => {
+  localStorage.clear();
+});
+
+test("legacy migration: connected=true copies all available wallet values", () => {
+  setLegacyWalletStorage({
+    connected: "true",
+    provider: "freighter",
+    publicKey: SAVED.publicKey,
+    displayName: "Freighter",
+  });
+
+  migrateLegacyWalletStorage();
+
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED), "true");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PROVIDER), "freighter");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PUBLIC_KEY), SAVED.publicKey);
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_DISPLAY_NAME), "Freighter");
+  assertLegacyWalletKeysRemoved();
+});
+
+test("legacy migration: connected=false does not create persisted wallet state", () => {
+  setLegacyWalletStorage({
+    connected: "false",
+    provider: "freighter",
+    publicKey: SAVED.publicKey,
+    displayName: "Freighter",
+  });
+
+  migrateLegacyWalletStorage();
+
+  assert.equal(readPersistedWalletState(), null);
+  assertLegacyWalletKeysRemoved();
+});
+
+test("legacy migration: missing public key does not create persisted wallet state", () => {
+  setLegacyWalletStorage({
+    connected: "true",
+    provider: "freighter",
+    displayName: "Freighter",
+  });
+
+  migrateLegacyWalletStorage();
+
+  assert.equal(readPersistedWalletState(), null);
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED), null);
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PROVIDER), null);
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PUBLIC_KEY), null);
+  assertLegacyWalletKeysRemoved();
+});
+
+test("legacy migration: existing central keys short-circuit and are not overwritten", () => {
+  localStorage.setItem(STORAGE_KEYS.WALLET_CONNECTED, "true");
+  localStorage.setItem(STORAGE_KEYS.WALLET_PROVIDER, "central-provider");
+  localStorage.setItem(STORAGE_KEYS.WALLET_PUBLIC_KEY, "central-public-key");
+  setLegacyWalletStorage({
+    connected: "true",
+    provider: "legacy-provider",
+    publicKey: "legacy-public-key",
+    displayName: "Legacy",
+  });
+
+  migrateLegacyWalletStorage();
+
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED), "true");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PROVIDER), "central-provider");
+  assert.equal(localStorage.getItem(STORAGE_KEYS.WALLET_PUBLIC_KEY), "central-public-key");
+  assertLegacyWalletKeysRemoved();
+});
+
+test("wallet persistence: persist/read/clear round-trip", () => {
+  const state: PersistedWalletState = {
+    connected: true,
+    providerId: "freighter",
+    publicKey: SAVED.publicKey,
+    displayName: "Freighter",
+    networkPassphrase: NETWORK,
+  };
+
+  persistWalletState(state);
+
+  assert.deepEqual(readPersistedWalletState(), state);
+
+  clearPersistedWalletState();
+
+  assert.equal(readPersistedWalletState(), null);
+  assertLegacyWalletKeysRemoved();
+  for (const key of [
+    STORAGE_KEYS.WALLET_CONNECTED,
+    STORAGE_KEYS.WALLET_PROVIDER,
+    STORAGE_KEYS.WALLET_PUBLIC_KEY,
+    STORAGE_KEYS.WALLET_DISPLAY_NAME,
+    STORAGE_KEYS.WALLET_NETWORK,
+  ]) {
+    assert.equal(localStorage.getItem(key), null, `central key ${key} should be cleared`);
   }
 });

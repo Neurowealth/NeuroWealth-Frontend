@@ -34,6 +34,13 @@ function removeKey(key: string): void {
   localStorage.removeItem(key);
 }
 
+function clearLegacyWalletStorage(): void {
+  removeKey(LEGACY_WALLET_STORAGE_KEYS.CONNECTED);
+  removeKey(LEGACY_WALLET_STORAGE_KEYS.PROVIDER);
+  removeKey(LEGACY_WALLET_STORAGE_KEYS.PUBLIC_KEY);
+  removeKey(LEGACY_WALLET_STORAGE_KEYS.DISPLAY_NAME);
+}
+
 /**
  * One-time migration from pre-centralization stellar_wallet_* keys.
  */
@@ -42,7 +49,16 @@ export function migrateLegacyWalletStorage(): void {
 
   const hasNewKeys = readKey(STORAGE_KEYS.WALLET_CONNECTED) !== null;
   const legacyConnected = readKey(LEGACY_WALLET_STORAGE_KEYS.CONNECTED);
-  if (hasNewKeys || legacyConnected === null) return;
+
+  if (hasNewKeys) {
+    clearLegacyWalletStorage();
+    return;
+  }
+
+  if (legacyConnected === null) {
+    clearLegacyWalletStorage();
+    return;
+  }
 
   const providerId = readKey(LEGACY_WALLET_STORAGE_KEYS.PROVIDER);
   const publicKey = readKey(LEGACY_WALLET_STORAGE_KEYS.PUBLIC_KEY);
@@ -57,10 +73,7 @@ export function migrateLegacyWalletStorage(): void {
     }
   }
 
-  removeKey(LEGACY_WALLET_STORAGE_KEYS.CONNECTED);
-  removeKey(LEGACY_WALLET_STORAGE_KEYS.PROVIDER);
-  removeKey(LEGACY_WALLET_STORAGE_KEYS.PUBLIC_KEY);
-  removeKey(LEGACY_WALLET_STORAGE_KEYS.DISPLAY_NAME);
+  clearLegacyWalletStorage();
 }
 
 export function readPersistedWalletState(): PersistedWalletState | null {
