@@ -69,12 +69,30 @@ export async function mockAsyncCheck({
  * Debounced async validation helper to reduce race conditions.
  * Returns a function that can be called multiple times but only executes
  * the async check after the specified delay with no new calls.
+ *
+ * A call that is superseded by a newer one (or by `cancel()`) resolves with
+ * `undefined` instead of staying pending forever, so callers awaiting it can
+ * never get stuck in a "validating" state.
  */
 export function createDebouncedAsyncCheck(delay: number = 300) {
-  let timeoutId: NodeJS.Timeout | null = null;
-  let lastPromise: Promise<string | undefined> | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let settlePending: ((result: string | undefined) => void) | null = null;
+  let generation = 0;
 
-  return async function debouncedCheck({
+  /** Cancel the pending timer and resolve its caller with `undefined`. */
+  function cancel(): void {
+    generation += 1;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (settlePending) {
+      settlePending(undefined);
+      settlePending = null;
+    }
+  }
+
+  async function debouncedCheck({
     value,
     shouldFail,
     message,
@@ -85,26 +103,30 @@ export function createDebouncedAsyncCheck(delay: number = 300) {
     message: string;
     asyncDelay?: number;
   }): Promise<string | undefined> {
-    // Clear previous timeout
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
+    // Supersede the previous call: clear its timer and resolve its promise.
+    cancel();
+    const myGeneration = generation;
 
-    // Return a promise that resolves after debounce delay
-    lastPromise = new Promise((resolve) => {
+    return new Promise<string | undefined>((resolve) => {
+      settlePending = resolve;
       timeoutId = setTimeout(async () => {
+        timeoutId = null;
+        // The debounce window elapsed; from here this call is only superseded
+        // by a newer call's generation, not by the timer.
+        if (settlePending === resolve) settlePending = null;
         const result = await mockAsyncCheck({
           value,
           shouldFail,
           message,
           delay: asyncDelay,
         });
-        resolve(result);
+        // A newer call (or cancel) arrived while the check was in flight.
+        resolve(myGeneration === generation ? result : undefined);
       }, delay);
     });
+  }
 
-    return lastPromise;
-  };
+  return Object.assign(debouncedCheck, { cancel });
 }
 
 export function hasUppercase(value: string): boolean {

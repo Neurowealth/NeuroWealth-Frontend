@@ -57,12 +57,26 @@ export function generatePortfolioValueData(): PortfolioValuePoint[] {
   });
 }
 
-/** Generate monthly-yield data (bar chart). */
-export function generateMonthlyYieldData(): ChartDatum[] {
-  return generatePortfolioValueData().map((p) => ({
+/**
+ * Derive monthly-yield data (bar chart) from portfolio points, so the bars
+ * always match `points[i].yield` for the same month.
+ */
+export function deriveMonthlyYieldData(points: PortfolioValuePoint[]): ChartDatum[] {
+  return points.map((p) => ({
     name: p.name,
     value: p.yield,
   }));
+}
+
+/**
+ * Generate monthly-yield data (bar chart). Pass the portfolio series the
+ * yield chart sits next to to keep both charts in agreement; without one a
+ * fresh series is generated.
+ */
+export function generateMonthlyYieldData(
+  points: PortfolioValuePoint[] = generatePortfolioValueData(),
+): ChartDatum[] {
+  return deriveMonthlyYieldData(points);
 }
 
 /** Generate asset-allocation slices (donut chart). */
@@ -97,6 +111,6 @@ export function generateCategoricalBarData(): ChartDatum[] {
 // after reseed().
 
 export const portfolioValueData: PortfolioValuePoint[] = generatePortfolioValueData();
-export const monthlyYieldData: ChartDatum[] = generateMonthlyYieldData();
+export const monthlyYieldData: ChartDatum[] = deriveMonthlyYieldData(portfolioValueData);
 export const assetAllocationData: AssetAllocationSlice[] = generateAssetAllocationData();
 export const categoricalBarData: ChartDatum[] = generateCategoricalBarData();
