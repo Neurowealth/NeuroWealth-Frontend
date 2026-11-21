@@ -1,18 +1,42 @@
-import { getActiveIntlLocale } from "@/lib/i18n/locale-state";
 import { dictionaries } from "@/lib/i18n/messages";
 import { getActiveLocale } from "@/lib/i18n/locale-state";
+import {
+  getDisplayCurrency,
+  getDisplayLocale,
+  normalizeDisplayCurrency,
+  normalizeDisplayLocale,
+} from "@/lib/i18n/display-preferences";
 
-function getCurrencyFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+/**
+ * Per-call override of the saved display locale/currency (#1278). Invalid
+ * values are ignored and the saved preference is used instead.
+ */
+export interface FormatOverrides {
+  /** BCP47 tag, e.g. "en-NG". */
+  locale?: string;
+  /** ISO 4217 code, e.g. "NGN". */
+  currency?: string;
+}
+
+function resolveLocale(overrides?: FormatOverrides): string {
+  return normalizeDisplayLocale(overrides?.locale) ?? getDisplayLocale();
+}
+
+function resolveCurrency(overrides?: FormatOverrides): string {
+  return normalizeDisplayCurrency(overrides?.currency) ?? getDisplayCurrency();
+}
+
+function getCurrencyFormatter(overrides?: FormatOverrides) {
+  return new Intl.NumberFormat(resolveLocale(overrides), {
     style: "currency",
-    currency: "USD",
+    currency: resolveCurrency(overrides),
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
 function getPercentFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+  return new Intl.NumberFormat(getDisplayLocale(), {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
@@ -20,23 +44,23 @@ function getPercentFormatter() {
 
 function getApyFormatter() {
   // Spec (Issue 468): 2–4 dp for APY.
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+  return new Intl.NumberFormat(getDisplayLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   });
 }
 
-function getPreciseCurrencyFormatter() {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+function getPreciseCurrencyFormatter(overrides?: FormatOverrides) {
+  return new Intl.NumberFormat(resolveLocale(overrides), {
     style: "currency",
-    currency: "USD",
+    currency: resolveCurrency(overrides),
     minimumFractionDigits: 2,
     maximumFractionDigits: 8,
   });
 }
 
 function getTimestampFormatter() {
-  return new Intl.DateTimeFormat(getActiveIntlLocale(), {
+  return new Intl.DateTimeFormat(getDisplayLocale(), {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -44,12 +68,12 @@ function getTimestampFormatter() {
   });
 }
 
-export function formatCurrency(value: number): string {
-  return getCurrencyFormatter().format(value);
+export function formatCurrency(value: number, overrides?: FormatOverrides): string {
+  return getCurrencyFormatter(overrides).format(value);
 }
 
-export function formatSignedCurrency(value: number): string {
-  const absoluteValue = getCurrencyFormatter().format(Math.abs(value));
+export function formatSignedCurrency(value: number, overrides?: FormatOverrides): string {
+  const absoluteValue = getCurrencyFormatter(overrides).format(Math.abs(value));
   const roundedValue = Number(value.toFixed(2));
 
   if (roundedValue > 0) {
@@ -98,8 +122,8 @@ export function numericSign(value: number): NumericSign {
  * Full-precision, locale-aware currency string for tooltips. Keeps up to 8
  * fraction digits so the underlying value is never silently truncated.
  */
-export function formatCurrencyPrecise(value: number): string {
-  return getPreciseCurrencyFormatter().format(value);
+export function formatCurrencyPrecise(value: number, overrides?: FormatOverrides): string {
+  return getPreciseCurrencyFormatter(overrides).format(value);
 }
 
 /**
@@ -120,10 +144,10 @@ export function formatApyRange(min: number, max: number): string {
 /**
  * Compact currency for dense widgets (e.g. $12.3K). Locale-aware.
  */
-export function formatCompactCurrency(value: number): string {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+export function formatCompactCurrency(value: number, overrides?: FormatOverrides): string {
+  return new Intl.NumberFormat(resolveLocale(overrides), {
     style: "currency",
-    currency: "USD",
+    currency: resolveCurrency(overrides),
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);
@@ -139,7 +163,7 @@ export function formatSyncLabel(value: string): string {
 }
 
 function getDateFormatter(options?: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat(getActiveIntlLocale(), {
+  return new Intl.DateTimeFormat(getDisplayLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -148,7 +172,7 @@ function getDateFormatter(options?: Intl.DateTimeFormatOptions) {
 }
 
 function getNumberFormatter(options?: Intl.NumberFormatOptions) {
-  return new Intl.NumberFormat(getActiveIntlLocale(), {
+  return new Intl.NumberFormat(getDisplayLocale(), {
     ...options,
   });
 }
