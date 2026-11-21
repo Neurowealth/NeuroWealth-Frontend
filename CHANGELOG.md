@@ -47,6 +47,7 @@ Versions are tagged in GitHub Releases and linked from this file.
 - Added a light-mode surface to the command palette while preserving the dark-mode presentation (#885)
 
 ### Fixed
+- Timestamps from `formatTimestamp()` / `formatSyncLabel()` now include the year; French transaction `domain` copy is translated (with a test that fails on untranslated values); an unset `NEXT_PUBLIC_DEMO_SEED` is documented as using `DEFAULT_SEED` (#1279, #1280, #1281)
 - Fixed raw `console.warn` logging in `parseTransactionKind` to use centralized PII-scrubbing logger (#999)
 - Fixed production and staging deploy workflows by setting `NEXT_PUBLIC_STELLAR_NETWORK` and `NEXT_PUBLIC_STELLAR_HORIZON_URL` during build (#1000)
 - Replaced hand-rolled modal implementation with shared Modal component in security settings (#993)

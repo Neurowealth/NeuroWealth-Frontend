@@ -2,12 +2,15 @@
  * seeded-rng.ts — Deterministic random number generator
  *
  * Controlled by NEXT_PUBLIC_DEMO_SEED (public env var, safe to expose).
- * When the variable is set, every call to random() / randomInt() /
- * randomItem() produces the same sequence across server and browser,
- * making mock data, chart values, and demo screenshots reproducible.
+ * Every call to random() / randomInt() / randomItem() produces the same
+ * sequence across server and browser, making mock data, chart values, and
+ * demo screenshots reproducible.
  *
- * When NEXT_PUBLIC_DEMO_SEED is unset the module falls back to
- * Math.random() so normal development behaviour is unchanged.
+ * The PRNG is ALWAYS seeded at import time: NEXT_PUBLIC_DEMO_SEED when it
+ * is set to a non-empty string, otherwise DEFAULT_SEED. An unset or empty
+ * variable therefore does NOT mean Math.random(); output is deterministic
+ * (and identical on server and client, which avoids hydration mismatches).
+ * Math.random() is only used after an explicit reseed(null).
  *
  * Algorithm: Mulberry32 — a fast, high-quality 32-bit PRNG seeded
  * from a DJB2-style hash of the string seed value.
@@ -25,14 +28,15 @@
  *   # .env.local — stable demo/screenshot output
  *   NEXT_PUBLIC_DEMO_SEED=demo-seed-2026
  *
- *   # Unset or empty — normal random behaviour
+ *   # Unset or empty — DEFAULT_SEED ("demo-seed-2026") is used, so output
+ *   # is still deterministic
  *   NEXT_PUBLIC_DEMO_SEED=
  *
  * Resetting mid-test
  * ──────────────────
  *   import { reseed } from "@/lib/seeded-rng";
  *   reseed("my-test-seed");   // deterministic from this point
- *   reseed(null);             // back to Math.random()
+ *   reseed(null);             // Math.random(), the only way to opt out
  *
  * Default seed (for contributors)
  * ────────────────────────────────
@@ -79,6 +83,15 @@ export const DEFAULT_SEED = "demo-seed-2026";
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
+ * Seed the PRNG uses at import time: the env value when it is a non-empty
+ * string, otherwise DEFAULT_SEED. Never null, so an unset variable still
+ * yields deterministic output.
+ */
+export function resolveInitialSeed(envSeed: string | undefined | null): string {
+  return envSeed || DEFAULT_SEED;
+}
+
+/**
  * Re-initialize the PRNG with a new seed string, or pass `null` to
  * revert to Math.random().  Useful in unit tests to get a fresh,
  * predictable sequence without reloading the module.
@@ -111,4 +124,4 @@ export function randomItem<T>(array: T[]): T {
 // NEXT_PUBLIC_DEMO_SEED is inlined at build time by Next.js for client
 // bundles and available as process.env.NEXT_PUBLIC_DEMO_SEED on the server.
 
-reseed(process.env.NEXT_PUBLIC_DEMO_SEED || DEFAULT_SEED);
+reseed(resolveInitialSeed(process.env.NEXT_PUBLIC_DEMO_SEED));

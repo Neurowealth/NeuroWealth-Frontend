@@ -29,7 +29,7 @@ Set these in `.env.local`:
 | `NEXT_PUBLIC_STELLAR_NETWORK` | Optional | Network name — `testnet` or `mainnet` (default: `testnet`) |
 | `NEXT_PUBLIC_STELLAR_HORIZON_URL` | Optional | Stellar Horizon endpoint (overrides the SDK default) |
 | `NEXT_PUBLIC_ENABLE_DASHBOARD_SANDBOX` | Optional | Set to `"true"` to enable the `/dashboard/sandbox` route (default: disabled) |
-| `NEXT_PUBLIC_DEMO_SEED` | Optional | String seed for deterministic mock data in demos and visual baselines. Any non-empty string activates the Mulberry32 seeded PRNG; unset or empty uses `Math.random()`. See `docs/qa/demo-seed.md`. |
+| `NEXT_PUBLIC_DEMO_SEED` | Optional | String seed for deterministic mock data in demos and visual baselines. Any non-empty string is used as the seed for the Mulberry32 PRNG; unset or empty uses the built-in `DEFAULT_SEED` (`demo-seed-2026`), so mock data is deterministic either way. See `docs/qa/demo-seed.md`. |
 
 Example `.env.local`:
 

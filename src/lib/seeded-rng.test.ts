@@ -9,7 +9,18 @@
 
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { random, randomInt, randomItem, reseed } from "./seeded-rng";
+import {
+  DEFAULT_SEED,
+  random,
+  randomInt,
+  randomItem,
+  reseed,
+  resolveInitialSeed,
+} from "./seeded-rng";
+
+// Captured at import time, before any test calls reseed(), so it reflects
+// the module's own initialisation.
+const initialSequence = Array.from({ length: 5 }, () => random());
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -148,6 +159,38 @@ describe("seeded-rng", () => {
 
       assert.deepStrictEqual(alpha, alphaAgain, "alpha sequences must match");
       assert.notDeepStrictEqual(alpha, beta, "alpha and beta must differ");
+    });
+  });
+
+  describe("initial seed (unset NEXT_PUBLIC_DEMO_SEED)", () => {
+    it("falls back to DEFAULT_SEED when the variable is unset", () => {
+      assert.equal(resolveInitialSeed(undefined), DEFAULT_SEED);
+      assert.equal(resolveInitialSeed(null), DEFAULT_SEED);
+    });
+
+    it("falls back to DEFAULT_SEED when the variable is empty", () => {
+      assert.equal(resolveInitialSeed(""), DEFAULT_SEED);
+    });
+
+    it("uses the variable when it is set", () => {
+      assert.equal(resolveInitialSeed("my-seed"), "my-seed");
+    });
+
+    it("is deterministic after import even when the variable is unset", () => {
+      reseed(resolveInitialSeed(process.env.NEXT_PUBLIC_DEMO_SEED));
+      const expected = collectSequence(initialSequence.length);
+
+      assert.deepStrictEqual(initialSequence, expected);
+    });
+
+    it("an unset variable matches an explicit DEFAULT_SEED", () => {
+      reseed(resolveInitialSeed(undefined));
+      const unset = collectSequence(10);
+
+      reseed(DEFAULT_SEED);
+      const explicit = collectSequence(10);
+
+      assert.deepStrictEqual(unset, explicit);
     });
   });
 });
