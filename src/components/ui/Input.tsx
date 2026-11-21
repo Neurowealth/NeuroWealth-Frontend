@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from "react";
+import React, { InputHTMLAttributes, forwardRef } from "react";
 
 type InputVariant = "default" | "error" | "success";
 
