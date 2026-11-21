@@ -19,7 +19,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface DataBoundaryProps {
   loading: boolean;
-  error: Error | null;
+  error: { message: string } | null;
   onRetry?: () => void;
   /** Skeleton UI shown while loading. Defaults to a generic block. */
   skeleton?: React.ReactNode;
