@@ -370,12 +370,14 @@ export function validateTransactionValues(kind: TransactionKind, values: Transac
     errors.amount = kind === "deposit" ? t.validation.fundingAvailable(context.availableAmount.toFixed(2)) : t.validation.withdrawAvailable(context.availableAmount.toFixed(2));
   }
 
-  if (kind === "withdrawal") {
-    if (!values.walletAddress.trim()) {
-      errors.walletAddress = t.validation.enterDestination;
-    } else if (!STELLAR_ADDRESS_PATTERN.test(values.walletAddress.trim())) {
-      errors.walletAddress = t.validation.validStellarAddress;
-    }
+  const trimmedWalletAddress = values.walletAddress.trim();
+  if (!trimmedWalletAddress) {
+    errors.walletAddress =
+      kind === "withdrawal"
+        ? t.validation.enterDestination
+        : t.validation.validStellarAddress;
+  } else if (!STELLAR_ADDRESS_PATTERN.test(trimmedWalletAddress)) {
+    errors.walletAddress = t.validation.validStellarAddress;
   }
 
   return errors;
