@@ -17,6 +17,8 @@ export function AuditTrail() {
   const t = messages.audit;
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [filter, setFilter] = useState<EventTypeFilter>("all");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -25,28 +27,35 @@ export function AuditTrail() {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    
+    setError(null);
+
     async function loadEvents() {
       try {
         const data = await getAuditService().getEvents();
         if (!controller.signal.aborted) {
           setEvents(data);
+          setError(null);
           setLoading(false);
         }
-      } catch (error) {
+      } catch (err) {
         if (!controller.signal.aborted) {
+          setError(err instanceof Error && err.message ? err.message : "load_failed");
           setLoading(false);
         }
       }
     }
-    
+
     const timer = setTimeout(() => loadEvents(), 800);
-    
+
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, []);
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount((count) => count + 1);
+  };
 
   const filteredEvents = useMemo(() => {
     return events
@@ -117,8 +126,17 @@ export function AuditTrail() {
         </Button>
       </div>
 
-      {/* Controls */}
-      <div className="audit-controls">
+      {error ? (
+        <div className="audit-error" role="alert">
+          <p className="audit-error-message">{t.loadError}</p>
+          <Button onClick={handleRetry} variant="secondary" size="sm">
+            {t.retry}
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* Controls */}
+          <div className="audit-controls">
         <div className="audit-filter-group">
           <Filter size={16} />
           <select
@@ -317,6 +335,8 @@ export function AuditTrail() {
           </div>
         </div>
       )}
+        </>
+      )}
 
       <style>{`
         .audit-trail-container {
@@ -506,6 +526,25 @@ export function AuditTrail() {
           text-align: center;
           padding: 32px 16px;
           color: #e2e8f0;
+        }
+
+        .audit-error {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          padding: 40px 24px;
+          text-align: center;
+          border: 1px solid rgba(248, 113, 113, 0.3);
+          border-radius: 12px;
+          background: rgba(127, 29, 29, 0.15);
+        }
+
+        .audit-error-message {
+          margin: 0;
+          color: #fca5a5;
+          font-size: 14px;
         }
 
         /* Mobile Cards */
