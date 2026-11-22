@@ -763,6 +763,8 @@ export interface AppMessages {
       details: string;
     };
     noEvents: string;
+    loadError: string;
+    retry: string;
     notAvailable: string;
     expandDetails: string;
     collapseDetails: string;
@@ -2045,6 +2047,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         details: "Details",
       },
       noEvents: "No events found",
+      loadError: "Failed to load audit events. Please try again.",
+      retry: "Retry",
       notAvailable: "N/A",
       expandDetails: "Expand details",
       collapseDetails: "Collapse details",
@@ -3520,6 +3524,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         details: "Détails",
       },
       noEvents: "Aucun événement trouvé",
+      loadError: "Impossible de charger les événements d'audit. Veuillez réessayer.",
+      retry: "Réessayer",
       notAvailable: "N/D",
       expandDetails: "Afficher les détails",
       collapseDetails: "Masquer les détails",
