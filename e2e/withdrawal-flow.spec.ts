@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Withdrawal flow", () => {
+  test.use({ timezoneId: "UTC" });
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
@@ -51,9 +52,22 @@ test.describe("Withdrawal flow", () => {
   });
 
   test("withdrawal handles error recovery", async ({ page }) => {
-    await page.goto("/dashboard/transactions?theme=light&kind=withdrawal&preview=interactive");
-    await page.waitForLoadState("networkidle");
+    await page.setViewportSize({ width: 1280, height: 1600 });
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await page.clock.setFixedTime(new Date("2025-01-15T12:00:00Z"));
+    await page.goto("/dashboard/transactions?theme=light&kind=withdrawal&preview=failure");
 
-    await expect(page.locator('[data-qa="transaction-review-button"]')).toBeVisible();
+    const reference = "NW-WDR-PREVIEW-FAILURE";
+    const receipt = page.getByRole("status").filter({ hasText: reference });
+    await expect(receipt.getByText("Failed", { exact: true })).toBeVisible();
+    await expect(receipt.getByText(/Treasury liquidity changed mid-flight/)).toBeVisible();
+    await expect(receipt.getByText(reference, { exact: true })).toBeVisible();
+    await expect(receipt).toBeInViewport({ ratio: 1 });
+    await expect(receipt).toHaveScreenshot("withdrawal-failure.png");
+
+    await receipt.getByRole("button", { name: "New transaction" }).click();
+    await expect(receipt).toBeHidden();
+    await expect(page.locator("#wallet")).toBeVisible();
+    await expect(page.locator('[data-qa="transaction-review-button"]')).toBeEnabled();
   });
 });

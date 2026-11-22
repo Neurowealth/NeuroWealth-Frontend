@@ -83,3 +83,41 @@ test("TransactionFlow segmented controls expose aria-pressed selection state and
   assert.equal(withdrawBtn.getAttribute("aria-pressed"), "true");
   assert.equal(depositBtn.getAttribute("aria-pressed"), "false");
 });
+
+test("withdrawal destination feedback follows Stellar address validity", async (t) => {
+  t.after(cleanup);
+  const user = userEvent.setup();
+  const view = renderTransactionFlow("theme=light&kind=withdrawal&preview=interactive");
+  const wallet = view.getByRole("textbox", { name: /wallet|destination/i });
+  const validAddress = (wallet as HTMLInputElement).value;
+
+  await user.clear(wallet);
+  assert.equal(view.container.querySelector("#wallet-success"), null);
+  assert.equal(wallet.getAttribute("aria-describedby"), "wallet-hint");
+  assert.equal(wallet.classList.contains("inputSuccess"), false);
+
+  await user.type(wallet, "BAD-ADDRESS");
+  assert.equal(view.container.querySelector("#wallet-success"), null);
+  assert.equal(wallet.getAttribute("aria-describedby"), "wallet-hint");
+  assert.equal(wallet.classList.contains("inputSuccess"), false);
+
+  await user.clear(wallet);
+  await user.paste(validAddress);
+  assert.ok(view.container.querySelector("#wallet-success"));
+  assert.equal(wallet.getAttribute("aria-describedby"), "wallet-hint wallet-success");
+  assert.equal(wallet.classList.contains("inputSuccess"), true);
+});
+
+test("deposit wallet success feedback follows the funding wallet connection", async (t) => {
+  t.after(cleanup);
+  const user = userEvent.setup();
+  const view = renderTransactionFlow();
+  const successMessage = /Deposit uses the connected funding wallet/i;
+
+  assert.ok(view.getByText(successMessage));
+  await user.click(view.getByRole("button", { name: /^Disconnect$/i }));
+  assert.equal(view.queryByText(successMessage), null);
+
+  await user.click(view.getByRole("button", { name: /^Reconnect$/i }));
+  assert.ok(view.getByText(successMessage));
+});

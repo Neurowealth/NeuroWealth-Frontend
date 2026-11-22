@@ -161,6 +161,10 @@ const STRATEGY_LABEL = "Balanced";
 
 const STELLAR_ADDRESS_PATTERN = /^G[A-Z2-7]{55}$/;
 
+export function isTransactionWalletAddress(value: string): boolean {
+  return STELLAR_ADDRESS_PATTERN.test(value.trim());
+}
+
 // Error recovery product copy mapping for each failure mode
 function getRecoveryCopy(t: any): Record<ErrorMode, TransactionRecoveryUI> {
   return {
@@ -373,7 +377,7 @@ export function validateTransactionValues(kind: TransactionKind, values: Transac
   if (kind === "withdrawal") {
     if (!values.walletAddress.trim()) {
       errors.walletAddress = t.validation.enterDestination;
-    } else if (!STELLAR_ADDRESS_PATTERN.test(values.walletAddress.trim())) {
+    } else if (!isTransactionWalletAddress(values.walletAddress)) {
       errors.walletAddress = t.validation.validStellarAddress;
     }
   }

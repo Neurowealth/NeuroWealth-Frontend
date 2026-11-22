@@ -9,6 +9,8 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { z } from "zod";
+import { useI18n } from "@/contexts/I18nContext";
 import {
     TransactionFieldErrors,
     TransactionFormValues,
@@ -46,7 +48,42 @@ const INITIAL_STATE: TransactionAPIState = {
     fieldErrors: {},
 };
 
-import { useI18n } from "@/contexts/I18nContext";
+const transactionKindSchema = z.enum(["deposit", "withdrawal"]);
+const referenceSchema = z.string().regex(/\S/);
+const quoteSchema = z.object({
+    kind: transactionKindSchema,
+    amount: z.number().finite(),
+    fee: z.number().finite(),
+    netAmount: z.number().finite(),
+    totalDebit: z.number().finite(),
+    reference: referenceSchema,
+    walletAddress: z.string(),
+    walletLabel: z.string(),
+    strategyLabel: z.string(),
+    estimatedSettlement: z.string(),
+}) satisfies z.ZodType<TransactionQuote>;
+
+const quoteResponseSchema = z.object({ quote: quoteSchema });
+const submitResponseSchema = z.object({
+    pending: z.object({
+        kind: transactionKindSchema,
+        reference: referenceSchema,
+        quote: quoteSchema,
+        statusLabel: z.string(),
+        message: z.string(),
+        completionDelayMs: z.number().int().nonnegative(),
+        nextStatus: z.enum(["success", "failure"]),
+        failureReason: z.string().nullable(),
+    }) satisfies z.ZodType<PendingTransaction>,
+});
+
+function invalidTransactionResponse() {
+    return new ApiRequestError("Service returned an unexpected transaction payload.", {
+        code: "INVALID_ENVELOPE",
+        status: 502,
+    });
+}
+
 export function useTransactionAPI() {
     const { messages } = useI18n();
     const tDomain = messages.transactions.domain;
@@ -81,7 +118,7 @@ export function useTransactionAPI() {
             }));
 
             try {
-                const payload = await apiRequest<{ quote?: TransactionQuote }>(
+                const payload = await apiRequest<unknown>(
                     "/api/transactions",
                     {
                         method: "POST",
@@ -95,13 +132,13 @@ export function useTransactionAPI() {
                     },
                 );
 
-                setState((prev) => ({ ...prev, isSubmitting: false }));
-
-                if (!payload.quote) {
-                    return { status: "error", fieldErrors: {} };
+                const parsed = quoteResponseSchema.safeParse(payload);
+                if (!parsed.success) {
+                    throw invalidTransactionResponse();
                 }
 
-                return { status: "success", quote: payload.quote };
+                setState((prev) => ({ ...prev, isSubmitting: false }));
+                return { status: "success", quote: parsed.data.quote };
             } catch (error) {
                 if (controller.signal.aborted) {
                     setState((prev) => ({ ...prev, isSubmitting: false }));
@@ -155,7 +192,7 @@ export function useTransactionAPI() {
             }));
 
             try {
-                const payload = await apiRequest<{ pending: PendingTransaction }>(
+                const payload = await apiRequest<unknown>(
                     "/api/transactions",
                     {
                         method: "POST",
@@ -169,13 +206,19 @@ export function useTransactionAPI() {
                     },
                 );
 
+                const parsed = submitResponseSchema.safeParse(payload);
+                if (!parsed.success) {
+                    throw invalidTransactionResponse();
+                }
+
+                const { pending } = parsed.data;
                 setState((prev) => ({
                     ...prev,
                     isSubmitting: false,
-                    lastErrorReference: payload.pending.reference,
+                    lastErrorReference: pending.reference,
                 }));
 
-                return { status: "success", pending: payload.pending };
+                return { status: "success", pending };
             } catch (error) {
                 if (controller.signal.aborted) {
                     setState((prev) => ({ ...prev, isSubmitting: false }));
