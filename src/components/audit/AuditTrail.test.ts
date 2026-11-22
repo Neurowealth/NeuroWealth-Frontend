@@ -23,6 +23,7 @@ import { act } from "react";
 import { setupDomGlobals } from "@/test-setup";
 import { AuditTrail } from "./AuditTrail";
 import { I18nProvider } from "@/contexts/I18nContext";
+import { getAuditService, type AuditEvent } from "@/lib/audit-service";
 
 setupDomGlobals();
 (globalThis as any).React = React;
@@ -166,4 +167,128 @@ test("AuditTrail safely unmounts while data fetch is pending without errors (#96
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 850));
   });
+});
+
+const SAMPLE_EVENT: AuditEvent = {
+  id: "evt-test-1",
+  eventType: "login",
+  timestamp: new Date("2026-01-15T10:30:00.000Z"),
+  actor: "alice@neurowealth.io",
+  ipAddress: "192.0.2.1",
+  metadata: { method: "wallet" },
+};
+
+test("AuditTrail renders loaded events on a successful non-empty response", async () => {
+  const service = getAuditService();
+  const originalGetEvents = service.getEvents.bind(service);
+  service.getEvents = async () => [SAMPLE_EVENT];
+
+  const { root, container } = renderToContainer(
+    createElement(I18nProvider, null, createElement(AuditTrail)),
+  );
+
+  try {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 850));
+    });
+
+    assert.equal(container.querySelector('[role="alert"]'), null);
+    assert.ok(
+      container.textContent?.includes("alice@neurowealth.io"),
+      "expected loaded audit event actor to be rendered",
+    );
+    assert.ok(
+      !container.textContent?.includes("No events found"),
+      "expected empty state not to render when events are present",
+    );
+  } finally {
+    service.getEvents = originalGetEvents;
+    cleanup(root, container);
+  }
+});
+
+test("AuditTrail renders empty state on a successful empty response", async () => {
+  const service = getAuditService();
+  const originalGetEvents = service.getEvents.bind(service);
+  service.getEvents = async () => [];
+
+  const { root, container } = renderToContainer(
+    createElement(I18nProvider, null, createElement(AuditTrail)),
+  );
+
+  try {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 850));
+    });
+
+    assert.equal(container.querySelector('[role="alert"]'), null);
+    assert.ok(
+      container.textContent?.includes("No events found"),
+      "expected empty state message for successful empty response",
+    );
+    assert.ok(
+      !container.textContent?.includes("Failed to load audit events"),
+      "expected error message not to render for successful empty response",
+    );
+  } finally {
+    service.getEvents = originalGetEvents;
+    cleanup(root, container);
+  }
+});
+
+test("AuditTrail renders localised error state with retry on load failure and recovers on retry", async () => {
+  const service = getAuditService();
+  const originalGetEvents = service.getEvents.bind(service);
+  let attempts = 0;
+  service.getEvents = async () => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error("Network error");
+    }
+    return [SAMPLE_EVENT];
+  };
+
+  const { root, container } = renderToContainer(
+    createElement(I18nProvider, null, createElement(AuditTrail)),
+  );
+
+  try {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 850));
+    });
+
+    const alert = container.querySelector('[role="alert"]');
+    assert.ok(alert, "expected an alert element to render on load failure");
+    assert.ok(
+      alert.textContent?.includes("Failed to load audit events. Please try again."),
+      "expected localised error message in alert",
+    );
+    assert.ok(
+      !container.textContent?.includes("No events found"),
+      "expected empty state not to render on load failure",
+    );
+
+    const retryButton = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent?.trim() === "Retry",
+    );
+    assert.ok(retryButton, "expected a Retry button in the error state");
+
+    act(() => {
+      retryButton.click();
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 850));
+    });
+
+    assert.equal(attempts, 2);
+    assert.equal(container.querySelector('[role="alert"]'), null);
+    assert.ok(
+      container.textContent?.includes("alice@neurowealth.io"),
+      "expected retry to load and render audit events",
+    );
+  } finally {
+    service.getEvents = originalGetEvents;
+    cleanup(root, container);
+  }
 });
