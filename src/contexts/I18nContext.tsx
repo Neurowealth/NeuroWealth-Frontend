@@ -69,13 +69,20 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    } catch {
+      // Storage unavailable (e.g. privacy mode or quota-blocked browser);
+      // fall back to navigator.language or default "en" in memory.
+    }
+
     if (stored && isSupportedLocale(stored)) {
       setLocaleState(stored);
       return;
     }
 
-    const browserLanguage = window.navigator.language.toLowerCase();
+    const browserLanguage = window.navigator?.language?.toLowerCase() ?? "";
     if (browserLanguage.startsWith("fr")) {
       setLocaleState("fr");
     }
@@ -90,7 +97,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       document.documentElement.lang = localeToIntl[locale];
     }
 
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    try {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    } catch {
+      // Skip persistence when storage is unavailable.
+    }
   }, [locale]);
 
   // Cross-tab sync: when another tab changes the locale, apply it here.
@@ -109,8 +120,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, [locale]);
 
-  const setLocale = useCallback((nextLocale: AppLocale) => {
-    setLocaleState(nextLocale);
   const setLocale = useCallback((nextLocale: AppLocale | string) => {
     const normalized = normalizeLocale(nextLocale);
     setLocaleState(normalized);
