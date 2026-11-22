@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { useAuth } from "@/contexts";
+import { canAccessDiagnostics } from "./diagnostics-config";
 
 const DiagnosticsPanelContent = dynamic(
   () => import("./DiagnosticsPanelContent").then((mod) => mod.DiagnosticsPanelContent),
@@ -10,16 +12,9 @@ const DiagnosticsPanelContent = dynamic(
 
 export function DiagnosticsPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    // Gated on the build's NODE_ENV only — this must never be reachable via a
-    // client-controlled signal like a query param, since the panel streams
-    // live logger output (including error/stack details) with no auth check.
-    setIsVisible(process.env.NODE_ENV !== "production");
-  }, []);
-
-  if (!isVisible) {
+  if (loading || !canAccessDiagnostics(user)) {
     return null;
   }
 

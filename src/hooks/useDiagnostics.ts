@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { LogEntry, subscribeToLogs } from "@/lib/logger";
 import { AnalyticsEvent, subscribeToEvents } from "@/lib/analytics";
+import {
+  getRedactedDiagnosticsEnv,
+  redactDiagnosticLog,
+} from "@/components/diagnostics/diagnostics-config";
 
 export function useDiagnostics() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -8,7 +12,7 @@ export function useDiagnostics() {
 
   useEffect(() => {
     const unsubscribeLogs = subscribeToLogs((entry) => {
-      setLogs((prev) => [entry, ...prev].slice(0, 50)); // Keep last 50
+      setLogs((prev) => [redactDiagnosticLog(entry), ...prev].slice(0, 50)); // Keep last 50
     });
 
     const unsubscribeEvents = subscribeToEvents((event) => {
@@ -29,9 +33,6 @@ export function useDiagnostics() {
     events,
     clearLogs,
     clearEvents,
-    env: {
-      nodeEnv: process.env.NODE_ENV,
-      userAgent: typeof window !== "undefined" ? navigator.userAgent : "N/A",
-    },
+    env: getRedactedDiagnosticsEnv(),
   };
 }
