@@ -197,5 +197,25 @@ describe("FirstDepositStep", () => {
       `expected error: "${t.errorInsufficientBalance}"`,
     );
   });
+
+  it("displays and announces minimum-deposit error when amount is below 10", () => {
+    const { container } = renderStep();
+    const t = dictionaries.en.onboardingSteps.firstDeposit;
+
+    const input = container.querySelector('input[type="number"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "5" } });
+
+    const submitBtn = container.querySelector('button[data-qa="deposit-submit-button"]') as HTMLButtonElement;
+    assert.ok(submitBtn, "expected deposit submit button");
+    assert.equal(submitBtn.disabled, false);
+    fireEvent.click(submitBtn);
+
+    const alert = container.querySelector('[role="alert"]');
+    assert.ok(alert, "expected role=alert container for error");
+    assert.ok(
+      alert.textContent?.includes(t.errorMinDeposit),
+      `expected error: "${t.errorMinDeposit}"`,
+    );
+  });
 });
 

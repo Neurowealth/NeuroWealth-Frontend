@@ -133,7 +133,7 @@ export function useTransactionFlow({
     setRequestMessage(null);
     resetApi();
     setLastFailedAction(null);
-  }, [kind, preview, cancelRequest, resetForm, resetApi, setValues, setErrors]);
+  }, [kind, preview, cancelRequest, resetForm, resetApi, setValues, setErrors, tDomain]);
 
   // Handle sandbox scenarios
   useEffect(() => {
