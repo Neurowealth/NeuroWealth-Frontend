@@ -963,6 +963,8 @@ export interface AppMessages {
       wallet: { title: string; description: string };
       strategy: { title: string; description: string };
       deposit: { title: string; description: string };
+    };
+  };
   onboardingSteps: {
     walletConnect: {
       title: string;
@@ -2435,6 +2437,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         wallet: { title: "Connect Wallet", description: "Secure your account" },
         strategy: { title: "Choose Strategy", description: "Set your preferences" },
         deposit: { title: "Make Deposit", description: "Start investing" },
+      },
+    },
     onboardingSteps: {
       walletConnect: {
         title: "Connect Your Wallet",
@@ -3910,6 +3914,8 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         wallet: { title: "Connecter le wallet", description: "Sécurisez votre compte" },
         strategy: { title: "Choisir la stratégie", description: "Définissez vos préférences" },
         deposit: { title: "Effectuer un dépôt", description: "Commencez à investir" },
+      },
+    },
     onboardingSteps: {
       walletConnect: {
         title: "Connecter votre wallet",

@@ -12,6 +12,7 @@ import {
   TransactionFormValues,
   TransactionKind,
   getTransactionContext,
+  isTransactionWalletAddress,
 } from "@/lib/transactions";
 import styles from "../transaction-flow.module.css";
 import { sanitizeAmount } from "../utils/transaction-utils";
@@ -55,14 +56,17 @@ export function TransactionFormStage({
     ),
   ].join(" ");
 
+  const isValidDestination =
+    kind === "withdrawal" &&
+    isTransactionWalletAddress(formValues.walletAddress) &&
+    !fieldErrors.walletAddress;
+
   const walletInputClassName = [
     styles.input,
     getInputStateClassName(
       formValues.walletAddress,
       fieldErrors.walletAddress,
-      kind === "withdrawal" &&
-        Boolean(formValues.walletAddress) &&
-        !fieldErrors.walletAddress,
+      isValidDestination,
     ),
   ].join(" ");
 
@@ -166,11 +170,11 @@ export function TransactionFormStage({
               <p className={`${styles.fieldMessage} ${styles.errorMessage}`}>
                 {fieldErrors.walletConnected}
               </p>
-            ) : (
+            ) : formValues.walletConnected ? (
               <p className={`${styles.fieldMessage} ${styles.successMessage}`}>
                 {t.form.depositUsesWallet}
               </p>
-            )}
+            ) : null}
           </>
         ) : (
           <>
@@ -189,9 +193,7 @@ export function TransactionFormStage({
               aria-describedby={joinDescribedBy(
                 "wallet-hint",
                 fieldErrors.walletAddress ? "wallet-error" : undefined,
-                formValues.walletAddress && !fieldErrors.walletAddress
-                  ? "wallet-success"
-                  : undefined,
+                isValidDestination ? "wallet-success" : undefined,
               )}
             />
             <div className={styles.connectRow}>
@@ -218,14 +220,14 @@ export function TransactionFormStage({
               >
                 {fieldErrors.walletAddress}
               </p>
-            ) : (
+            ) : isValidDestination ? (
               <p
                 id="wallet-success"
                 className={`${styles.fieldMessage} ${styles.successMessage}`}
               >
                 {t.form.destinationValid}
               </p>
-            )}
+            ) : null}
             {fieldErrors.walletConnected ? (
               <p
                 className={`${styles.fieldMessage} ${styles.errorMessage}`}

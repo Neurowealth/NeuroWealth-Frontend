@@ -31,34 +31,22 @@ function DrawerHarness({
       },
       "Open Drawer",
     ),
-    createElement(
-      Drawer,
-      {
-        isOpen,
-        onClose: () => setIsOpen(false),
-        title: "Activity Details",
-        preventClose,
-        side,
-        footer: createElement(
-          "button",
-          {
-            type: "button",
-            "data-testid": "drawer-apply-btn",
-            onClick: () => setIsOpen(false),
-          },
-          "Apply",
-        ),
-      },
-      createElement(
-        "div",
-        null,
-        createElement("input", {
-          type: "text",
-          "data-testid": "drawer-input",
-          "aria-label": "Filter text",
-        }),
-      ),
-    ),
+    <Drawer
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Activity Details"
+      preventClose={preventClose}
+      side={side}
+      footer={
+        <button type="button" data-testid="drawer-apply-btn" onClick={() => setIsOpen(false)}>
+          Apply
+        </button>
+      }
+    >
+      <div>
+        <input type="text" data-testid="drawer-input" aria-label="Filter text" />
+      </div>
+    </Drawer>,
   );
 }
 
