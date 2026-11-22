@@ -408,3 +408,36 @@ describe("formatters honour the saved display locale and currency", () => {
     assert.equal(formatCurrency(1234.56), "$1,234.56");
   });
 });
+
+describe("timestamp year (#1279)", () => {
+  beforeEach(() => {
+    setActiveLocale("en");
+  });
+
+  it("formatTimestamp includes the year for a date in a prior year", () => {
+    assert.match(formatTimestamp("2023-03-04T09:05:00Z"), /2023/);
+  });
+
+  it("formatTimestamp shows different years for the same day and month", () => {
+    const earlier = formatTimestamp("2022-07-09T12:00:00Z");
+    const later = formatTimestamp("2024-07-09T12:00:00Z");
+
+    assert.match(earlier, /2022/);
+    assert.match(later, /2024/);
+    assert.notEqual(earlier, later);
+  });
+
+  it("formatSyncLabel includes the year for a date in a prior year", () => {
+    assert.match(formatSyncLabel("2021-11-30T18:45:00Z"), /2021/);
+  });
+
+  it("includes the year in the French locale too", () => {
+    setActiveLocale("fr");
+
+    assert.match(formatTimestamp("2023-03-04T09:05:00Z"), /2023/);
+  });
+
+  it("still includes the time of day", () => {
+    assert.match(formatTimestamp("2023-03-04T09:05:00Z"), /9:05|09:05|09 ?h ?05/);
+  });
+});

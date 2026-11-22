@@ -165,3 +165,84 @@ function resolve(locale: AppLocale, path: string): unknown {
       dictionaries[locale],
     );
 }
+
+// #1280 — the shape/type checks above cannot tell a translated value from an
+// English one left behind in the `fr` dictionary. Compare the transaction
+// domain copy (context, validation, pending, receipt, statusChips, recovery)
+// against `en` and fail on any value that was not translated.
+describe("fr transactions.domain is translated", () => {
+  type Leaf = string | ((...args: never[]) => string);
+
+  function leaves(value: unknown, path: string, out: Map<string, Leaf>) {
+    if (typeof value === "string" || typeof value === "function") {
+      out.set(path, value as Leaf);
+      return;
+    }
+    if (value && typeof value === "object") {
+      for (const [key, child] of Object.entries(value)) {
+        leaves(child, path ? `${path}.${key}` : key, out);
+      }
+    }
+  }
+
+  function render(leaf: Leaf): string {
+    // Function-valued copy takes a number or string; 7 works for both.
+    return typeof leaf === "string" ? leaf : (leaf as (arg: unknown) => string)(7);
+  }
+
+  const en = new Map<string, Leaf>();
+  const fr = new Map<string, Leaf>();
+  leaves(dictionaries.en.transactions.domain, "domain", en);
+  leaves(dictionaries.fr.transactions.domain, "domain", fr);
+
+  it("covers every section of the domain copy", () => {
+    const sections = new Set([...fr.keys()].map((path) => path.split(".")[1]));
+    assert.deepEqual(
+      [...sections].sort(),
+      ["context", "pending", "receipt", "recovery", "statusChips", "validation"],
+    );
+  });
+
+  it("has the same keys in en and fr", () => {
+    assert.deepEqual([...fr.keys()].sort(), [...en.keys()].sort());
+  });
+
+  it("does not reuse the English value for any fr entry", () => {
+    const untranslated = [...en.keys()].filter(
+      (path) => render(en.get(path) as Leaf) === render(fr.get(path) as Leaf),
+    );
+
+    assert.deepEqual(untranslated, [], `untranslated fr value(s): ${untranslated.join(", ")}`);
+  });
+
+  it("keeps the interpolated argument in function-valued entries", () => {
+    for (const [path, leaf] of fr) {
+      if (typeof leaf === "function") {
+        assert.ok(render(leaf).includes("7"), `${path} dropped its argument`);
+      }
+    }
+  });
+
+  it("does not contain known English phrases", () => {
+    const known = [
+      "Withdraw funds",
+      "Add capital",
+      "Review deposit",
+      "Confirm withdrawal",
+      "Deposit amount",
+      "Minimum deposit",
+      "Pending on Stellar",
+      "Wallet required",
+      "Connection lost",
+      "Request timed out",
+      "Contact support",
+      "Something went wrong",
+      "Retry request",
+    ];
+    const text = [...fr.values()].map(render).join("\n");
+
+    for (const phrase of known) {
+      assert.equal(text.includes(phrase), false, `fr still contains English "${phrase}"`);
+    }
+  });
+});
