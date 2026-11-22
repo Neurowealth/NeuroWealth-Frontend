@@ -76,7 +76,7 @@ const SENSITIVE_KEY_FRAGMENTS = [
 ] as const;
 
 const SENSITIVE_VALUE_PATTERN =
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|Bearer\s+\S+/gi;
+  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|Bearer\s+\S+|\b(?:[GMC][A-Z0-9]{55}|0x[a-fA-F0-9]{40})\b/gi;
 
 function resolveMinLogLevel(): LogLevelConfig {
   const configured = process.env.NEXT_PUBLIC_LOG_LEVEL?.toLowerCase();
@@ -149,7 +149,7 @@ const createEntry = (
   id: random().toString(36).substring(7),
   timestamp: new Date().toISOString(),
   level,
-  message,
+  message: typeof message === "string" ? (scrubPII(message) as string) : message,
   context: context === undefined ? undefined : scrubPII(context),
 });
 
@@ -157,17 +157,18 @@ const emitToConsole = (level: LogLevel, message: string, context?: unknown) => {
   if (!isLogLevelEnabled(level)) return;
 
   const prefix = level.toUpperCase();
+  const scrubbedMessage = typeof message === "string" ? (scrubPII(message) as string) : message;
   const payload = context === undefined ? "" : scrubPII(context);
 
   switch (level) {
     case "info":
-      console.log(`[${prefix}] ${message}`, payload);
+      console.log(`[${prefix}] ${scrubbedMessage}`, payload);
       break;
     case "warn":
-      console.warn(`[${prefix}] ${message}`, payload);
+      console.warn(`[${prefix}] ${scrubbedMessage}`, payload);
       break;
     case "error":
-      console.error(`[${prefix}] ${message}`, payload);
+      console.error(`[${prefix}] ${scrubbedMessage}`, payload);
       break;
   }
 };
