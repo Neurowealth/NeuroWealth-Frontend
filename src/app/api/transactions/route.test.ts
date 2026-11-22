@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { POST, resolveTransactionClientId } from "./route";
+import { POST } from "./route";
+import { resolveTransactionClientId } from "./client-id";
 import { NextRequest } from "next/server";
 import { getRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { ERROR_CODE, HTTP_STATUS, MAX_BODY_BYTES } from "@/lib/api-response";

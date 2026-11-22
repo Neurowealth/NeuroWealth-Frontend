@@ -29,33 +29,21 @@ function ModalHarness({
       },
       "Open Modal",
     ),
-    createElement(
-      Modal,
-      {
-        isOpen,
-        onClose: () => setIsOpen(false),
-        title: "Transfer Confirmation",
-        preventClose,
-        footer: createElement(
-          "button",
-          {
-            type: "button",
-            "data-testid": "modal-confirm-btn",
-            onClick: () => setIsOpen(false),
-          },
-          "Confirm",
-        ),
-      },
-      createElement(
-        "div",
-        null,
-        createElement("input", {
-          type: "text",
-          "data-testid": "modal-input",
-          "aria-label": "Transfer note",
-        }),
-      ),
-    ),
+    <Modal
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Transfer Confirmation"
+      preventClose={preventClose}
+      footer={
+        <button type="button" data-testid="modal-confirm-btn" onClick={() => setIsOpen(false)}>
+          Confirm
+        </button>
+      }
+    >
+      <div>
+        <input type="text" data-testid="modal-input" aria-label="Transfer note" />
+      </div>
+    </Modal>,
   );
 }
 

@@ -18,17 +18,12 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
-import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
-import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/api-auth";
 import { dictionaries } from "@/lib/i18n/messages";
+import { resolveTransactionClientId } from "./client-id";
 
 const tDomain = dictionaries.en.transactions.domain;
-
-export function resolveTransactionClientId(request: NextRequest): string | null {
-  const session = getSessionFromRequest(request);
-  const ip = getRateLimitKey(request);
-  return ip ?? (session?.token ? `session:${session.token}` : null);
-}
 
 export async function POST(request: NextRequest) {
   const authError = requireAuth(request, { requireSameOrigin: true });
