@@ -97,14 +97,18 @@ export function CookieConsentProvider({
     }
     setHydrated(true);
   }, []);
-  const persist = useCallback((state: CookieConsentState) => {
+  const persist = useCallback((state: CookieConsentState): boolean => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
-    setConsentState(state);
+      setConsentState(state);
+      return true;
+    } catch (error) {
+      logger.warn("Failed to persist cookie consent to storage", error);
+      return false;
+    }
   }, []);
   const acceptAll = useCallback(() => {
-    persist({
+    const saved = persist({
       status: "accepted",
       preferences: {
         necessary: true,
@@ -114,17 +118,21 @@ export function CookieConsentProvider({
       },
       lastUpdated: new Date().toISOString(),
     });
-    setShowBanner(false);
-    setShowModal(false);
+    if (saved) {
+      setShowBanner(false);
+      setShowModal(false);
+    }
   }, [persist]);
   const rejectAll = useCallback(() => {
-    persist({
+    const saved = persist({
       status: "rejected",
       preferences: { ...defaultPreferences, necessary: true },
       lastUpdated: new Date().toISOString(),
     });
-    setShowBanner(false);
-    setShowModal(false);
+    if (saved) {
+      setShowBanner(false);
+      setShowModal(false);
+    }
   }, [persist]);
   const savePreferences = useCallback(
     (prefs: Partial<CookiePreferences>) => {
@@ -137,13 +145,15 @@ export function CookieConsentProvider({
         merged.analytics && merged.marketing && merged.personalization;
       const allOff =
         !merged.analytics && !merged.marketing && !merged.personalization;
-      persist({
+      const saved = persist({
         status: allOn ? "accepted" : allOff ? "rejected" : "custom",
         preferences: merged,
         lastUpdated: new Date().toISOString(),
       });
-      setShowBanner(false);
-      setShowModal(false);
+      if (saved) {
+        setShowBanner(false);
+        setShowModal(false);
+      }
     },
     [consentState.preferences, persist],
   );

@@ -1,13 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { logger } from "@/lib/logger";
 
 export type ScenarioType = "success" | "empty" | "loading" | "partial-failure" | "timeout";
 export type ModuleType = "portfolio" | "history" | "transactions" | "notifications";
 
-interface ScenarioState {
+export interface ScenarioState {
   [key: string]: ScenarioType;
 }
 
@@ -19,12 +19,39 @@ interface SandboxContextType {
   isSandboxMode: boolean;
 }
 
-const defaultScenarios: ScenarioState = {
+export const defaultScenarios: ScenarioState = {
   portfolio: "success",
   history: "success",
   transactions: "success",
   notifications: "success",
 };
+
+const VALID_SCENARIO_TYPES: ReadonlySet<string> = new Set<ScenarioType>([
+  "success",
+  "empty",
+  "loading",
+  "partial-failure",
+  "timeout",
+]);
+
+export function validateScenarioState(parsed: unknown): ScenarioState {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { ...defaultScenarios };
+  }
+
+  const result: ScenarioState = { ...defaultScenarios };
+  const candidate = parsed as Record<string, unknown>;
+
+  for (const key of Object.keys(defaultScenarios)) {
+    const value = candidate[key];
+    if (typeof value === "string" && VALID_SCENARIO_TYPES.has(value)) {
+      result[key] = value as ScenarioType;
+    }
+  }
+
+  return result;
+}
+
 const SANDBOX_STORAGE_KEY = STORAGE_KEYS.SANDBOX_SCENARIOS;
 
 const SandboxContext = createContext<SandboxContextType | undefined>(undefined);
@@ -55,9 +82,11 @@ export function SandboxProvider({ children }: SandboxProviderProps) {
       const saved = localStorage.getItem(SANDBOX_STORAGE_KEY);
       if (saved) {
         try {
-          setScenarios(JSON.parse(saved));
+          const parsed: unknown = JSON.parse(saved);
+          setScenarios(validateScenarioState(parsed));
         } catch (e) {
           logger.error("Failed to load sandbox scenarios", e);
+          setScenarios(defaultScenarios);
         }
       }
     }
