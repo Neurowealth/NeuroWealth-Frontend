@@ -11,6 +11,9 @@ export type ValidationTone = "error" | "success" | "warning";
 
 import { logger } from "./logger";
 import { random } from "./seeded-rng";
+import type { dictionaries } from "@/lib/i18n/messages";
+
+export type TransactionDomainMessages = (typeof dictionaries)["en"]["transactions"]["domain"];
 
 // Error recovery types
 export type RecoveryAction = "retry" | "edit" | "support";
@@ -166,7 +169,7 @@ export function isTransactionWalletAddress(value: string): boolean {
 }
 
 // Error recovery product copy mapping for each failure mode
-function getRecoveryCopy(t: any): Record<ErrorMode, TransactionRecoveryUI> {
+function getRecoveryCopy(t: TransactionDomainMessages["recovery"]): Record<ErrorMode, TransactionRecoveryUI> {
   return {
     network_error: {
       title: t.networkErrorTitle,
@@ -276,7 +279,7 @@ export function parsePreviewState(value: string | null): TransactionPreviewState
   return "interactive";
 }
 
-export function getTransactionContext(kind: TransactionKind, t: any): TransactionContext {
+export function getTransactionContext(kind: TransactionKind, t: TransactionDomainMessages["context"]): TransactionContext {
   if (kind === "withdrawal") {
     return {
       kind,
@@ -355,7 +358,7 @@ export function parseAmount(value: string): number {
   return amount;
 }
 
-export function validateTransactionValues(kind: TransactionKind, values: TransactionFormValues, t: any): TransactionFieldErrors {
+export function validateTransactionValues(kind: TransactionKind, values: TransactionFormValues, t: TransactionDomainMessages): TransactionFieldErrors {
   const context = getTransactionContext(kind, t.context);
   const amount = parseAmount(values.amount);
   const errors: TransactionFieldErrors = {};
@@ -385,7 +388,7 @@ export function validateTransactionValues(kind: TransactionKind, values: Transac
   return errors;
 }
 
-export function buildTransactionQuote(kind: TransactionKind, values: TransactionFormValues, tContext: any, reference = generateReference(kind)): TransactionQuote {
+export function buildTransactionQuote(kind: TransactionKind, values: TransactionFormValues, tContext: TransactionDomainMessages["context"], reference = generateReference(kind)): TransactionQuote {
   const context = getTransactionContext(kind, tContext);
   const amount = roundCurrency(parseAmount(values.amount));
   const fee = NETWORK_FEE[kind];
@@ -406,7 +409,7 @@ export function buildTransactionQuote(kind: TransactionKind, values: Transaction
   };
 }
 
-export function buildPendingTransaction(kind: TransactionKind, values: TransactionFormValues, tPending: any, tContext: any, nextStatus: "success" | "failure" = "success"): PendingTransaction {
+export function buildPendingTransaction(kind: TransactionKind, values: TransactionFormValues, tPending: TransactionDomainMessages["pending"], tContext: TransactionDomainMessages["context"], nextStatus: "success" | "failure" = "success"): PendingTransaction {
   const quote = buildTransactionQuote(kind, values, tContext);
 
   return {
@@ -421,7 +424,7 @@ export function buildPendingTransaction(kind: TransactionKind, values: Transacti
   };
 }
 
-export function buildTransactionReceipt(pending: PendingTransaction, status: "success" | "failure", tReceipt: any): TransactionReceipt {
+export function buildTransactionReceipt(pending: PendingTransaction, status: "success" | "failure", tReceipt: TransactionDomainMessages["receipt"]): TransactionReceipt {
   return {
     kind: pending.kind,
     status,
@@ -434,7 +437,7 @@ export function buildTransactionReceipt(pending: PendingTransaction, status: "su
   };
 }
 
-export function buildPreviewSnapshot(kind: TransactionKind, preview: TransactionPreviewState, t: any): TransactionPreviewSnapshot {
+export function buildPreviewSnapshot(kind: TransactionKind, preview: TransactionPreviewState, t: TransactionDomainMessages): TransactionPreviewSnapshot {
   const baseValues = getDefaultTransactionValues(kind);
 
   if (preview === "validation") {
@@ -526,7 +529,7 @@ export function buildPreviewSnapshot(kind: TransactionKind, preview: Transaction
   };
 }
 
-export function buildStatusChips(kind: TransactionKind, values: TransactionFormValues, t: any): Array<{ label: string; tone: ValidationTone }> {
+export function buildStatusChips(kind: TransactionKind, values: TransactionFormValues, t: TransactionDomainMessages): Array<{ label: string; tone: ValidationTone }> {
   const context = getTransactionContext(kind, t.context);
 
   return [
@@ -582,7 +585,7 @@ export function mapErrorCodeToErrorMode(code: string): ErrorMode {
  */
 export function getTransactionRecoveryUI(
   codeOrMode: string,
-  t: any,
+  t: TransactionDomainMessages["recovery"],
   reference?: string,
 ): TransactionRecoveryUI {
   const normalized = codeOrMode.toLowerCase() as ErrorMode;

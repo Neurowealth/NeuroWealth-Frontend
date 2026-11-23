@@ -27,6 +27,7 @@ import {
   TransactionQuote,
   TransactionReceipt,
   type RecoveryAction,
+  type TransactionDomainMessages,
 } from "@/lib/transactions";
 import type { ScenarioType } from "@/contexts/SandboxContext";
 import { getTheme } from "../utils/transaction-utils";
@@ -50,7 +51,7 @@ export interface UseTransactionFlowArgs {
   router: FlowRouter;
   isSandboxMode: boolean;
   scenario: ScenarioType;
-  tDomain: any;
+  tDomain: TransactionDomainMessages;
 }
 
 export function useTransactionFlow({

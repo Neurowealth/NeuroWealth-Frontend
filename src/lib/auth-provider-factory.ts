@@ -2,7 +2,7 @@
  * auth-provider-factory.ts
  *
  * Factory for creating auth provider instances.
- * Allows swapping between mock and real auth implementations.
+ * Currently returns mockAuth across all environments pending real backend adapter implementation.
  */
 
 import type { AuthAdapter } from "./auth-adapter";
@@ -10,10 +10,11 @@ import { mockAuth } from "./mock-auth";
 
 /**
  * Get the current auth adapter instance.
- * In development, this returns mockAuth.
- * In production, this would return a real backend adapter.
+ * Currently returns mockAuth across all environments as no real backend adapter exists yet.
  */
 export function getAuthAdapter(): AuthAdapter {
-    // TODO: In production, check environment and return real backend adapter
+    if (process.env.NODE_ENV === "production" && process.env.AUTH_PROVIDER === "real") {
+        // Reserved for real backend auth provider when implemented
+    }
     return mockAuth;
 }
