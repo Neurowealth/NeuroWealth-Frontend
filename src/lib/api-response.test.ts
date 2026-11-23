@@ -23,6 +23,46 @@ test("readJsonBody parses valid JSON within the configured size limit", async ()
   }
 });
 
+test("readJsonBody rejects missing and non-JSON content types before reading the body", async () => {
+  for (const headers of [{ "Content-Type": "text/plain" }, {}]) {
+    let bodyRead = false;
+    const request = new Request("http://localhost:3000/api/test", {
+      method: "POST",
+      headers,
+      body: new ReadableStream({
+        pull() {
+          bodyRead = true;
+        },
+      }, { highWaterMark: 0 }),
+      duplex: "half",
+    } as RequestInit);
+
+    const result = await readJsonBody(request);
+
+    assert.equal(bodyRead, false);
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const body = await result.response.json();
+      assert.equal(result.response.status, HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE);
+      assert.equal(body.success, false);
+      assert.equal(body.error.code, ERROR_CODE.UNSUPPORTED_MEDIA_TYPE);
+    }
+  }
+});
+
+test("readJsonBody accepts JSON media types with parameters and structured suffixes", async () => {
+  const result = await readJsonBody(
+    makeJsonRequest('{"ok":true}', {
+      "Content-Type": "application/problem+json; charset=utf-8",
+    }),
+  );
+
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.deepEqual(result.data, { ok: true });
+  }
+});
+
 test("readJsonBody rejects declared oversized bodies before parsing", async () => {
   const result = await readJsonBody(
     makeJsonRequest("{}", {

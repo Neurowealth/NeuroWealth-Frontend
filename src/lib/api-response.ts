@@ -26,6 +26,7 @@ export const HTTP_STATUS = {
     OK: 200,
     CREATED: 201,
     BAD_REQUEST: 400,
+    UNSUPPORTED_MEDIA_TYPE: 415,
     PAYLOAD_TOO_LARGE: 413,
     UNAUTHORIZED: 401,
     FORBIDDEN: 403,
@@ -41,6 +42,7 @@ export const HTTP_STATUS = {
  */
 export const ERROR_CODE = {
     VALIDATION_ERROR: "VALIDATION_ERROR",
+    UNSUPPORTED_MEDIA_TYPE: "UNSUPPORTED_MEDIA_TYPE",
     UNAUTHORIZED: "UNAUTHORIZED",
     FORBIDDEN: "FORBIDDEN",
     NOT_FOUND: "NOT_FOUND",
@@ -106,6 +108,24 @@ export async function readJsonBody(
     | { ok: false; response: import("next/server").NextResponse }
 > {
     const { NextResponse } = await import("next/server");
+
+    const contentType = request.headers.get("content-type");
+    const mediaType = contentType?.split(";", 1)[0].trim().toLowerCase();
+    if (
+        !mediaType ||
+        !/^application\/(?:[a-z0-9!#$&^_.+-]+\+)?json$/.test(mediaType)
+    ) {
+        return {
+            ok: false,
+            response: NextResponse.json(
+                errorResponse(
+                    ERROR_CODE.UNSUPPORTED_MEDIA_TYPE,
+                    "Content-Type must be a JSON media type.",
+                ),
+                { status: HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE },
+            ),
+        };
+    }
 
     // Fast path: reject oversized requests before reading the body when the
     // client/proxy provides Content-Length. The same limit is also enforced
