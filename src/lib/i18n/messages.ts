@@ -784,6 +784,7 @@ export interface AppMessages {
     page: string;
     goTo: string;
     jumpToPage: string;
+    itemsCount: string;
     resultRange: string;
   };
   profile: {
@@ -1102,6 +1103,7 @@ export interface AppMessages {
     searchAriaLabel: string;
   };
   notifications: {
+    unreadLabel: string;
     title: string;
     preferencesTitle: string;
     empty: string;
@@ -2068,6 +2070,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       page: "Page {page}",
       goTo: "Go to",
       jumpToPage: "Jump to page",
+      itemsCount: "{count} items",
       resultRange: "{start}–{end} of {total}",
     },
     profile: {
@@ -2581,6 +2584,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       searchAriaLabel: "Search routes and actions",
     },
     notifications: {
+      unreadLabel: "Unread",
       title: "Notifications",
       preferencesTitle: "Preferences",
       empty: "No notifications yet.",
@@ -3545,6 +3549,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       page: "Page {page}",
       goTo: "Aller à",
       jumpToPage: "Aller à la page",
+      itemsCount: "{count} éléments",
       resultRange: "{start}–{end} sur {total}",
     },
     profile: {
@@ -4058,6 +4063,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
       searchAriaLabel: "Rechercher des pages et des actions",
     },
     notifications: {
+      unreadLabel: "Non lue",
       title: "Notifications",
       preferencesTitle: "Préférences",
       empty: "Aucune notification pour le moment.",
