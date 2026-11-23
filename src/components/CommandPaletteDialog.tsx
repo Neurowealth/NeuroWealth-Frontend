@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Settings } from "lucide-react";
+import { Search } from "lucide-react";
 import { commandPaletteRoutes } from "@/lib/routeMetadata";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -18,19 +18,6 @@ type Command = {
 interface CommandPaletteDialogProps {
   onClose: () => void;
 }
-
-const mockActions = [
-  {
-    id: "action-logout",
-    name: "Mock: Logout",
-    action: () => alert("Logged Out"),
-  },
-  {
-    id: "action-theme",
-    name: "Mock: Toggle Theme",
-    action: () => alert("Theme Toggled"),
-  },
-];
 
 /**
  * The command palette UI. Loaded lazily by `CommandPalette` only after the
@@ -55,14 +42,6 @@ export function CommandPaletteDialog({ onClose }: CommandPaletteDialogProps) {
         ...route,
         action: () => {
           router.push(route.path);
-          onClose();
-        },
-      })),
-      ...mockActions.map((action) => ({
-        ...action,
-        icon: Settings,
-        action: () => {
-          action.action();
           onClose();
         },
       })),

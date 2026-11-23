@@ -271,12 +271,10 @@ test("CommandPaletteDialog — wraps filteredCommands in useMemo over allCommand
   assert.match(dialogSource, /\[allCommands, query\]/);
 });
 
-test("CommandPaletteDialog — hoists mockActions out of the render body", () => {
-  assert.match(dialogSource, /const mockActions = \[/);
-  const componentBody = dialogSource.slice(
-    dialogSource.indexOf("export function CommandPaletteDialog"),
-  );
-  assert.doesNotMatch(componentBody, /const mockActions = \[/);
+test("CommandPaletteDialog — production commands contain no alert-backed placeholder actions", () => {
+  assert.doesNotMatch(dialogSource, /\bmockActions\b/);
+  assert.doesNotMatch(dialogSource, /\balert\s*\(/);
+  assert.doesNotMatch(dialogSource, /Mock: (?:Logout|Toggle Theme)/);
 });
 
 // ── Focus trap Tab cycle regression test (#863) ──────────────────────────
