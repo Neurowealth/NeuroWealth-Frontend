@@ -30,13 +30,14 @@ test("filterAndPaginateHistory filters and paginates items", () => {
   const page = filterAndPaginateHistory({
     kind: "all",
     status: "all",
-    search: "",
+    dateFrom: "",
+    dateTo: "",
     page: 1,
-    limit: 10,
+    pageSize: 10,
   });
 
   assert.equal(page.page, 1);
-  assert.equal(page.limit, 10);
+  assert.equal(page.pageSize, 10);
   assert.equal(page.items.length, 10);
   assert.equal(page.total, MOCK_HISTORY_ITEMS.length);
   assert.ok(page.totalPages > 1);
@@ -46,9 +47,10 @@ test("filterAndPaginateHistory filters by kind deposit", () => {
   const page = filterAndPaginateHistory({
     kind: "deposit",
     status: "all",
-    search: "",
+    dateFrom: "",
+    dateTo: "",
     page: 1,
-    limit: 10,
+    pageSize: 10,
   });
 
   assert.ok(page.items.every((item) => item.kind === "deposit"));
