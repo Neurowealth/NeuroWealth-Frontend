@@ -356,3 +356,133 @@ test("POST /api/transactions rate limiting isolates clients by session when IP h
 test.afterEach(() => {
   resetRateLimitStore();
 });
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = value;
+  }
+}
+
+function mockBackend(
+  run: () => Promise<void>,
+): Promise<void> {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  return run().finally(() => {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  });
+}
+
+test("POST /api/transactions returns 502 BACKEND_ERROR for a non-JSON backend body", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response("<html><body>Gateway Error</body></html>", {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
+});
+
+test("POST /api/transactions returns 502 BACKEND_ERROR for a malformed backend payload", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ unexpected: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
+});
+
+test("POST /api/transactions wraps a bare backend success payload in the app envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ quote: { kind: "deposit" } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.quote.kind, "deposit");
+  });
+});
+
+test("POST /api/transactions unwraps a wrapped backend success envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: { quote: { kind: "withdrawal" } },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+
+    const res = await POST(makePostRequest(validWithdrawal));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.quote.kind, "withdrawal");
+  });
+});
+
+test("POST /api/transactions maps a backend error envelope on a 2xx response", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "INSUFFICIENT_BALANCE", message: "Not enough funds." },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_REQUEST);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.VALIDATION_ERROR);
+    assert.equal(body.error.message, "Not enough funds.");
+  });
+});
+
+test("POST /api/transactions maps a non-OK backend response to the error envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: "Bad Gateway" }), {
+        status: 502,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
+});
