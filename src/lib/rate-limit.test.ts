@@ -60,6 +60,28 @@ test("resets after the window elapses", () => {
   assert.equal(afterWindow.allowed, true);
 });
 
+test("evicts least-recently-used keys instead of an actively used key", () => {
+  const opts = { maxRequests: 5, windowMs: 60_000 };
+  const activeKey = "active:client";
+
+  for (let i = 0; i < opts.maxRequests; i++) {
+    assert.equal(checkRateLimit(activeKey, opts).allowed, true);
+  }
+
+  for (let i = 0; i < 900; i++) {
+    checkRateLimit(`idle:${i}`, opts);
+  }
+
+  assert.equal(checkRateLimit(activeKey, opts).allowed, false);
+
+  for (let i = 900; i < 1300; i++) {
+    checkRateLimit(`idle:${i}`, opts);
+  }
+
+  const stillBlocked = checkRateLimit(activeKey, opts);
+  assert.equal(stillBlocked.allowed, false);
+});
+
 test("getRateLimitKey extracts client IP from x-forwarded-for first hop", () => {
   const headers = new Headers({
     "x-forwarded-for": "203.0.113.195, 70.41.3.18, 150.172.238.178",

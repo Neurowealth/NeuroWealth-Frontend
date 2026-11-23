@@ -18,13 +18,44 @@ export const strategyUpdateSchema = z.object({
   strategy: strategyKindSchema,
 });
 
+const backendObjectSchema = z.object({}).passthrough();
+
+export const backendSuccessEnvelopeSchema = z.object({
+  success: z.literal(true),
+  data: z.unknown(),
+});
+
+export const transactionQuotePayloadSchema = z.object({
+  quote: backendObjectSchema,
+});
+
+export const transactionPendingPayloadSchema = z.object({
+  pending: backendObjectSchema,
+});
+
+export const strategyPreferencePayloadSchema = z
+  .object({
+    strategy: strategyKindSchema,
+  })
+  .passthrough();
+
 export const transactionHistoryQuerySchema = z.object({
   kind: z.enum(["all", "deposit", "withdrawal", "rebalance"]).optional(),
   status: z.enum(["all", "pending", "success", "failed"]).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().int().min(1))
+    .optional(),
+  pageSize: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(50))
+    .optional(),
 });
 
 export const transactionKindSchema = z.enum(["deposit", "withdrawal"]);
