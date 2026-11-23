@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useI18n } from "@/contexts/I18nContext";
 
 export interface FilterOption {
   id: string;
@@ -23,6 +24,7 @@ const XIcon = () => (
 );
 
 export default function FilterChips({ options, selected, onChange, className = "" }: FilterChipsProps) {
+  const { messages: { pagination } } = useI18n();
   const toggle = (id: string) => {
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
   };
@@ -78,6 +80,7 @@ export default function FilterChips({ options, selected, onChange, className = "
             <span>{opt.label}</span>
             {opt.count !== undefined && (
               <span style={{
+                position: "relative",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -92,9 +95,11 @@ export default function FilterChips({ options, selected, onChange, className = "
                 lineHeight: 1,
                 transition: "all 0.12s",
               }}
-                aria-label={`${opt.count} items`}
               >
-                {opt.count > 999 ? "999+" : opt.count}
+                <span aria-hidden="true">{opt.count > 999 ? "999+" : opt.count}</span>
+                <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+                  {pagination.itemsCount.replace("{count}", String(opt.count))}
+                </span>
               </span>
             )}
             {active && (
