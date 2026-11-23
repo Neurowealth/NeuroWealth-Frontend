@@ -31,6 +31,10 @@ JSON write routes enforce a 100 KB request body limit before schema validation.
 This application-level limit is intentionally below Vercel Functions' documented
 4.5 MB request/response payload cap while matching the small payloads expected by
 the transaction and strategy flows.
+Write requests must use a JSON media type (`application/json` or another
+`application/*+json` media type). Requests with a missing or non-JSON
+`Content-Type` are rejected with `415 Unsupported Media Type` before the body is
+read.
 
 Affected frontend routes:
 
@@ -45,6 +49,19 @@ Oversized requests return `413 Payload Too Large` with the standard envelope:
   "error": {
     "code": "PAYLOAD_TOO_LARGE",
     "message": "Request body must not exceed 100 KB."
+  }
+}
+```
+
+Requests with a missing or non-JSON `Content-Type` return `415 Unsupported Media
+Type` with the standard envelope:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNSUPPORTED_MEDIA_TYPE",
+    "message": "Content-Type must be a JSON media type."
   }
 }
 ```
@@ -255,12 +272,13 @@ Accept: application/json
 | `VALIDATION_ERROR`    | 400         | Request validation failed               |
 | `UNAUTHORIZED`        | 401         | Bearer token invalid or expired         |
 | `FORBIDDEN`           | 403         | User lacks permission for resource      |
-| `NOT_FOUND`           | 404         | Resource does not exist                 |
-| `PAYLOAD_TOO_LARGE`   | 413         | Request body exceeds 100 KB limit       |
-| `RATE_LIMITED`        | 429         | Too many requests — retry after backoff |
-| `INTERNAL_ERROR`      | 500         | Internal server error                   |
-| `BACKEND_ERROR`       | 502         | Backend service error                   |
-| `SERVICE_UNAVAILABLE` | 503         | Backend service temporarily unavailable |
+| `NOT_FOUND`              | 404 | Resource does not exist                   |
+| `UNSUPPORTED_MEDIA_TYPE` | 415 | Request `Content-Type` must be JSON        |
+| `PAYLOAD_TOO_LARGE`      | 413 | Request body exceeds 100 KB limit         |
+| `RATE_LIMITED`           | 429 | Too many requests — retry after backoff   |
+| `INTERNAL_ERROR`         | 500 | Internal server error                     |
+| `BACKEND_ERROR`          | 502 | Backend service error                     |
+| `SERVICE_UNAVAILABLE`    | 503 | Backend service temporarily unavailable  |
 
 ## Response Envelope
 

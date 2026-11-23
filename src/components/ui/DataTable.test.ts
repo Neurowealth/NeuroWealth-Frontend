@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { setupDomGlobals } from "@/test-setup";
 
@@ -145,7 +144,11 @@ test("getPaginatedSlice handles out-of-range page gracefully", () => {
   assert.deepEqual(getPaginatedSlice(items, 10, 3), []);
 });
 
-test("interactive rows expose keyboard semantics", () => {
+test("clickable rows preserve table semantics and remain keyboard-activatable", (t) => {
+  setupDomGlobals();
+  Object.assign(globalThis, { React });
+  t.after(cleanup);
+
   type TestRow = { id: string; name: string };
   const columns: DataTableColumn<TestRow>[] = [
     {
@@ -155,19 +158,70 @@ test("interactive rows expose keyboard semantics", () => {
     },
   ];
 
-  const markup = renderToStaticMarkup(
+  let clickedRow: TestRow | undefined;
+  const { getByRole } = render(
     React.createElement(DataTable<TestRow>, {
       data: [{ id: "1", name: "Alpha" }],
       columns,
       rowKey: (row) => row.id,
-      onRowClick: () => undefined,
+      onRowClick: (row) => {
+        clickedRow = row;
+      },
       pageSize: 10,
       searchable: false,
     }),
   );
 
-  assert.match(markup, /role="button"/);
-  assert.match(markup, /tabindex="0"/);
+  const table = getByRole("table");
+  const row = getByRole("row", { name: "Alpha" });
+  assert.ok(table.contains(row));
+  assert.equal(row.getAttribute("role"), "row");
+  assert.equal(row.getAttribute("tabindex"), "0");
+
+  row.focus();
+  fireEvent.keyDown(row, { key: "Enter" });
+  assert.deepEqual(clickedRow, { id: "1", name: "Alpha" });
+});
+
+test("shrinking data after navigating to the last page shows a valid page", (t) => {
+  setupDomGlobals();
+  Object.assign(globalThis, { React });
+  t.after(cleanup);
+
+  const data = Array.from({ length: 35 }, (_, index) => ({
+    id: String(index + 1),
+    name: `Item ${index + 1}`,
+  }));
+  const columns: DataTableColumn<(typeof data)[number]>[] = [
+    { key: "name", header: "Name", accessor: (row) => row.name },
+  ];
+  const props = {
+    data,
+    columns,
+    rowKey: (row: (typeof data)[number]) => row.id,
+    searchable: false,
+    pageSize: 10,
+  };
+  const { getByRole, rerender } = render(
+    React.createElement(DataTable<(typeof data)[number]>, props),
+  );
+  const table = getByRole("table");
+
+  fireEvent.click(getByRole("button", { name: "Page 4" }));
+  assert.match(table.textContent ?? "", /Item 31/);
+
+  const smallerData = data.slice(0, 12);
+  rerender(
+    React.createElement(DataTable<(typeof data)[number]>, {
+      ...props,
+      data: smallerData,
+    }),
+  );
+
+  assert.match(table.textContent ?? "", /Item 1/);
+  assert.match(table.textContent ?? "", /Item 10/);
+  assert.doesNotMatch(table.textContent ?? "", /Item 31/);
+  assert.equal(getByRole("button", { name: "Page 1" }).getAttribute("aria-current"), "page");
 });
 
 test("column menu moves focus in on open, supports ArrowDown/ArrowUp/Home/End/Escape, and returns focus to trigger on close", (t) => {

@@ -66,6 +66,25 @@ test("PUT /api/strategy returns 401 when unauthenticated", async () => {
   assert.equal(body.error.code, "UNAUTHORIZED");
 });
 
+test("PUT /api/strategy returns 415 for non-JSON content type", async () => {
+  const req = new NextRequest("http://localhost:3000/api/strategy", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "text/plain",
+      Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
+      Origin: "http://localhost:3000",
+      Host: "localhost:3000",
+    },
+    body: JSON.stringify({ strategy: "balanced" }),
+  });
+  const res = await PUT(req);
+  const body = await res.json();
+
+  assert.equal(res.status, HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE);
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, ERROR_CODE.UNSUPPORTED_MEDIA_TYPE);
+});
+
 test("GET /api/strategy returns 200 with default strategy", async () => {
   const req = makeGetRequest();
   const res = await GET(req);

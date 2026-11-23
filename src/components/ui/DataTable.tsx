@@ -224,16 +224,16 @@ export function DataTable<T extends object>({
     [rows, pageSize],
   );
 
-  const pagedRows = useMemo(
-    () => getPaginatedSlice(rows, currentPage, pageSize ?? 0),
-    [rows, currentPage, pageSize],
-  );
-
   const safePage = Math.min(currentPage, totalPages || 1);
+
+  const pagedRows = useMemo(
+    () => getPaginatedSlice(rows, safePage, pageSize ?? 0),
+    [rows, safePage, pageSize],
+  );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [data, query, columnFilters]);
+  }, [data, query, columnFilters, pageSize, totalPages]);
 
   const toggleSort = (key: string) =>
     setSort((prev) => {
@@ -480,7 +480,7 @@ export function DataTable<T extends object>({
                   key={rowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
-                  role={onRowClick ? "button" : undefined}
+                  role={onRowClick ? "row" : undefined}
                   tabIndex={onRowClick ? 0 : undefined}
                   className={cn(
                     "transition-colors",
