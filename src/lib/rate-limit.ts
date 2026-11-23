@@ -16,6 +16,8 @@ interface RateLimitEntry {
   timestamps: number[];
   /** Window of the limiter that last used this key; sweeps prune with it. */
   windowMs: number;
+  /** Last time this key was checked; used to evict least-recently-used keys. */
+  lastAccess: number;
 }
 
 export interface RateLimiterOptions {
@@ -49,10 +51,15 @@ function sweepStaleEntries(force = false): void {
     }
   }
 
-  // If still oversized after removing expired timestamps, prune oldest keys
+  // If still oversized after removing expired timestamps, prune the least
+  // recently used keys so an actively throttled client is not evicted while
+  // older-but-idle keys remain tracked.
   if (store.size > MAX_MAP_SIZE) {
-    const keysToDelete = Array.from(store.keys()).slice(0, store.size - MAX_MAP_SIZE);
-    for (const key of keysToDelete) {
+    const oldestKeys = Array.from(store.entries())
+      .sort(([, a], [, b]) => a.lastAccess - b.lastAccess)
+      .slice(0, store.size - MAX_MAP_SIZE)
+      .map(([key]) => key);
+    for (const key of oldestKeys) {
       store.delete(key);
     }
   }
@@ -73,9 +80,10 @@ export function checkRateLimit(
 
   let entry = store.get(key);
   if (!entry) {
-    entry = { timestamps: [], windowMs: options.windowMs };
+    entry = { timestamps: [], windowMs: options.windowMs, lastAccess: now };
     store.set(key, entry);
   }
+  entry.lastAccess = now;
   // A key can be shared by limiters with different windows. Keep the longest
   // so timestamps are retained for as long as any of them may need them.
   entry.windowMs = Math.max(entry.windowMs, options.windowMs);
