@@ -18,6 +18,27 @@ export const strategyUpdateSchema = z.object({
   strategy: strategyKindSchema,
 });
 
+const backendObjectSchema = z.object({}).passthrough();
+
+export const backendSuccessEnvelopeSchema = z.object({
+  success: z.literal(true),
+  data: z.unknown(),
+});
+
+export const transactionQuotePayloadSchema = z.object({
+  quote: backendObjectSchema,
+});
+
+export const transactionPendingPayloadSchema = z.object({
+  pending: backendObjectSchema,
+});
+
+export const strategyPreferencePayloadSchema = z
+  .object({
+    strategy: strategyKindSchema,
+  })
+  .passthrough();
+
 export const transactionHistoryQuerySchema = z.object({
   kind: z.enum(["all", "deposit", "withdrawal", "rebalance"]).optional(),
   status: z.enum(["all", "pending", "success", "failed"]).optional(),

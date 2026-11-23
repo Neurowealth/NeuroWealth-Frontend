@@ -12,12 +12,20 @@ import {
   successResponse,
 } from "@/lib/api-response";
 import {
+  transactionPendingPayloadSchema,
+  transactionQuotePayloadSchema,
   transactionRequestSchema,
   zodErrorToDetails,
 } from "@/lib/validation/api";
 import { NextRequest, NextResponse } from "next/server";
 import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
+import {
+  isBackendErrorEnvelope,
+  readBackendJson,
+  toBackendErrorResponse,
+  unwrapBackendPayload,
+} from "@/lib/backend-response";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 import { dictionaries } from "@/lib/i18n/messages";
@@ -107,15 +115,57 @@ export async function POST(request: NextRequest) {
         cache: "no-store",
       });
 
-      const text = await response.text();
+      const raw = await readBackendJson(response);
+      const rawValue = raw.kind === "json" ? raw.value : null;
 
-      return new NextResponse(text, {
-        status: response.status,
-        headers: {
-          "Content-Type":
-            response.headers.get("Content-Type") ?? "application/json",
-          "Cache-Control": "no-store",
-        },
+      if (!response.ok || isBackendErrorEnvelope(rawValue)) {
+        const failure = toBackendErrorResponse(
+          response.status,
+          rawValue,
+          "Transaction service returned an unexpected response.",
+        );
+
+        return NextResponse.json(failure.body, {
+          status: failure.status,
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (raw.kind !== "json") {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.BACKEND_ERROR,
+            "Transaction service returned an unexpected response.",
+          ),
+          {
+            status: HTTP_STATUS.BAD_GATEWAY,
+            headers: { "Cache-Control": "no-store" },
+          },
+        );
+      }
+
+      const backendPayload = unwrapBackendPayload(raw.value);
+      const parsedResponse =
+        payload.intent === "submit"
+          ? transactionPendingPayloadSchema.safeParse(backendPayload)
+          : transactionQuotePayloadSchema.safeParse(backendPayload);
+
+      if (!parsedResponse.success) {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.BACKEND_ERROR,
+            "Transaction service returned an unexpected response.",
+          ),
+          {
+            status: HTTP_STATUS.BAD_GATEWAY,
+            headers: { "Cache-Control": "no-store" },
+          },
+        );
+      }
+
+      return NextResponse.json(successResponse(parsedResponse.data), {
+        status: HTTP_STATUS.OK,
+        headers: { "Cache-Control": "no-store" },
       });
     } catch (error) {
       if (error instanceof ServerFetchTimeoutError) {
@@ -124,7 +174,7 @@ export async function POST(request: NextRequest) {
             ERROR_CODE.SERVICE_UNAVAILABLE,
             "Transaction service timed out. Please try again.",
           ),
-          { status: 408 },
+          { status: HTTP_STATUS.REQUEST_TIMEOUT },
         );
       }
 
