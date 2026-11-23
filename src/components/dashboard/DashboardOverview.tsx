@@ -229,7 +229,7 @@ export default function DashboardOverview() {
           </h2>
           {summary ? (
             <div className="space-y-3">
-              {/* Placeholder bars — real chart in Issue 5 */}
+              {/* Placeholder bars — asset allocation chart */}
               {[
                 { label: "Blend — Lending", pct: 60, color: "bg-primary" },
                 { label: "Stellar DEX — LP", pct: 30, color: "bg-success" },
