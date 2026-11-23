@@ -109,8 +109,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, [locale]);
 
-  const setLocale = useCallback((nextLocale: AppLocale) => {
-    setLocaleState(nextLocale);
   const setLocale = useCallback((nextLocale: AppLocale | string) => {
     const normalized = normalizeLocale(nextLocale);
     setLocaleState(normalized);

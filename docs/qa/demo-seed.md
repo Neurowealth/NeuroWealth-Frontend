@@ -9,10 +9,11 @@
 ## Why this exists
 
 Mock data generated with `Math.random()` changes on every run, making visual
-baseline screenshots and demo recordings flaky. Setting `NEXT_PUBLIC_DEMO_SEED`
-activates a deterministic PRNG (Mulberry32) so every chart value, allocation
-amount, transaction hash, and simulated success/failure outcome is identical
-across runs as long as the seed string is the same.
+baseline screenshots and demo recordings flaky. The mock modules therefore use
+a deterministic PRNG (Mulberry32), so every chart value, allocation amount,
+transaction hash, and simulated success/failure outcome is identical across
+runs as long as the seed string is the same. The seed is `DEFAULT_SEED`
+(`demo-seed-2026`) unless `NEXT_PUBLIC_DEMO_SEED` overrides it.
 
 ---
 
@@ -26,9 +27,12 @@ across runs as long as the seed string is the same.
 | `randomInt(min, max)` | Returns an integer in `[min, max)` |
 | `randomItem(array)` | Returns one element from the array |
 
-When `NEXT_PUBLIC_DEMO_SEED` is set, all three use a Mulberry32 PRNG seeded
-from a DJB2 hash of the string value. When unset or empty, they fall back to
-`Math.random()` so normal dev behaviour is unchanged.
+All three use a Mulberry32 PRNG seeded from a DJB2 hash of a string seed. At
+import time that string is `NEXT_PUBLIC_DEMO_SEED` when it is a non-empty
+string, and `DEFAULT_SEED` (`demo-seed-2026`) otherwise. **An unset or empty
+variable does not switch to `Math.random()`**: the output is still
+deterministic, and identical on the server and in the browser. The only way to
+get `Math.random()` is `reseed(null)` in code (for example in a test).
 
 The seed is a `NEXT_PUBLIC_*` variable — it is inlined into the browser bundle
 at build time by Next.js and is also available as `process.env.NEXT_PUBLIC_DEMO_SEED`
@@ -68,13 +72,18 @@ The captured `manifest.json` records the `demoSeed` field so baselines are
 traceable. If `NEXT_PUBLIC_DEMO_SEED` was unset when the script ran, the
 manifest contains `"demoSeed": null` and a warning is printed.
 
-### Toggling off
+### Reverting to the default seed
 
-Remove the variable or leave it empty to restore random behaviour:
+Remove the variable or leave it empty to go back to `DEFAULT_SEED`
+(`demo-seed-2026`). This does **not** make the data random:
 
 ```bash
 NEXT_PUBLIC_DEMO_SEED=
 ```
+
+To get different (but still reproducible) data, set another seed string, for
+example `NEXT_PUBLIC_DEMO_SEED=my-other-seed`. To get genuinely random data in
+a test, call `reseed(null)`.
 
 ---
 
@@ -127,6 +136,8 @@ To combine both for a fully reproducible demo environment:
 - Same seed → identical sequence across two separate calls to `reseed()`
 - Different seeds → different sequences
 - `reseed(null)` restores non-deterministic behaviour
+- An unset or empty `NEXT_PUBLIC_DEMO_SEED` resolves to `DEFAULT_SEED`, and the
+  initial sequence after import is deterministic
 - `randomInt()` always returns integers in the specified range
 - `randomItem()` always returns an element from the input array
 
@@ -146,6 +157,8 @@ yarn test
 4. Open `/dashboard/strategy` — APY chart values must be identical across reloads.
 5. Open `/dashboard/transactions`, submit a deposit — note the reference ID suffix.
 6. Hard-refresh and repeat step 5 — the suffix must match step 5's value.
-7. Remove `NEXT_PUBLIC_DEMO_SEED` from `.env.local`, restart the server, and reload
-   the dashboard. Values should differ from those in step 2 (unseeded = random).
+7. Set `NEXT_PUBLIC_DEMO_SEED=another-seed` in `.env.local`, restart the server, and
+   reload the dashboard. Values should differ from those in step 2. Removing the
+   variable again returns to the values from step 2, because the default seed is
+   `demo-seed-2026`.
 8. Run `yarn test` — all `seeded-rng` tests must pass.

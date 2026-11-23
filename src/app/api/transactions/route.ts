@@ -20,6 +20,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
+
 import {
   isBackendErrorEnvelope,
   readBackendJson,
@@ -29,6 +30,7 @@ import {
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 import { dictionaries } from "@/lib/i18n/messages";
+import { resolveTransactionClientId } from "./client-id";
 
 const tDomain = dictionaries.en.transactions.domain;
 
@@ -36,9 +38,7 @@ export async function POST(request: NextRequest) {
   const authError = requireAuth(request, { requireSameOrigin: true });
   if (authError) return authError;
 
-  const session = getSessionFromRequest(request);
-  const ip = getRateLimitKey(request);
-  const clientId = ip ?? (session?.token ? `session:${session.token}` : null);
+  const clientId = resolveTransactionClientId(request);
 
   if (clientId) {
     const limit = checkRateLimit(`POST:/api/transactions:${clientId}`, {

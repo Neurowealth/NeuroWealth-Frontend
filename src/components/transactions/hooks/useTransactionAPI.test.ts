@@ -36,29 +36,65 @@ function mockErrorResponse(details: Record<string, string | string[]>) {
     );
 }
 
-function mockSuccessQuote() {
+function mockSuccessResponse(data: unknown) {
   globalThis.fetch = async () =>
     new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          quote: {
-            kind: "deposit",
-            amount: 100,
-            fee: 1,
-            totalDebit: 101,
-            netAmount: 100,
-            strategyLabel: "Balanced",
-            estimatedSettlement: "Instant",
-            reference: "NW-DEP-TEST",
-          },
-        },
-      }),
+      JSON.stringify({ success: true, data }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
       },
     );
+}
+
+function mockSuccessQuote() {
+  mockSuccessResponse({
+    quote: {
+      kind: "deposit",
+      amount: 100,
+      fee: 1,
+      totalDebit: 101,
+      netAmount: 100,
+      strategyLabel: "Balanced",
+      estimatedSettlement: "Instant",
+      reference: "NW-DEP-TEST",
+      walletAddress: "",
+      walletLabel: "Funding wallet",
+    },
+  });
+}
+
+const malformedResponses = [
+  { name: "null quote", method: "requestQuote", data: { quote: null } },
+  { name: "missing pending transaction", method: "submitTransaction", data: {} },
+  {
+    name: "incomplete pending transaction",
+    method: "submitTransaction",
+    data: { pending: { reference: "NW-WDR-INCOMPLETE" } },
+  },
+  { name: "null success data", method: "requestQuote", data: null },
+] as const;
+
+for (const { name, method, data } of malformedResponses) {
+  test(`${method} returns recovery for ${name}`, async () => {
+    mockSuccessResponse(data);
+    const { result } = renderApiHook();
+    const reference = "NW-WDR-REF";
+
+    await act(async () => {
+      const response = await result.current[method](
+        "withdrawal",
+        { amount: "100", walletAddress: "G" + "A".repeat(55), walletConnected: true },
+        reference,
+      );
+      assert.deepEqual(response, { status: "error", fieldErrors: {} });
+    });
+
+    assert.equal(result.current.isSubmitting, false);
+    assert.equal(result.current.lastErrorReference, reference);
+    assert.equal(result.current.recovery?.reference, reference);
+    assert.equal(result.current.recovery?.primaryAction.action, "retry");
+  });
 }
 
 test("requestQuote returns fieldErrors from API details instead of discarding them", async () => {

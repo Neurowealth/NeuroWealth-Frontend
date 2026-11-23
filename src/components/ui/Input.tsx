@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from "react";
+import { InputHTMLAttributes, forwardRef, useId } from "react";
 
 type InputVariant = "default" | "error" | "success";
 
@@ -29,12 +29,23 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     variant = "default",
     className = "",
     id,
+    "aria-describedby": ariaDescribedByProp,
+    "aria-invalid": ariaInvalidProp,
     ...props
   },
   ref
 ) {
+  const defaultId = useId();
+  const inputId = id ?? defaultId;
   const resolvedVariant: InputVariant = error ? "error" : variant;
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+
+  const errorId = error ? `${inputId}-error` : undefined;
+  const hintId = !error && hint ? `${inputId}-hint` : undefined;
+  const describedById = errorId || hintId;
+  const ariaDescribedBy = [ariaDescribedByProp, describedById]
+    .filter(Boolean)
+    .join(" ") || undefined;
+  const ariaInvalid = error ? true : ariaInvalidProp;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -49,13 +60,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <input
         ref={ref}
         id={inputId}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         className={`w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-dark-800 dark:text-white dark:placeholder-slate-500 ${inputVariants[resolvedVariant]} ${className}`}
         {...props}
       />
       {error ? (
-        <p className="text-xs text-accent-red">{error}</p>
+        <p id={errorId} className="text-xs text-accent-red">
+          {error}
+        </p>
       ) : hint ? (
-        <p className="text-xs text-slate-500 dark:text-slate-500">{hint}</p>
+        <p id={hintId} className="text-xs text-slate-500 dark:text-slate-500">
+          {hint}
+        </p>
       ) : null}
     </div>
   );

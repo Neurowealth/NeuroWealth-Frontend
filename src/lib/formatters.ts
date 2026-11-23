@@ -60,9 +60,12 @@ function getPreciseCurrencyFormatter(overrides?: FormatOverrides) {
 }
 
 function getTimestampFormatter() {
+  // The year is included so records from a previous year do not look recent
+  // in transaction history, audit trails and receipts.
   return new Intl.DateTimeFormat(getDisplayLocale(), {
     month: "short",
     day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
   });
