@@ -44,8 +44,18 @@ export const transactionHistoryQuerySchema = z.object({
   status: z.enum(["all", "pending", "success", "failed"]).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().int().min(1))
+    .optional(),
+  pageSize: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(50))
+    .optional(),
 });
 
 export const transactionKindSchema = z.enum(["deposit", "withdrawal"]);
