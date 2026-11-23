@@ -38,9 +38,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env
 .env*.local
-.env.production
 
 # vercel
 .vercel
@@ -53,7 +51,6 @@ build.log
 install.log
 
 # editor
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -70,3 +67,4 @@ pr.md
 inject_*.js
 inject_*.py
 fix_components.py
+config.bat
