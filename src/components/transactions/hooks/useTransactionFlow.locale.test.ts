@@ -3,6 +3,7 @@ import test from "node:test";
 import React from "react";
 import { renderHook, act } from "@/test-utils/render-hook";
 import { I18nProvider } from "@/contexts/I18nContext";
+import { dictionaries } from "@/lib/i18n/messages";
 import { useTransactionFlow, type RouteSearchParams, type FlowRouter } from "./useTransactionFlow";
 
 function makeSearchParams(params: Record<string, string> = {}): RouteSearchParams {
@@ -19,35 +20,8 @@ function makeRouter(): FlowRouter {
   };
 }
 
-const tDomainEn = {
-  validation: {
-    enterAmount: "Please enter a deposit amount.",
-    connectFunding: "Connect your funding wallet before requesting a quote.",
-    withdrawAvailable: (avail: string) => `Withdrawal amount cannot exceed available balance of ${avail} USDC.`,
-    validStellarAddress: "Enter a valid Stellar address starting with G.",
-  },
-  context: {
-    depositTitle: "Deposit USDC",
-    withdrawTitle: "Withdraw USDC",
-  },
-  pending: {},
-  receipt: {},
-};
-
-const tDomainFr = {
-  validation: {
-    enterAmount: "Veuillez entrer un montant de dépôt.",
-    connectFunding: "Connectez votre portefeuille de financement avant de demander un devis.",
-    withdrawAvailable: (avail: string) => `Le montant du retrait ne peut pas dépasser le solde disponible de ${avail} USDC.`,
-    validStellarAddress: "Entrez une adresse Stellar valide commençant par G.",
-  },
-  context: {
-    depositTitle: "Déposer des USDC",
-    withdrawTitle: "Retirer des USDC",
-  },
-  pending: {},
-  receipt: {},
-};
+const tDomainEn = dictionaries.en.transactions.domain;
+const tDomainFr = dictionaries.fr.transactions.domain;
 
 test("useTransactionFlow — updates preview snapshot copy when locale / tDomain changes", () => {
   const searchParams = makeSearchParams({ kind: "deposit", preview: "validation" });
@@ -69,10 +43,10 @@ test("useTransactionFlow — updates preview snapshot copy when locale / tDomain
   );
 
   // Initially in English
-  assert.equal(result.current.fieldErrors.amount, "Please enter a deposit amount.");
+  assert.equal(result.current.fieldErrors.amount, tDomainEn.validation.enterAmount);
   assert.equal(
     result.current.fieldErrors.walletConnected,
-    "Connect your funding wallet before requesting a quote.",
+    tDomainEn.validation.connectFunding,
   );
 
   // Switch locale / tDomain to French while preview is displayed
@@ -81,9 +55,9 @@ test("useTransactionFlow — updates preview snapshot copy when locale / tDomain
   });
 
   // Snapshot must refresh to French
-  assert.equal(result.current.fieldErrors.amount, "Veuillez entrer un montant de dépôt.");
+  assert.equal(result.current.fieldErrors.amount, tDomainFr.validation.enterAmount);
   assert.equal(
     result.current.fieldErrors.walletConnected,
-    "Connectez votre portefeuille de financement avant de demander un devis.",
+    tDomainFr.validation.connectFunding,
   );
 });

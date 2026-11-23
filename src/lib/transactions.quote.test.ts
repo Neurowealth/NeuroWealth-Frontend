@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { buildTransactionQuote } from '@/lib/transactions';
 import { dictionaries } from '@/lib/i18n/messages';
 
-const tContext = dictionaries.en.transactions.domain;
+const tContext = dictionaries.en.transactions.domain.context;
 
 test('buildTransactionQuote works with proper context', () => {
   const kind = 'deposit' as const;

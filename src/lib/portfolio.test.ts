@@ -32,7 +32,7 @@ test("buildScenarioPayload builds live scenario with non-zero summary", () => {
 });
 
 test("normalizePortfolioPayload defaults missing fields safely", () => {
-  const normalized = normalizePortfolioPayload({});
+  const normalized = normalizePortfolioPayload({}, "api");
   assert.equal(normalized.summary.totalBalance, 0);
   assert.ok(Array.isArray(normalized.allocation));
   assert.ok(Array.isArray(normalized.activity));
