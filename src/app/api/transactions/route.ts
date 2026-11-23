@@ -21,6 +21,12 @@ import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/api-auth";
 import { dictionaries } from "@/lib/i18n/messages";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
+import {
+  getStrategyLabel,
+  parseStrategyKind,
+  resolveStrategyLabel,
+} from "@/lib/strategies";
 import { resolveTransactionClientId } from "./client-id";
 
 const tDomain = dictionaries.en.transactions.domain;
@@ -67,6 +73,14 @@ export async function POST(request: NextRequest) {
   const payload = parsedPayload.data;
   const kind = parseTransactionKind(payload.kind);
   const values = payload.values;
+  const cookieStrategy = parseStrategyKind(
+    request.cookies.get(STORAGE_KEYS.STRATEGY_PREFERENCE)?.value ?? null,
+  );
+  const strategyLabel = payload.strategyLabel
+    ? resolveStrategyLabel(payload.strategyLabel)
+    : cookieStrategy
+      ? getStrategyLabel(cookieStrategy)
+      : undefined;
   const transactionPath =
     process.env.NEUROWEALTH_TRANSACTIONS_PATH ?? "/transactions";
   const scenario = parseSandboxScenario(
@@ -102,6 +116,7 @@ export async function POST(request: NextRequest) {
           ...payload,
           kind,
           values,
+          ...(strategyLabel ? { strategyLabel } : {}),
         }),
         cache: "no-store",
       });
@@ -154,6 +169,7 @@ export async function POST(request: NextRequest) {
           tDomain.pending,
           tDomain.context,
           outcome,
+          strategyLabel,
         ),
       }),
     );
@@ -161,7 +177,13 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     successResponse({
-      quote: buildTransactionQuote(kind, values, tDomain.context),
+      quote: buildTransactionQuote(
+        kind,
+        values,
+        tDomain.context,
+        undefined,
+        strategyLabel,
+      ),
     }),
   );
 }

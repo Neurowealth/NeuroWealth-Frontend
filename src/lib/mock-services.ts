@@ -43,6 +43,7 @@ import {
 import type { AuthSession } from "./mock-auth";
 import { adaptMockAuthUser } from "./user";
 import { STORAGE_KEYS } from "./storage-keys";
+import { loadStoredStrategyLabel } from "./strategies";
 import { dictionaries } from "./i18n/messages";
 
 const tDomain = dictionaries.en.transactions.domain;
@@ -386,7 +387,13 @@ export const mockTransactionService: TransactionService = {
     }
 
     return {
-      quote: buildTransactionQuote(kind, values, tDomain.context),
+      quote: buildTransactionQuote(
+        kind,
+        values,
+        tDomain.context,
+        undefined,
+        loadStoredStrategyLabel() ?? undefined,
+      ),
       fieldErrors: {},
     };
   },
@@ -411,6 +418,7 @@ export const mockTransactionService: TransactionService = {
         tDomain.pending,
         tDomain.context,
         nextStatus,
+        loadStoredStrategyLabel() ?? undefined,
       ),
     };
   },

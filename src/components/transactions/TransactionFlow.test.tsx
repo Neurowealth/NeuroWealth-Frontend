@@ -8,6 +8,7 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 import { SearchParamsContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { SandboxProvider } from "@/contexts/SandboxContext";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { TransactionFlow } from "./TransactionFlow";
 
 Object.assign(globalThis, { React });
@@ -120,4 +121,18 @@ test("deposit wallet success feedback follows the funding wallet connection", as
 
   await user.click(view.getByRole("button", { name: /^Reconnect$/i }));
   assert.ok(view.getByText(successMessage));
+});
+
+test("TransactionFlow renders the selected strategy label on confirm quote and context summary (#1316)", (t) => {
+  t.after(() => {
+    cleanup();
+    localStorage.removeItem(STORAGE_KEYS.STRATEGY_PREFERENCE);
+    localStorage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
+  });
+
+  localStorage.setItem(STORAGE_KEYS.STRATEGY_PREFERENCE, "conservative");
+  const view = renderTransactionFlow("theme=light&kind=deposit&preview=confirm");
+
+  assert.equal(view.getAllByText("Conservative").length, 2);
+  assert.equal(view.queryByText("Balanced"), null);
 });

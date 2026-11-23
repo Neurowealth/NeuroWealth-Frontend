@@ -39,6 +39,7 @@ export const transactionRequestSchema = z.object({
   intent: z.enum(["quote", "submit"]).optional(),
   kind: transactionKindSchema,
   values: transactionFormValuesSchema,
+  strategyLabel: z.string().trim().min(1).max(64).optional(),
   simulation: z.enum(["auto", "success", "failure"]).optional(),
 });
 

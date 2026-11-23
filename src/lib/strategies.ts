@@ -119,6 +119,8 @@ export const COMPARISON_ROWS: ComparisonRow[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+export const DEFAULT_STRATEGY_LABEL = "Balanced";
+
 export function parseStrategyKind(value: string | null): StrategyKind | null {
   if (
     value === "conservative" ||
@@ -130,12 +132,55 @@ export function parseStrategyKind(value: string | null): StrategyKind | null {
   return null;
 }
 
+export function getStrategyLabel(kind: StrategyKind | null | undefined): string {
+  if (!kind) return DEFAULT_STRATEGY_LABEL;
+  return (
+    STRATEGIES.find((strategy) => strategy.kind === kind)?.title ??
+    DEFAULT_STRATEGY_LABEL
+  );
+}
+
+export function resolveStrategyLabel(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return DEFAULT_STRATEGY_LABEL;
+
+  const normalized = trimmed.toLowerCase();
+  const parsed = parseStrategyKind(normalized);
+  if (parsed) return getStrategyLabel(parsed);
+
+  // Onboarding StrategyOverviewStep persists "aggressive" for the high-risk tier.
+  if (normalized === "aggressive") return getStrategyLabel("growth");
+
+  return trimmed;
+}
+
 const PREFERENCE_STORAGE_KEY = STORAGE_KEYS.STRATEGY_PREFERENCE;
 
 export function loadStoredPreference(): StrategyKind | null {
   if (typeof window === "undefined") return null;
   try {
     return parseStrategyKind(localStorage.getItem(PREFERENCE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function loadStoredStrategyLabel(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const preference = loadStoredPreference();
+    if (preference) {
+      return getStrategyLabel(preference);
+    }
+
+    const onboardingStrategy = localStorage.getItem(
+      STORAGE_KEYS.ONBOARDING_USER_STRATEGY,
+    );
+    if (onboardingStrategy?.trim()) {
+      return resolveStrategyLabel(onboardingStrategy);
+    }
+
+    return null;
   } catch {
     return null;
   }

@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildTransactionQuote, buildPendingTransaction, getTransactionContext } from '@/lib/transactions';
+import {
+  buildPendingTransaction,
+  buildPreviewSnapshot,
+  buildTransactionQuote,
+  getTransactionContext,
+} from '@/lib/transactions';
 import { dictionaries } from '@/lib/i18n/messages';
 
 // Real i18n domain for English
@@ -54,4 +59,33 @@ test('buildPendingTransaction creates a pending transaction that mirrors the quo
   assert.equal(pending.nextStatus, 'success');
   assert.ok(pending.completionDelayMs > 0);
   assert.ok(pending.quote);
+});
+
+test('getTransactionContext and quote builders propagate the selected strategy label across confirm, pending, and receipt', () => {
+  const depositContext = getTransactionContext('deposit', tDomain.context, 'Conservative');
+  const withdrawalContext = getTransactionContext('withdrawal', tDomain.context, 'Growth');
+  assert.equal(depositContext.strategyLabel, 'Conservative');
+  assert.equal(withdrawalContext.strategyLabel, 'Growth');
+
+  // Blank or omitted values fall back to Balanced
+  assert.equal(getTransactionContext('deposit', tDomain.context, '   ').strategyLabel, 'Balanced');
+
+  const depositQuote = buildTransactionQuote('deposit', values, tDomain.context, undefined, 'Conservative');
+  assert.equal(depositQuote.strategyLabel, 'Conservative');
+
+  const withdrawalQuote = buildTransactionQuote('withdrawal', values, tDomain.context, 'NW-WDR-CUSTOM', 'Growth');
+  assert.equal(withdrawalQuote.reference, 'NW-WDR-CUSTOM');
+  assert.equal(withdrawalQuote.strategyLabel, 'Growth');
+
+  const pending = buildPendingTransaction('deposit', values, tDomain.pending, tDomain.context, 'success', 'Conservative');
+  assert.equal(pending.quote.strategyLabel, 'Conservative');
+
+  const confirmPreview = buildPreviewSnapshot('deposit', 'confirm', tDomain, 'Conservative');
+  assert.equal(confirmPreview.quote?.strategyLabel, 'Conservative');
+
+  const pendingPreview = buildPreviewSnapshot('withdrawal', 'pending', tDomain, 'Growth');
+  assert.equal(pendingPreview.pending?.quote.strategyLabel, 'Growth');
+
+  const successPreview = buildPreviewSnapshot('deposit', 'success', tDomain, 'Conservative');
+  assert.equal(successPreview.receipt?.quote.strategyLabel, 'Conservative');
 });
