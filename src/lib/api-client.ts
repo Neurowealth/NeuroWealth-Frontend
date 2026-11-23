@@ -88,10 +88,6 @@ function isApiErrorResponse(payload: unknown): payload is ApiErrorResponse {
   );
 }
 
-function isAbortLikeError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
-}
-
 function resolveRequestUrl(pathOrUrl: string, baseUrl?: string): string {
   if (!baseUrl) {
     return pathOrUrl;
@@ -234,10 +230,10 @@ export async function apiRequest<T>(
       body: nextBody,
       signal: timeout.signal,
     });
-  } catch (error) {
+  } catch {
     timeout.cancel();
 
-    if (isAbortLikeError(error) && timeout.wasTimedOut()) {
+    if (timeout.wasTimedOut()) {
       throw new ApiRequestError("Request timed out. Please try again.", {
         code: "REQUEST_TIMEOUT",
         status: 408,
