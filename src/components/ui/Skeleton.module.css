@@ -465,3 +465,14 @@
   flex-direction: column;
   gap: 6px;
 }
+
+/* ─── Skeleton card shell ──────────────────────────────────────────────────── */
+/* Used by SkeletonStatCard, SkeletonAllocationWidget and DashboardSkeleton.
+   Matches Card: rounded-xl p-6 border border-gray-800 bg-gray-900 */
+
+.card {
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 41, 55, 1);
+  background: rgb(17, 24, 39);
+}
