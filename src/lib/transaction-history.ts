@@ -49,29 +49,29 @@ const MOCK_TX_HASHES: Record<string, string> = {
   t16: "901abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567",
 };
 
-const HISTORY_TEMPLATES: { kind: HistoryKind; title: string; detail: string }[] = [
-  { kind: "deposit", title: "Deposit confirmed", detail: "USDC deposited from Freighter wallet and routed to Balanced strategy." },
-  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Capital shifted from reserve into Blend lending after rate improvement." },
-  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Liquidity released and settled to destination wallet." },
-  { kind: "deposit", title: "Deposit pending", detail: "Transaction submitted, awaiting Stellar network confirmation." },
-  { kind: "withdrawal", title: "Withdrawal failed", detail: "Treasury liquidity changed mid-flight. Please retry with updated amount." },
-  { kind: "deposit", title: "Deposit confirmed", detail: "USDC deposited and allocated to Stellar DEX LP position." },
-  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Reserve topped up from DEX LP as APY spread narrowed." },
-  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Scheduled withdrawal settled to Freighter destination wallet." },
-  { kind: "deposit", title: "Deposit confirmed", detail: "Lump-sum deposit split across Blend lending and DEX liquidity." },
-  { kind: "rebalance", title: "Rebalance pending", detail: "Triggered by strategy drift; awaiting on-chain settlement." },
-  { kind: "deposit", title: "Deposit confirmed", detail: "Small top-up deposited into protected reserve buffer." },
-  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Emergency liquidity withdrawn after manual request." },
-  { kind: "deposit", title: "Deposit failed", detail: "Network fee estimate expired before submission. Refresh and retry." },
-  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Monthly strategy review triggered reallocation to growth positions." },
-  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Profit-taking withdrawal cleared same-day." },
-  { kind: "deposit", title: "Deposit confirmed", detail: "DCA deposit routed into Blend USDC lending pool." },
-  { kind: "rebalance", title: "Auto-rebalance executed", detail: "AQUA rewards reinvested into primary lending position." },
-  { kind: "withdrawal", title: "Withdrawal pending", detail: "Queued for same-day settlement; liquidity being freed." },
-  { kind: "deposit", title: "Deposit confirmed", detail: "Initial portfolio deposit routed to Balanced strategy." },
-  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Standard withdrawal settled to Stellar destination wallet." },
-  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Quarterly rebalance to maintain Balanced strategy drift limits." },
-  { kind: "deposit", title: "Deposit failed", detail: "Wallet signature timed out. Funds were not debited — safe to retry." },
+const HISTORY_TEMPLATES: { kind: HistoryKind; title: string; detail: string; status: HistoryStatus }[] = [
+  { kind: "deposit", title: "Deposit confirmed", detail: "USDC deposited from Freighter wallet and routed to Balanced strategy.", status: "success" },
+  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Capital shifted from reserve into Blend lending after rate improvement.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Liquidity released and settled to destination wallet.", status: "success" },
+  { kind: "deposit", title: "Deposit pending", detail: "Transaction submitted, awaiting Stellar network confirmation.", status: "pending" },
+  { kind: "withdrawal", title: "Withdrawal failed", detail: "Treasury liquidity changed mid-flight. Please retry with updated amount.", status: "failed" },
+  { kind: "deposit", title: "Deposit confirmed", detail: "USDC deposited and allocated to Stellar DEX LP position.", status: "success" },
+  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Reserve topped up from DEX LP as APY spread narrowed.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Scheduled withdrawal settled to Freighter destination wallet.", status: "success" },
+  { kind: "deposit", title: "Deposit confirmed", detail: "Lump-sum deposit split across Blend lending and DEX liquidity.", status: "success" },
+  { kind: "rebalance", title: "Rebalance pending", detail: "Triggered by strategy drift; awaiting on-chain settlement.", status: "pending" },
+  { kind: "deposit", title: "Deposit confirmed", detail: "Small top-up deposited into protected reserve buffer.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Emergency liquidity withdrawn after manual request.", status: "success" },
+  { kind: "deposit", title: "Deposit failed", detail: "Network fee estimate expired before submission. Refresh and retry.", status: "failed" },
+  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Monthly strategy review triggered reallocation to growth positions.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Profit-taking withdrawal cleared same-day.", status: "success" },
+  { kind: "deposit", title: "Deposit confirmed", detail: "DCA deposit routed into Blend USDC lending pool.", status: "success" },
+  { kind: "rebalance", title: "Auto-rebalance executed", detail: "AQUA rewards reinvested into primary lending position.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal pending", detail: "Queued for same-day settlement; liquidity being freed.", status: "pending" },
+  { kind: "deposit", title: "Deposit confirmed", detail: "Initial portfolio deposit routed to Balanced strategy.", status: "success" },
+  { kind: "withdrawal", title: "Withdrawal confirmed", detail: "Standard withdrawal settled to Stellar destination wallet.", status: "success" },
+  { kind: "rebalance", title: "Auto-rebalance executed", detail: "Quarterly rebalance to maintain Balanced strategy drift limits.", status: "success" },
+  { kind: "deposit", title: "Deposit failed", detail: "Wallet signature timed out. Funds were not debited — safe to retry.", status: "failed" },
 ];
 
 const TX_HASH_KEYS = ["t01", "t02", "t03", "t04", "t05", "t06", "t07", "t08", "t09", "t10", "t11", "t12", "t13", "t14", "t15", "t16"];
@@ -86,8 +86,8 @@ function generateHistoryItems(count: number): TransactionHistoryItem[] {
     const date = new Date(baseDate.getTime() - i * 4 * 60 * 60 * 1000);
     const rawAmount = amounts[i % amounts.length];
     const amount = tmpl.kind === "withdrawal" ? (rawAmount != null ? -rawAmount : null) : rawAmount;
-    const status: HistoryStatus = i % 7 === 2 ? "pending" : i % 11 === 0 ? "failed" : "success";
-    const hasTx = status !== "pending" && status !== "failed";
+    const status = tmpl.status;
+    const hasTx = status === "success";
     const txKey = TX_HASH_KEYS[i % TX_HASH_KEYS.length];
 
     items.push({
