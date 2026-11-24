@@ -95,13 +95,6 @@ export default function WalletConnectButton({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A ref, not state: this observer is an imperative DOM handle, not
-  // render-driven data. Storing it in state made the effect depend on a
-  // value it set itself, so every modal detection re-ran the whole effect
-  // (tearing down and recreating the document-wide root observer) and the
-  // cleanup closed over the previous render's (stale) observer instead of
-  // the one just created, leaking it instead of disconnecting it.
-  const modalObserverRef = useRef<MutationObserver | null>(null);
   // The modal observer is set up once (empty deps), so read the injected
   // copy through a ref to pick up locale changes without re-subscribing.
   const modalMessageRef = useRef(t.modalMessage);
@@ -153,27 +146,24 @@ export default function WalletConnectButton({
       }
     };
 
-    const rootObserver = new MutationObserver((mutationsList, observer) => {
-      for (const mutation of mutationsList) {
-        if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-          for (const node of Array.from(mutation.addedNodes)) {
-            if (node instanceof HTMLElement) {
-              // Check if the node itself or any descendant matches the modal selector
-              const modalElement = findSwkModal(node);
-              if (modalElement) {
-                handleModalMutations(modalElement);
-                const newModalObserver = new MutationObserver(() =>
-                  handleModalMutations(modalElement),
-                );
-                newModalObserver.observe(modalElement, {
-                  childList: true,
-                  subtree: true,
-                });
-                modalObserverRef.current = newModalObserver;
-                observer.disconnect(); // Disconnect the root observer once the modal is found
-                return;
-              }
-            }
+    let activeModal: Element | null = null;
+    const rootObserver = new MutationObserver((mutations) => {
+      if (activeModal && !document.body.contains(activeModal)) {
+        activeModal = null;
+      }
+      if (activeModal) {
+        if (mutations.some(({ target }) => activeModal?.contains(target))) {
+          handleModalMutations(activeModal);
+        }
+        return;
+      }
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement) || !document.body.contains(node)) continue;
+          activeModal = findSwkModal(node);
+          if (activeModal) {
+            handleModalMutations(activeModal);
+            return;
           }
         }
       }
@@ -186,8 +176,6 @@ export default function WalletConnectButton({
 
     return () => {
       rootObserver.disconnect();
-      modalObserverRef.current?.disconnect();
-      modalObserverRef.current = null;
     };
   }, []);
 
