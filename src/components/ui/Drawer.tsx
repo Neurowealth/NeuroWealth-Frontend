@@ -3,6 +3,7 @@
 import { useEffect, useRef, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 interface DrawerProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function Drawer({
 }: DrawerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   useFocusTrap(containerRef, isOpen);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -32,10 +34,8 @@ export function Drawer({
       if (e.key === "Escape" && !preventClose) onClose();
     };
     document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
     };
   }, [isOpen, preventClose, onClose]);
 
