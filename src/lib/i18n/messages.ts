@@ -1162,6 +1162,7 @@ export interface AppMessages {
       connectFailedFallback: string;
       disconnectFailedFallback: string;
       modalMessage: string;
+      unavailable: string;
     };
   };
 }
@@ -2646,6 +2647,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         disconnectFailedFallback: "Failed to disconnect wallet",
         modalMessage:
           "🧠 Connect your Stellar wallet to access NeuroWealth's AI-powered investment strategies and portfolio management tools.",
+        unavailable: "Connecting a wallet is not available on this page. Open the dashboard to connect.",
       },
     },
   },
@@ -4125,6 +4127,7 @@ export const dictionaries: Record<AppLocale, AppMessages> = {
         disconnectFailedFallback: "Impossible de déconnecter le portefeuille",
         modalMessage:
           "🧠 Connectez votre portefeuille Stellar pour accéder aux stratégies d'investissement et aux outils de gestion de portefeuille de NeuroWealth propulsés par l'IA.",
+        unavailable: "Connecting a wallet is not available on this page. Open the dashboard to connect.",
       },
     },
   },

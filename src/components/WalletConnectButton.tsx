@@ -88,10 +88,13 @@ export default function WalletConnectButton({
     walletName,
     publicKey,
     networkStatus,
+    available,
   } = useWallet();
   const { pushToast } = useToast();
   const { messages } = useI18n();
   const t = messages.walletConnection.button;
+  // Outside <WalletProvider> connect/disconnect are no-ops, so say so instead of spinning.
+  const unavailable = available === false;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -192,6 +195,9 @@ export default function WalletConnectButton({
   }, []);
 
   const handleClick = async () => {
+    if (unavailable) {
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -251,13 +257,16 @@ export default function WalletConnectButton({
       ) : (
         <button
           onClick={handleClick}
-          disabled={isLoading}
+          disabled={isLoading || unavailable}
+          title={unavailable ? t.unavailable : undefined}
+          aria-label={unavailable ? `${t.connect}. ${t.unavailable}` : undefined}
+          data-wallet-unavailable={unavailable ? "true" : undefined}
           data-qa="wallet-connect-button"
           className={`px-6 py-2.5 text-sm font-medium rounded-full transition-colors ${
             theme === "light"
               ? "bg-black text-white hover:bg-gray-800"
               : "bg-white text-black hover:bg-gray-200"
-          } ${isLoading ? "opacity-75 cursor-not-allowed" : ""}`}
+          } ${isLoading || unavailable ? "opacity-75 cursor-not-allowed" : ""}`}
         >
           <span className="flex items-center gap-2">
             {getIcon()}
