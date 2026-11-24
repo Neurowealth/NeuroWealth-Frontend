@@ -3,6 +3,7 @@ import test, { afterEach, describe } from "node:test";
 import React, { createElement, useState } from "react";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { setupDomGlobals } from "@/test-setup";
+import { Drawer } from "./Drawer";
 import { Modal } from "./Modal";
 
 setupDomGlobals();
@@ -51,6 +52,27 @@ describe("Modal focus management and keyboard interactions (#1182)", () => {
   afterEach(() => {
     cleanup();
     document.body.style.overflow = "";
+  });
+
+  test("closing a nested drawer keeps scrolling locked until the modal closes", () => {
+    document.body.style.overflow = "auto";
+    const onClose = () => {};
+    const overlays = (modalOpen: boolean, drawerOpen: boolean) => (
+      <Modal isOpen={modalOpen} onClose={onClose} title="Transfer">
+        <Drawer isOpen={drawerOpen} onClose={onClose} title="Details">
+          Transfer details
+        </Drawer>
+      </Modal>
+    );
+
+    const view = render(overlays(true, false));
+    view.rerender(overlays(true, true));
+    assert.equal(view.getAllByRole("dialog").length, 2);
+    view.rerender(overlays(true, false));
+    assert.equal(view.getAllByRole("dialog").length, 1);
+    assert.equal(document.body.style.overflow, "hidden");
+    view.rerender(overlays(false, false));
+    assert.equal(document.body.style.overflow, "auto");
   });
 
   test("renders dialog with role='dialog', aria-modal='true', and aria-labelledby matching the title node", () => {
