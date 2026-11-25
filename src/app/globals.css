@@ -7,6 +7,7 @@
  *   plugins, darkMode.
  */
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @theme {
   /* Design-system palette */
