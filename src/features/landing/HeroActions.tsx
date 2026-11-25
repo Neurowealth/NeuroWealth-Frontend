@@ -3,21 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { useI18n } from "@/contexts";
-import { connectFreighter } from "@/lib/stellar-wallet-kit";
+import { useI18n, useWallet } from "@/contexts";
 
 export function HeroActions() {
   const { messages } = useI18n();
+  const { connected, connect, isRestoring } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
 
   async function connectWallet() {
     setLoading(true);
     setError(null);
     try {
-      await connectFreighter();
-      setConnected(true);
+      await connect();
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("not installed") || message.includes("not available")) {
@@ -43,7 +41,7 @@ export function HeroActions() {
           <Button
             size="lg"
             onClick={connectWallet}
-            disabled={loading}
+            disabled={loading || isRestoring}
             data-qa="landing-primary-cta-button"
           >
             {loading ? messages.heroActions.connecting : messages.heroActions.connectWallet}
@@ -66,7 +64,9 @@ export function HeroActions() {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-400" data-qa="landing-connection-error">
+          {error}
+        </p>
       )}
     </div>
   );
