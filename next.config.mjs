@@ -15,9 +15,12 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60,
   },
-  // Reduce bundle size by removing console logs in production
+  // Keep warnings and error diagnostics in production.
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
   },
   // Enable experimental optimisation for package imports
   experimental: {
@@ -88,8 +91,13 @@ const nextConfig = {
 };
 
 // Bundle analyzer (dev-only, enabled via ANALYZE=true)
-import withBundleAnalyzer from '@next/bundle-analyzer';
+let config = nextConfig;
 
-export default withBundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-})(nextConfig);
+if (process.env.ANALYZE === "true") {
+  const withBundleAnalyzer = (await import("@next/bundle-analyzer")).default;
+  config = withBundleAnalyzer({
+    enabled: true,
+  })(config);
+}
+
+export default config;

@@ -60,6 +60,26 @@ describe("useNotifications", () => {
     assert.equal(markedNotification?.isRead, true);
   });
 
+  it("preserves back-to-back mark-as-read updates", () => {
+    const { result } = renderHook(() => useNotifications());
+    const unreadIds = result.current.notifications
+      .filter((notification) => !notification.isRead)
+      .slice(0, 2)
+      .map((notification) => notification.id);
+    assert.equal(unreadIds.length, 2);
+
+    act(() => {
+      result.current.markAsRead(unreadIds[0]);
+      result.current.markAsRead(unreadIds[1]);
+    });
+
+    const stored = JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEY) || "[]");
+    for (const id of unreadIds) {
+      assert.equal(result.current.notifications.find((notification) => notification.id === id)?.isRead, true);
+      assert.equal(stored.find((notification: { id: string }) => notification.id === id)?.isRead, true);
+    }
+  });
+
   it("marks all notifications as read", () => {
     const { result } = renderHook(() => useNotifications());
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode, useMemo } from "react";
 import { THEME_STORAGE_KEY } from "@/lib/theme-persistence";
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -27,7 +27,10 @@ function getStoredTheme(): ThemeMode {
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof globalThis.window === "undefined") return "light";
-  return globalThis.window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const mediaQuery = typeof globalThis.window.matchMedia === "function"
+    ? globalThis.window.matchMedia("(prefers-color-scheme: dark)")
+    : undefined;
+  return mediaQuery?.matches ? "dark" : "light";
 }
 
 function resolveTheme(theme: ThemeMode): "light" | "dark" {
@@ -84,7 +87,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     // Listen for system theme changes if using system preference
     if (theme === "system") {
-      const mediaQuery = globalThis.window?.matchMedia("(prefers-color-scheme: dark)");
+      const mediaQuery = typeof globalThis.window?.matchMedia === "function"
+        ? globalThis.window.matchMedia("(prefers-color-scheme: dark)")
+        : undefined;
       if (!mediaQuery) return;
 
       const handleChange = () => {

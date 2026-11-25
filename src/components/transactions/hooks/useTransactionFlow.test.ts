@@ -16,6 +16,7 @@ import { renderHook, act } from "@/test-utils/render-hook";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { useTransactionFlow, type RouteSearchParams, type FlowRouter } from "./useTransactionFlow";
 import { dictionaries } from "@/lib/i18n/messages";
+import type { PendingTransaction, TransactionQuote } from "@/lib/transactions";
 
 function renderFlowHook(callback: () => ReturnType<typeof useTransactionFlow>) {
   return renderHook(callback, {
@@ -49,53 +50,41 @@ function makeRouter(): FlowRouter & { replaceCalls: Array<{ href: string; option
   };
 }
 
-function mockSuccessQuote(reference = "NW-DEP-TEST") {
+const quote = {
+  kind: "deposit",
+  amount: 100,
+  fee: 1,
+  totalDebit: 101,
+  netAmount: 100,
+  strategyLabel: "Balanced",
+  estimatedSettlement: "Instant",
+  reference: "NW-DEP-TEST",
+  walletAddress: "",
+  walletLabel: "Funding wallet",
+} satisfies TransactionQuote;
+
+function mockSuccessQuote() {
   globalThis.fetch = async () =>
     new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          quote: {
-            kind: "deposit",
-            amount: 100,
-            fee: 1,
-            totalDebit: 101,
-            netAmount: 100,
-            strategyLabel: "Balanced",
-            estimatedSettlement: "Instant",
-            reference,
-          },
-        },
-      }),
+      JSON.stringify({ success: true, data: { quote } }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
 }
 
-function mockSuccessSubmit(overrides: Record<string, unknown> = {}) {
+function mockSuccessSubmit() {
+  const pending = {
+    kind: quote.kind,
+    reference: quote.reference,
+    nextStatus: "success",
+    completionDelayMs: 1600,
+    statusLabel: "Pending on Stellar",
+    message: "Submitting deposit",
+    failureReason: null,
+    quote,
+  } satisfies PendingTransaction;
   globalThis.fetch = async () =>
     new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          pending: {
-            kind: "deposit",
-            reference: "NW-DEP-TEST",
-            nextStatus: "success",
-            completionDelayMs: 1600,
-            quote: {
-              kind: "deposit",
-              amount: 100,
-              fee: 1,
-              totalDebit: 101,
-              netAmount: 100,
-              strategyLabel: "Balanced",
-              estimatedSettlement: "Instant",
-              reference: "NW-DEP-TEST",
-            },
-            ...overrides,
-          },
-        },
-      }),
+      JSON.stringify({ success: true, data: { pending } }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
 }

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
 
 import { POST } from "./route";
+import { resolveTransactionClientId } from "./client-id";
 import { NextRequest } from "next/server";
 import { getRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { ERROR_CODE, HTTP_STATUS, MAX_BODY_BYTES } from "@/lib/api-response";
@@ -69,7 +69,14 @@ test("POST /api/transactions returns 200 for valid deposit quote", async () => {
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.quote);
+  assert.equal(body.data.quote.kind, "deposit");
+  assert.equal(body.data.quote.amount, 100);
+  assert.equal(body.data.quote.fee, 0.06);
+  assert.equal(body.data.quote.netAmount, 100);
+  assert.equal(body.data.quote.totalDebit, 100.06);
+  assert.equal(body.data.quote.walletAddress, VALID_STELLAR_ADDRESS);
+  assert.equal(body.data.quote.strategyLabel, "Balanced");
+  assert.match(body.data.quote.reference, /^NW-DEP-/);
 });
 
 test("POST /api/transactions returns 200 for valid withdrawal quote", async () => {
@@ -79,7 +86,14 @@ test("POST /api/transactions returns 200 for valid withdrawal quote", async () =
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.quote);
+  assert.equal(body.data.quote.kind, "withdrawal");
+  assert.equal(body.data.quote.amount, 50);
+  assert.equal(body.data.quote.fee, 0.38);
+  assert.equal(body.data.quote.netAmount, 49.62);
+  assert.equal(body.data.quote.totalDebit, 50);
+  assert.equal(body.data.quote.walletAddress, VALID_STELLAR_ADDRESS);
+  assert.equal(body.data.quote.strategyLabel, "Balanced");
+  assert.match(body.data.quote.reference, /^NW-WDR-/);
 });
 
 test("POST /api/transactions returns 200 for submit intent", async () => {
@@ -89,7 +103,15 @@ test("POST /api/transactions returns 200 for submit intent", async () => {
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.pending);
+  assert.equal(body.data.pending.kind, "deposit");
+  assert.equal(body.data.pending.nextStatus, "success");
+  assert.equal(body.data.pending.failureReason, null);
+  assert.equal(body.data.pending.quote.kind, "deposit");
+  assert.equal(body.data.pending.quote.amount, 100);
+  assert.equal(body.data.pending.quote.fee, 0.06);
+  assert.equal(body.data.pending.quote.totalDebit, 100.06);
+  assert.match(body.data.pending.reference, /^NW-DEP-/);
+  assert.equal(body.data.pending.reference, body.data.pending.quote.reference);
 });
 
 test("POST /api/transactions returns 400 for missing kind", async () => {
@@ -180,7 +202,14 @@ test("POST /api/transactions simulation failure returns failure outcome", async 
 
   assert.equal(res.status, 200);
   assert.equal(body.success, true);
-  assert.ok(body.data.pending);
+  assert.equal(body.data.pending.kind, "deposit");
+  assert.equal(body.data.pending.nextStatus, "failure");
+  assert.ok(
+    typeof body.data.pending.failureReason === "string" &&
+      body.data.pending.failureReason.length > 0,
+  );
+  assert.equal(body.data.pending.quote.amount, 100);
+  assert.match(body.data.pending.reference, /^NW-DEP-/);
 });
 
 test("POST /api/transactions validates negative amount before backend proxy", async () => {
@@ -241,12 +270,36 @@ test("POST /api/transactions validates invalid wallet address for withdrawals", 
 });
 
 test("rate-limit key uses getRateLimitKey, not a raw spoofable x-forwarded-for read", () => {
-  const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
-  assert.match(source, /getRateLimitKey\(request\)/);
-  assert.doesNotMatch(
-    source,
-    /headers\.get\(["']x-forwarded-for["']\)\s*\?\?\s*["']unknown["']/,
-  );
+  const spoofedVendorReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "cf-connecting-ip": "198.51.100.99",
+      "true-client-ip": "198.51.100.98",
+      "x-client-ip": "198.51.100.97",
+    },
+  });
+  assert.equal(getRateLimitKey(spoofedVendorReq), null);
+  assert.equal(resolveTransactionClientId(spoofedVendorReq), null);
+
+  const sessionFallbackReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "cf-connecting-ip": "198.51.100.99",
+      Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
+    },
+  });
+  assert.equal(getRateLimitKey(sessionFallbackReq), null);
+  assert.equal(resolveTransactionClientId(sessionFallbackReq), "session:test_token");
+
+  const xffReq = new NextRequest("http://localhost:3000/api/transactions", {
+    method: "POST",
+    headers: {
+      "x-forwarded-for": "198.51.100.88, 10.0.0.5",
+      Cookie: `nw_session=${VALID_SESSION_COOKIE}`,
+    },
+  });
+  assert.equal(getRateLimitKey(xffReq), "198.51.100.88");
+  assert.equal(resolveTransactionClientId(xffReq), "198.51.100.88");
 });
 
 test("rate-limit key prefers trusted headers over a spoofed x-forwarded-for", () => {
@@ -302,4 +355,134 @@ test("POST /api/transactions rate limiting isolates clients by session when IP h
 
 test.afterEach(() => {
   resetRateLimitStore();
+});
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = value;
+  }
+}
+
+function mockBackend(
+  run: () => Promise<void>,
+): Promise<void> {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  return run().finally(() => {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  });
+}
+
+test("POST /api/transactions returns 502 BACKEND_ERROR for a non-JSON backend body", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response("<html><body>Gateway Error</body></html>", {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
+});
+
+test("POST /api/transactions returns 502 BACKEND_ERROR for a malformed backend payload", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ unexpected: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
+});
+
+test("POST /api/transactions wraps a bare backend success payload in the app envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ quote: { kind: "deposit" } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.quote.kind, "deposit");
+  });
+});
+
+test("POST /api/transactions unwraps a wrapped backend success envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: { quote: { kind: "withdrawal" } },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+
+    const res = await POST(makePostRequest(validWithdrawal));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.quote.kind, "withdrawal");
+  });
+});
+
+test("POST /api/transactions maps a backend error envelope on a 2xx response", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "INSUFFICIENT_BALANCE", message: "Not enough funds." },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_REQUEST);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.VALIDATION_ERROR);
+    assert.equal(body.error.message, "Not enough funds.");
+  });
+});
+
+test("POST /api/transactions maps a non-OK backend response to the error envelope", async () => {
+  await mockBackend(async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: "Bad Gateway" }), {
+        status: 502,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    const res = await POST(makePostRequest(validDeposit));
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  });
 });

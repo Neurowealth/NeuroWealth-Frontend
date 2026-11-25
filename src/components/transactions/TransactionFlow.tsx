@@ -76,27 +76,43 @@ export function TransactionFlow() {
 
             <div className={styles.topControls}>
               <div className={styles.controlPanel}>
-                <p className={styles.controlLabel}>{t.flow.themePreview}</p>
-                <div className={styles.segmentRow}>
-                  {(["light", "dark"] as const).map((option) => (
-                    <button
-                      className={[
-                        styles.segmentButton,
-                        theme === option ? styles.segmentButtonActive : "",
-                      ].join(" ")}
-                      key={option}
-                      onClick={() => handleThemeChange(option)}
-                      type="button"
-                    >
-                      {option === "light" ? t.flow.lightMode : t.flow.darkMode}
-                    </button>
-                  ))}
+                <p id="tx-theme-group-label" className={styles.controlLabel}>
+                  {t.flow.themePreview}
+                </p>
+                <div
+                  role="group"
+                  aria-labelledby="tx-theme-group-label"
+                  className={styles.segmentRow}
+                >
+                  {(["light", "dark"] as const).map((option) => {
+                    const isSelected = theme === option;
+                    return (
+                      <button
+                        aria-pressed={isSelected}
+                        className={[
+                          styles.segmentButton,
+                          isSelected ? styles.segmentButtonActive : "",
+                        ].join(" ")}
+                        key={option}
+                        onClick={() => handleThemeChange(option)}
+                        type="button"
+                      >
+                        {option === "light" ? t.flow.lightMode : t.flow.darkMode}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className={styles.controlPanel}>
-                <p className={styles.controlLabel}>{t.flow.screenshotStates}</p>
-                <div className={styles.segmentRow}>
+                <p id="tx-preview-group-label" className={styles.controlLabel}>
+                  {t.flow.screenshotStates}
+                </p>
+                <div
+                  role="group"
+                  aria-labelledby="tx-preview-group-label"
+                  className={styles.segmentRow}
+                >
                   {(
                     [
                       "interactive",
@@ -106,21 +122,25 @@ export function TransactionFlow() {
                       "success",
                       "failure",
                     ] as const
-                  ).map((option) => (
-                    <button
-                      className={[
-                        styles.segmentButton,
-                        preview === option ? styles.segmentButtonActive : "",
-                      ].join(" ")}
-                      key={option}
-                      onClick={() => handlePreviewChange(option)}
-                      type="button"
-                    >
-                      {option === "interactive"
-                        ? t.flow.liveFlow
-                        : t.flow.previewStates[option]}
-                    </button>
-                  ))}
+                  ).map((option) => {
+                    const isSelected = preview === option;
+                    return (
+                      <button
+                        aria-pressed={isSelected}
+                        className={[
+                          styles.segmentButton,
+                          isSelected ? styles.segmentButtonActive : "",
+                        ].join(" ")}
+                        key={option}
+                        onClick={() => handlePreviewChange(option)}
+                        type="button"
+                      >
+                        {option === "interactive"
+                          ? t.flow.liveFlow
+                          : t.flow.previewStates[option]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -128,20 +148,28 @@ export function TransactionFlow() {
 
           <div className={styles.grid}>
             <section className={`${styles.card} ${styles.mainCard}`}>
-              <div className={styles.kindTabs}>
-                {(["deposit", "withdrawal"] as const).map((option) => (
-                  <button
-                    className={[
-                      styles.kindButton,
-                      kind === option ? styles.kindButtonActive : "",
-                    ].join(" ")}
-                    key={option}
-                    onClick={() => handleKindChange(option)}
-                    type="button"
-                  >
-                    {option === "deposit" ? t.flow.deposit : t.flow.withdraw}
-                  </button>
-                ))}
+              <div
+                role="group"
+                aria-label={t.flow.heading}
+                className={styles.kindTabs}
+              >
+                {(["deposit", "withdrawal"] as const).map((option) => {
+                  const isSelected = kind === option;
+                  return (
+                    <button
+                      aria-pressed={isSelected}
+                      className={[
+                        styles.kindButton,
+                        isSelected ? styles.kindButtonActive : "",
+                      ].join(" ")}
+                      key={option}
+                      onClick={() => handleKindChange(option)}
+                      type="button"
+                    >
+                      {option === "deposit" ? t.flow.deposit : t.flow.withdraw}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className={styles.sectionHeading}>

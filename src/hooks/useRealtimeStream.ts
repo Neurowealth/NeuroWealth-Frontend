@@ -16,12 +16,36 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { random as seededRandom } from "@/lib/seeded-rng";
-import { formatNumber } from "@/lib/formatters";
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type StreamEventKind = "deposit" | "withdrawal" | "rebalance";
 export type StreamStatus = "idle" | "running" | "stopped";
+
+export interface RealtimeStreamMessages {
+  depositTitle?: string;
+  depositDesc?: string;
+  withdrawalTitle?: string;
+  withdrawalDesc?: string;
+  rebalanceTitle?: string;
+  rebalanceDesc?: string;
+}
+
+export interface RealtimeStreamOptions {
+  onEvent?: (event: StreamEvent) => void;
+  messages?: RealtimeStreamMessages;
+  /** Injected clock for deterministic testing or demo runs. */
+  clock?: () => Date | number | string;
+}
 
 export interface StreamEvent {
   id: string;
@@ -69,58 +93,107 @@ function randInterval(): number {
 
 // ── Event generators ──────────────────────────────────────────────────────────
 
+const BASE_STREAM_TIME_MS = 1767225600000; // 2026-01-01T00:00:00.000Z
 let _seq = 0;
-function nextId() {
-  _seq += 1;
-  return `rt-${Date.now()}-${_seq}`;
+let _virtualTime = BASE_STREAM_TIME_MS;
+
+export function resetRealtimeStreamSequence(val = 0, baseTime = BASE_STREAM_TIME_MS): void {
+  _seq = val;
+  _virtualTime = baseTime;
 }
 
-function makeDeposit(): StreamEvent {
-  const amount = Math.round(100 + seededRandom() * 4900);
+function nextEventMeta(clock?: () => Date | number | string): { id: string; timestamp: string } {
+  _seq += 1;
+  if (clock) {
+    const raw = clock();
+    const date = typeof raw === "object" ? raw : new Date(raw);
+    return {
+      id: `rt-${date.getTime()}-${_seq}`,
+      timestamp: date.toISOString(),
+    };
+  }
+
+  _virtualTime += randInterval();
   return {
-    id: nextId(),
+    id: `rt-${_virtualTime}-${_seq}`,
+    timestamp: new Date(_virtualTime).toISOString(),
+  };
+}
+
+function makeDeposit(
+  messages?: RealtimeStreamMessages,
+  clock?: () => Date | number | string,
+): StreamEvent {
+  const amount = Math.round(100 + seededRandom() * 4900);
+  const formattedAmount = formatCurrency(amount);
+  const title = messages?.depositTitle ?? "Deposit received";
+  const descTemplate = messages?.depositDesc ?? "+{{amount}} USDC deposited and routed to active strategy.";
+  const description = descTemplate.replace("{{amount}}", formattedAmount);
+  const { id, timestamp } = nextEventMeta(clock);
+
+  return {
+    id,
     kind: "deposit",
-    title: "Deposit received",
-    description: `+$${formatNumber(amount)} USDC deposited and routed to active strategy.`,
+    title,
+    description,
     amountDelta: amount,
     yieldDelta: +(amount * 0.0002).toFixed(2),
     apyDelta: +(seededRandom() * 0.08).toFixed(2),
-    timestamp: new Date().toISOString(),
+    timestamp,
     toastVariant: "success",
   };
 }
 
-function makeWithdrawal(): StreamEvent {
+function makeWithdrawal(
+  messages?: RealtimeStreamMessages,
+  clock?: () => Date | number | string,
+): StreamEvent {
   const amount = Math.round(50 + seededRandom() * 1500);
+  const formattedAmount = formatCurrency(amount);
+  const title = messages?.withdrawalTitle ?? "Withdrawal processed";
+  const descTemplate = messages?.withdrawalDesc ?? "-{{amount}} liquidity released to destination wallet.";
+  const description = descTemplate.replace("{{amount}}", formattedAmount);
+  const { id, timestamp } = nextEventMeta(clock);
+
   return {
-    id: nextId(),
+    id,
     kind: "withdrawal",
-    title: "Withdrawal processed",
-    description: `-$${formatNumber(amount)} liquidity released to destination wallet.`,
+    title,
+    description,
     amountDelta: -amount,
     yieldDelta: 0,
     apyDelta: -(seededRandom() * 0.04),
-    timestamp: new Date().toISOString(),
+    timestamp,
     toastVariant: "info",
   };
 }
 
-function makeRebalance(): StreamEvent {
+function makeRebalance(
+  messages?: RealtimeStreamMessages,
+  clock?: () => Date | number | string,
+): StreamEvent {
   const apyGain = +(seededRandom() * 0.15).toFixed(2);
+  const title = messages?.rebalanceTitle ?? "Auto-rebalance executed";
+  const descTemplate = messages?.rebalanceDesc ?? "Strategy drift corrected. APY improved by {{apyGain}}%.";
+  const description = descTemplate.replace("{{apyGain}}", apyGain.toFixed(2));
+  const { id, timestamp } = nextEventMeta(clock);
+
   return {
-    id: nextId(),
+    id,
     kind: "rebalance",
-    title: "Auto-rebalance executed",
-    description: `Strategy drift corrected. APY improved by ${apyGain.toFixed(2)}%.`,
+    title,
+    description,
     amountDelta: 0,
     yieldDelta: +(seededRandom() * 12).toFixed(2),
     apyDelta: apyGain,
-    timestamp: new Date().toISOString(),
+    timestamp,
     toastVariant: "info",
   };
 }
 
-const EVENT_GENERATORS: Array<() => StreamEvent> = [
+const EVENT_GENERATORS: Array<
+  (messages?: RealtimeStreamMessages, clock?: () => Date | number | string) => StreamEvent
+> = [
   makeDeposit,
   makeDeposit,   // weighted 2× — deposits are more common in demo
   makeWithdrawal,
@@ -128,9 +201,12 @@ const EVENT_GENERATORS: Array<() => StreamEvent> = [
   makeRebalance, // weighted 2× for rebalances
 ];
 
-function generateEvent(): StreamEvent {
+export function generateEvent(
+  messages?: RealtimeStreamMessages,
+  clock?: () => Date | number | string,
+): StreamEvent {
   const generator = EVENT_GENERATORS[Math.floor(seededRandom() * EVENT_GENERATORS.length)];
-  return generator();
+  return generator(messages, clock);
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -138,8 +214,16 @@ function generateEvent(): StreamEvent {
 const ZERO_DELTA: PortfolioDelta = { totalBalance: 0, totalYield: 0, apy: 0 };
 
 export function useRealtimeStream(
-  onEvent?: (event: StreamEvent) => void,
+  onEventOrOptions?: ((event: StreamEvent) => void) | RealtimeStreamOptions,
+  maybeOptions?: RealtimeStreamOptions,
 ): RealtimeStreamHandle {
+  const resolvedOnEvent =
+    typeof onEventOrOptions === "function"
+      ? onEventOrOptions
+      : onEventOrOptions?.onEvent;
+  const options =
+    typeof onEventOrOptions === "object" ? onEventOrOptions : maybeOptions;
+
   const [status, setStatus] = useState<StreamStatus>("idle");
   const [delta, setDelta] = useState<PortfolioDelta>(ZERO_DELTA);
   const [events, setEvents] = useState<StreamEvent[]>([]);
@@ -147,12 +231,22 @@ export function useRealtimeStream(
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef<StreamStatus>("idle");
-  const onEventRef = useRef(onEvent);
+  const onEventRef = useRef(resolvedOnEvent);
+  const messagesRef = useRef(options?.messages);
+  const clockRef = useRef(options?.clock);
 
   // Keep ref in sync so the timer closure always calls the latest callback
   useEffect(() => {
-    onEventRef.current = onEvent;
-  }, [onEvent]);
+    onEventRef.current = resolvedOnEvent;
+  }, [resolvedOnEvent]);
+
+  useEffect(() => {
+    messagesRef.current = options?.messages;
+  }, [options?.messages]);
+
+  useEffect(() => {
+    clockRef.current = options?.clock;
+  }, [options?.clock]);
 
   const scheduleNext = useCallback(() => {
     if (statusRef.current !== "running") return;
@@ -160,7 +254,7 @@ export function useRealtimeStream(
     timerRef.current = setTimeout(() => {
       if (statusRef.current !== "running") return;
 
-      const event = generateEvent();
+      const event = generateEvent(messagesRef.current, clockRef.current);
 
       setDelta((prev: PortfolioDelta) => ({
         totalBalance: +(prev.totalBalance + event.amountDelta).toFixed(2),
@@ -196,6 +290,7 @@ export function useRealtimeStream(
     setDelta(ZERO_DELTA);
     setEvents([]);
     setLatestEvent(null);
+    resetRealtimeStreamSequence();
   }, []);
 
   // Cleanup on unmount

@@ -19,6 +19,7 @@ import { ThemeMode, useTheme } from "@/contexts/ThemeProvider";
 import { useI18n } from "@/contexts/I18nContext";
 import { LOCALE_OPTIONS as LOCALES } from "@/lib/locale-options";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { setDisplayPreferences } from "@/lib/i18n/display-preferences";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import rawStyles from "../settings.module.css";
 
@@ -84,6 +85,10 @@ export default function PreferencesPage() {
     onSaveSuccess: (savedData) => {
       setAppTheme(savedData.theme);
       setLocale(savedData.locale);
+      setDisplayPreferences({
+        locale: savedData.locale,
+        currency: savedData.currencyFormat,
+      });
     },
   });
 

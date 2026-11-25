@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function DashboardDevErrorsPage() {
   return (
-    <main className="space-y-8">
+    <section className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold text-text-primary">
           Error page dev triggers
@@ -62,6 +62,6 @@ export default function DashboardDevErrorsPage() {
           </li>
         </ul>
       </section>
-    </main>
+    </section>
   );
 }

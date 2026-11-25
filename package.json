@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "set TZ=UTC && node --import tsx --test \"src/**/*.test.{ts,tsx}\"",
+    "test": "TZ=UTC node --import tsx --test \"src/**/*.test.{ts,tsx}\"",
     "test:e2e": "playwright test",
     "qa:visual-baseline": "node scripts/capture-visual-baselines.mjs",
     "lint": "next lint",

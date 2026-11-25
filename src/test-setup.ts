@@ -9,6 +9,8 @@ if (typeof require !== "undefined" && require.extensions) {
       return typeof prop === "string" ? prop : undefined;
     },
   });
+  // Module interop copies own properties when importing the CSS default export.
+  Object.defineProperty(cssProxy, "default", { value: cssProxy });
   require.extensions[".css"] = (module) => {
     module.exports = cssProxy;
   };

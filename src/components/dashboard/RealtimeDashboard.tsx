@@ -136,7 +136,10 @@ export function RealtimeDashboard() {
     [pushToast],
   );
 
-  const { status, delta, events, start, stop, reset } = useRealtimeStream(handleEvent);
+  const { status, delta, events, start, stop, reset } = useRealtimeStream(
+    handleEvent,
+    { messages: t.events },
+  );
 
   const deltaBalanceStr =
     delta.totalBalance === 0

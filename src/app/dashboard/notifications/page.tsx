@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   RefreshCw,
 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { useToast } from "@/components/notifications/ToastProvider";
 import { Button, Card, InlineBanner } from "@/components/ui";
 import { runMockFlow, useMockFlows, type MockFlowKey } from "./mockFlows";
@@ -169,7 +170,7 @@ function NotificationInbox() {
 
       <DataBoundary
         loading={simLoading}
-        error={simError ? new Error(simError.message) : null}
+        error={simError}
         onRetry={handleRetry}
         skeleton={<NotificationListSkeleton items={4} />}
         label="notifications"
@@ -202,6 +203,7 @@ function NotificationInbox() {
 
 function NotificationRow({ item, onRead }: { item: NotificationItem; onRead: (id: string) => void }) {
   const Icon = item.icon;
+  const { messages } = useI18n();
   return (
     <div
       role="listitem"
@@ -212,7 +214,7 @@ function NotificationRow({ item, onRead }: { item: NotificationItem; onRead: (id
       }`}
     >
       {!item.read && (
-        <span className="absolute top-4 right-4 h-2 w-2 rounded-full bg-sky-400" aria-label="Unread" />
+        <span className="absolute top-4 right-4 h-2 w-2 rounded-full bg-sky-400"><span className="sr-only">{messages.notifications.unreadLabel}</span></span>
       )}
       <div className="flex items-start gap-3 p-4 pr-8">
         <div className={`mt-0.5 rounded-xl border p-2 ${TYPE_STYLES[item.type]}`}>

@@ -10,11 +10,12 @@ import {
     TransactionFieldErrors,
     TransactionFormValues,
     TransactionKind,
+    TransactionDomainMessages,
     getDefaultTransactionValues,
     validateTransactionValues,
 } from "@/lib/transactions";
 
-export function useTransactionForm(kind: TransactionKind, tDomain: any) {
+export function useTransactionForm(kind: TransactionKind, tDomain: TransactionDomainMessages) {
     const [formValues, setFormValues] = useState<TransactionFormValues>(() =>
         getDefaultTransactionValues(kind),
     );

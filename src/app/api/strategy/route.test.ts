@@ -246,7 +246,7 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exce
   }
 });
 
-test("PUT /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
+test("PUT /api/strategy maps a non-OK backend response to the error envelope", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
   process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
@@ -263,9 +263,143 @@ test("PUT /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK re
     const res = await PUT(req);
     const body = await res.json();
 
-    assert.equal(res.status, 503);
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
     assert.equal(body.success, false);
     assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy maps a backend error envelope on a 2xx response", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "RATE_LIMITED", message: "Slow down." },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.TOO_MANY_REQUESTS);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.RATE_LIMITED);
+    assert.equal(body.error.message, "Slow down.");
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy returns 502 BACKEND_ERROR for a non-JSON backend body", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response("<html><body>Gateway Error</body></html>", {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy returns 502 BACKEND_ERROR when the backend payload is malformed", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(JSON.stringify({ strategy: "aggressive" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.BAD_GATEWAY);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy wraps a bare backend success payload in the app envelope", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(JSON.stringify({ strategy: "growth" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const req = makePutRequest({ strategy: "growth" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.strategy, "growth");
+  } finally {
+    restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("PUT /api/strategy unwraps a wrapped backend success envelope", async () => {
+  const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
+
+  try {
+    globalThis.fetch = async () => {
+      return new Response(
+        JSON.stringify({ success: true, data: { strategy: "conservative" } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+
+    const req = makePutRequest({ strategy: "conservative" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    assert.equal(res.status, HTTP_STATUS.OK);
+    assert.equal(body.success, true);
+    assert.equal(body.data.strategy, "conservative");
   } finally {
     restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
     globalThis.fetch = originalFetch;

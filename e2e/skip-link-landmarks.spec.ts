@@ -23,14 +23,28 @@ test.describe("Skip link and main landmark", () => {
   });
 
   test("dashboard history has exactly one main", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: /fill demo credentials/i }).click();
+    await page.locator('[data-qa="login-submit-button"]').click();
+    await page.waitForURL("**/dashboard", { timeout: 10000 });
+
     await page.goto("/dashboard/history");
+    await expect(page).toHaveURL(/\/dashboard\/history/);
     await expect(page.locator("main#main-content")).toHaveCount(1);
     await expect(page.locator("main")).toHaveCount(1);
+    await expect(page.locator("main#main-content")).toHaveAttribute("aria-labelledby", "dashboard-route-title");
   });
 
   test("dashboard activity has exactly one main", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: /fill demo credentials/i }).click();
+    await page.locator('[data-qa="login-submit-button"]').click();
+    await page.waitForURL("**/dashboard", { timeout: 10000 });
+
     await page.goto("/dashboard/activity");
+    await expect(page).toHaveURL(/\/dashboard\/activity/);
     await expect(page.locator("main#main-content")).toHaveCount(1);
     await expect(page.locator("main")).toHaveCount(1);
+    await expect(page.locator("main#main-content")).toHaveAttribute("aria-labelledby", "dashboard-route-title");
   });
 });

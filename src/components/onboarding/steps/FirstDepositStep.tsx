@@ -248,7 +248,7 @@ export default function FirstDepositStep({ onNext, onSkip, onBack }: FirstDeposi
       <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto">
         <Button
           onClick={handleDeposit}
-          disabled={!finalAmount || finalAmount < 10 || isDepositing}
+          disabled={!finalAmount || isDepositing}
           className="flex-1 sm:flex-initial min-w-[140px]"
           data-qa="deposit-submit-button"
         >
