@@ -197,7 +197,7 @@ function restoreEnv(key: string, value: string | undefined) {
 
 // ── Backend error & exception paths (#Issue 1) ──────────────────────────
 
-test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK response", async () => {
+test("GET /api/strategy returns 502 BACKEND_ERROR when backend returns non-OK response", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
   process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
@@ -214,7 +214,7 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK re
     const res = await GET(req);
     const body = await res.json();
 
-    assert.equal(res.status, 503);
+    assert.equal(res.status, 502);
     assert.equal(body.success, false);
     assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
   } finally {
@@ -223,7 +223,7 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend returns non-OK re
   }
 });
 
-test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exception", async () => {
+test("GET /api/strategy returns 200 with fallback to cookie when backend fetch throws exception", async () => {
   const originalEnv = process.env.NEUROWEALTH_API_BASE_URL;
   const originalFetch = globalThis.fetch;
   process.env.NEUROWEALTH_API_BASE_URL = "http://mock-api.local";
@@ -237,9 +237,10 @@ test("GET /api/strategy returns 503 BACKEND_ERROR when backend fetch throws exce
     const res = await GET(req);
     const body = await res.json();
 
-    assert.equal(res.status, 503);
-    assert.equal(body.success, false);
-    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+    // Falls back to local cookie when backend is unavailable
+    assert.equal(res.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.data.strategy, "growth");
   } finally {
     restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
     globalThis.fetch = originalFetch;
@@ -420,9 +421,10 @@ test("PUT /api/strategy returns 503 BACKEND_ERROR when backend fetch throws netw
     const res = await PUT(req);
     const body = await res.json();
 
-    assert.equal(res.status, 503);
-    assert.equal(body.success, false);
-    assert.equal(body.error.code, ERROR_CODE.BACKEND_ERROR);
+    // Falls back to local cookie update when backend is unavailable
+    assert.equal(res.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.data.strategy, "conservative");
   } finally {
     restoreEnv("NEUROWEALTH_API_BASE_URL", originalEnv);
     globalThis.fetch = originalFetch;

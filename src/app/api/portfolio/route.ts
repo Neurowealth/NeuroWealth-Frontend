@@ -11,12 +11,33 @@ import {
 } from "@/lib/api-response";
 import { portfolioQuerySchema, zodErrorToDetails } from "@/lib/validation/api";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
-import { requireAuth } from "@/lib/api-auth";
+import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const authError = requireAuth(request);
   if (authError) return authError;
+
+  const session = getSessionFromRequest(request);
+  const ip = getRateLimitKey(request);
+  const clientId = ip ?? (session?.token ? `session:${session.token}` : null);
+
+  if (clientId) {
+    const limit = checkRateLimit(`GET:/api/portfolio:${clientId}`, {
+      maxRequests: 30,
+      windowMs: 60_000,
+    });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        errorResponse(ERROR_CODE.RATE_LIMITED, "Too many requests. Please try again later."),
+        {
+          status: HTTP_STATUS.TOO_MANY_REQUESTS,
+          headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) },
+        },
+      );
+    }
+  }
 
   const parsedQuery = portfolioQuerySchema.safeParse({
     scenario: request.nextUrl.searchParams.get("scenario") ?? undefined,
