@@ -29,6 +29,11 @@ import {
   type RecoveryAction,
   type TransactionDomainMessages,
 } from "@/lib/transactions";
+import {
+  DEFAULT_STRATEGY_LABEL,
+  loadStoredStrategyLabel,
+  resolveStrategyLabel,
+} from "@/lib/strategies";
 import type { ScenarioType } from "@/contexts/SandboxContext";
 import { getTheme } from "../utils/transaction-utils";
 import { useTransactionForm } from "./useTransactionForm";
@@ -52,6 +57,7 @@ export interface UseTransactionFlowArgs {
   isSandboxMode: boolean;
   scenario: ScenarioType;
   tDomain: TransactionDomainMessages;
+  strategyLabel?: string;
 }
 
 export function useTransactionFlow({
@@ -60,6 +66,7 @@ export function useTransactionFlow({
   isSandboxMode,
   scenario,
   tDomain,
+  strategyLabel,
 }: UseTransactionFlowArgs) {
   const timeoutRef = useRef<number | null>(null);
 
@@ -78,6 +85,26 @@ export function useTransactionFlow({
   const [lastFailedAction, setLastFailedAction] = useState<
     "review" | "confirm" | null
   >(null);
+  const [storedStrategyLabel, setStoredStrategyLabel] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (strategyLabel?.trim()) {
+      return;
+    }
+
+    const stored = loadStoredStrategyLabel();
+    if (stored) {
+      setStoredStrategyLabel(stored);
+    }
+  }, [strategyLabel]);
+
+  const selectedStrategyLabel = strategyLabel?.trim()
+    ? resolveStrategyLabel(strategyLabel)
+    : storedStrategyLabel ?? undefined;
+  const selectedStrategyLabelRef = useRef(selectedStrategyLabel);
+  selectedStrategyLabelRef.current = selectedStrategyLabel;
 
   const {
     formValues,
@@ -101,7 +128,11 @@ export function useTransactionFlow({
     reset: resetApi,
   } = useTransactionAPI();
 
-  const context = getTransactionContext(kind, tDomain.context);
+  const context = getTransactionContext(
+    kind,
+    tDomain.context,
+    selectedStrategyLabel,
+  );
 
   useEffect(() => {
     if (timeoutRef.current) {
@@ -123,7 +154,12 @@ export function useTransactionFlow({
       return;
     }
 
-    const snapshot = buildPreviewSnapshot(kind, preview, tDomain);
+    const snapshot = buildPreviewSnapshot(
+      kind,
+      preview,
+      tDomain,
+      selectedStrategyLabelRef.current,
+    );
 
     setStage(snapshot.stage);
     setValues(snapshot.form);
@@ -135,6 +171,22 @@ export function useTransactionFlow({
     resetApi();
     setLastFailedAction(null);
   }, [kind, preview, cancelRequest, resetForm, resetApi, setValues, setErrors, tDomain]);
+
+  useEffect(() => {
+    if (preview === "interactive") {
+      return;
+    }
+
+    const snapshot = buildPreviewSnapshot(
+      kind,
+      preview,
+      tDomain,
+      selectedStrategyLabel,
+    );
+    setQuote(snapshot.quote);
+    setPending(snapshot.pending);
+    setReceipt(snapshot.receipt);
+  }, [kind, preview, tDomain, selectedStrategyLabel]);
 
   // Handle sandbox scenarios
   useEffect(() => {
@@ -239,7 +291,12 @@ export function useTransactionFlow({
     clearRecovery();
     setLastFailedAction(null);
 
-    const result = await requestQuote(kind, formValues, quote?.reference);
+    const result = await requestQuote(
+      kind,
+      formValues,
+      quote?.reference,
+      selectedStrategyLabel,
+    );
 
     if (result.status === "aborted") {
       return;
@@ -248,6 +305,13 @@ export function useTransactionFlow({
     if (result.status === "success") {
       setErrors({});
       setQuote(result.quote);
+      const serverStrategy = result.quote.strategyLabel.trim();
+      if (!strategyLabel?.trim() && !storedStrategyLabel && serverStrategy) {
+        const resolvedServerStrategy = resolveStrategyLabel(serverStrategy);
+        if (resolvedServerStrategy !== DEFAULT_STRATEGY_LABEL) {
+          setStoredStrategyLabel(resolvedServerStrategy);
+        }
+      }
       setStage("confirm");
       setLastFailedAction(null);
       return;
@@ -272,7 +336,12 @@ export function useTransactionFlow({
     clearRecovery();
     setLastFailedAction(null);
 
-    const result = await submitTransaction(kind, formValues, quote?.reference);
+    const result = await submitTransaction(
+      kind,
+      formValues,
+      quote?.reference,
+      selectedStrategyLabel,
+    );
 
     if (result.status === "aborted") {
       return;
@@ -281,6 +350,13 @@ export function useTransactionFlow({
     if (result.status === "success") {
       setPending(result.pending);
       setQuote(result.pending.quote);
+      const serverStrategy = result.pending.quote.strategyLabel.trim();
+      if (!strategyLabel?.trim() && !storedStrategyLabel && serverStrategy) {
+        const resolvedServerStrategy = resolveStrategyLabel(serverStrategy);
+        if (resolvedServerStrategy !== DEFAULT_STRATEGY_LABEL) {
+          setStoredStrategyLabel(resolvedServerStrategy);
+        }
+      }
       setStage("pending");
       setLastFailedAction(null);
 

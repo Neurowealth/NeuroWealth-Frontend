@@ -11,7 +11,12 @@ const VALID_SESSION_COOKIE = encodeURIComponent(
   JSON.stringify({ token: "test_token", expiresAt: Date.now() + 3600 * 1000 }),
 );
 
-function makePostRequest(body: unknown, scenario?: string, authenticated = true): NextRequest {
+function makePostRequest(
+  body: unknown,
+  scenario?: string,
+  authenticated = true,
+  extraCookies: string[] = [],
+): NextRequest {
   const url = scenario
     ? `http://localhost:3000/api/transactions?scenario=${scenario}`
     : "http://localhost:3000/api/transactions";
@@ -20,8 +25,13 @@ function makePostRequest(body: unknown, scenario?: string, authenticated = true)
     Origin: "http://localhost:3000",
     Host: "localhost:3000",
   });
+  const cookies: string[] = [];
   if (authenticated) {
-    headers.set("Cookie", `nw_session=${VALID_SESSION_COOKIE}`);
+    cookies.push(`nw_session=${VALID_SESSION_COOKIE}`);
+  }
+  cookies.push(...extraCookies);
+  if (cookies.length > 0) {
+    headers.set("Cookie", cookies.join("; "));
   }
   return new NextRequest(url, {
     method: "POST",
@@ -112,6 +122,51 @@ test("POST /api/transactions returns 200 for submit intent", async () => {
   assert.equal(body.data.pending.quote.totalDebit, 100.06);
   assert.match(body.data.pending.reference, /^NW-DEP-/);
   assert.equal(body.data.pending.reference, body.data.pending.quote.reference);
+});
+
+test("POST /api/transactions propagates explicit strategyLabel on quote and submit", async () => {
+  const quoteRes = await POST(
+    makePostRequest({ ...validDeposit, strategyLabel: "Conservative" }),
+  );
+  const quoteBody = await quoteRes.json();
+
+  assert.equal(quoteRes.status, 200);
+  assert.equal(quoteBody.data.quote.strategyLabel, "Conservative");
+
+  const submitRes = await POST(
+    makePostRequest({
+      ...validWithdrawal,
+      intent: "submit",
+      strategyLabel: "Growth",
+    }),
+  );
+  const submitBody = await submitRes.json();
+
+  assert.equal(submitRes.status, 200);
+  assert.equal(submitBody.data.pending.quote.strategyLabel, "Growth");
+});
+
+test("POST /api/transactions resolves strategyLabel from nw_strategy_preference cookie when omitted from payload", async () => {
+  const quoteRes = await POST(
+    makePostRequest(validDeposit, undefined, true, ["nw_strategy_preference=growth"]),
+  );
+  const quoteBody = await quoteRes.json();
+
+  assert.equal(quoteRes.status, 200);
+  assert.equal(quoteBody.data.quote.strategyLabel, "Growth");
+
+  const submitRes = await POST(
+    makePostRequest(
+      { ...validWithdrawal, intent: "submit" },
+      undefined,
+      true,
+      ["nw_strategy_preference=conservative"],
+    ),
+  );
+  const submitBody = await submitRes.json();
+
+  assert.equal(submitRes.status, 200);
+  assert.equal(submitBody.data.pending.quote.strategyLabel, "Conservative");
 });
 
 test("POST /api/transactions returns 400 for missing kind", async () => {

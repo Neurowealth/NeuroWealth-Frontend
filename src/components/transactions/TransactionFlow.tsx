@@ -17,7 +17,11 @@ import { useTransactionFlow } from "./hooks/useTransactionFlow";
 import { currentStepIndex } from "./utils/transaction-utils";
 import { getToneClassName } from "./utils/transaction-style-utils";
 
-export function TransactionFlow() {
+interface TransactionFlowProps {
+  strategyLabel?: string;
+}
+
+export function TransactionFlow({ strategyLabel }: TransactionFlowProps = {}) {
   const { messages } = useI18n();
   const t = messages.transactions;
   const router = useRouter();
@@ -49,7 +53,14 @@ export function TransactionFlow() {
     handleRecoveryAction,
     resetFlow,
     setStage,
-  } = useTransactionFlow({ searchParams, router, isSandboxMode, scenario, tDomain: t.domain });
+  } = useTransactionFlow({
+    searchParams,
+    router,
+    isSandboxMode,
+    scenario,
+    tDomain: t.domain,
+    strategyLabel,
+  });
 
   const statusChips = buildStatusChips(kind, formValues, t.domain);
 

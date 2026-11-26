@@ -108,6 +108,7 @@ export function useTransactionAPI() {
             kind: TransactionKind,
             formValues: TransactionFormValues,
             quoteReference?: string,
+            strategyLabel?: string,
         ): Promise<QuoteResult> => {
             const controller = beginApiRequest();
             setState((prev) => ({
@@ -126,6 +127,7 @@ export function useTransactionAPI() {
                             intent: "quote",
                             kind,
                             values: formValues,
+                            ...(strategyLabel ? { strategyLabel } : {}),
                         },
                         timeoutMs: 12000,
                         signal: controller.signal,
@@ -182,6 +184,7 @@ export function useTransactionAPI() {
             kind: TransactionKind,
             formValues: TransactionFormValues,
             quoteReference?: string,
+            strategyLabel?: string,
         ): Promise<SubmitResult> => {
             const controller = beginApiRequest();
             setState((prev) => ({
@@ -200,6 +203,7 @@ export function useTransactionAPI() {
                             intent: "submit",
                             kind,
                             values: formValues,
+                            ...(strategyLabel ? { strategyLabel } : {}),
                         },
                         timeoutMs: 12000,
                         signal: controller.signal,

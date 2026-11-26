@@ -16,6 +16,7 @@ import { renderHook, act } from "@/test-utils/render-hook";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { useTransactionFlow, type RouteSearchParams, type FlowRouter } from "./useTransactionFlow";
 import { dictionaries } from "@/lib/i18n/messages";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
 import type { PendingTransaction, TransactionQuote } from "@/lib/transactions";
 
 function renderFlowHook(callback: () => ReturnType<typeof useTransactionFlow>) {
@@ -30,6 +31,8 @@ const originalFetch = globalThis.fetch;
 
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
+  localStorage.removeItem(STORAGE_KEYS.STRATEGY_PREFERENCE);
+  localStorage.removeItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY);
 });
 
 function makeSearchParams(params: Record<string, string> = {}): RouteSearchParams {
@@ -510,4 +513,88 @@ test("useTransactionFlow — sandbox mode 'empty' scenario resets form, quote, p
   assert.equal(result.current.pending, null);
   assert.equal(result.current.receipt, null);
   assert.equal(result.current.requestMessage, "No transaction data available.");
+});
+
+test("useTransactionFlow — propagates stored strategy preference into context, preview quotes, and API requests", async () => {
+  localStorage.setItem(STORAGE_KEYS.STRATEGY_PREFERENCE, "conservative");
+
+  const previewHook = renderFlowHook(() =>
+    useTransactionFlow({
+      searchParams: makeSearchParams({ theme: "light", kind: "deposit", preview: "success" }),
+      router: makeRouter(),
+      isSandboxMode: false,
+      scenario: "success",
+      tDomain,
+    }),
+  );
+
+  assert.equal(previewHook.result.current.context.strategyLabel, "Conservative");
+  assert.equal(previewHook.result.current.quote?.strategyLabel, "Conservative");
+  assert.equal(previewHook.result.current.pending?.quote.strategyLabel, "Conservative");
+  assert.equal(previewHook.result.current.receipt?.quote.strategyLabel, "Conservative");
+
+  const sentBodies: Array<Record<string, unknown>> = [];
+  globalThis.fetch = async (_input, init) => {
+    const parsed = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+    sentBodies.push(parsed);
+    const activeQuote: TransactionQuote = {
+      ...quote,
+      strategyLabel: String(parsed.strategyLabel ?? "Balanced"),
+    };
+    if (parsed.intent === "submit") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            pending: {
+              kind: activeQuote.kind,
+              reference: activeQuote.reference,
+              nextStatus: "success",
+              completionDelayMs: 1600,
+              statusLabel: "Pending on Stellar",
+              message: "Submitting deposit",
+              failureReason: null,
+              quote: activeQuote,
+            },
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return new Response(
+      JSON.stringify({ success: true, data: { quote: activeQuote } }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  };
+
+  localStorage.removeItem(STORAGE_KEYS.STRATEGY_PREFERENCE);
+  localStorage.setItem(STORAGE_KEYS.ONBOARDING_USER_STRATEGY, "growth");
+
+  const liveHook = renderFlowHook(() =>
+    useTransactionFlow({
+      searchParams: makeSearchParams({ theme: "light", kind: "deposit" }),
+      router: makeRouter(),
+      isSandboxMode: false,
+      scenario: "success",
+      tDomain,
+    }),
+  );
+
+  assert.equal(liveHook.result.current.context.strategyLabel, "Growth");
+
+  act(() => {
+    liveHook.result.current.updateField("amount", "100");
+  });
+
+  await act(async () => {
+    await liveHook.result.current.submitReview?.();
+  });
+  assert.equal(liveHook.result.current.quote?.strategyLabel, "Growth");
+  assert.equal(sentBodies[0]?.strategyLabel, "Growth");
+
+  await act(async () => {
+    await liveHook.result.current.handleConfirm?.();
+  });
+  assert.equal(liveHook.result.current.pending?.quote.strategyLabel, "Growth");
+  assert.equal(sentBodies[1]?.strategyLabel, "Growth");
 });

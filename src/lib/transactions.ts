@@ -12,6 +12,7 @@ export type ValidationTone = "error" | "success" | "warning";
 import { logger } from "./logger";
 import { random } from "./seeded-rng";
 import type { dictionaries } from "@/lib/i18n/messages";
+import { resolveStrategyLabel } from "./strategies";
 
 export type TransactionDomainMessages = (typeof dictionaries)["en"]["transactions"]["domain"];
 
@@ -126,6 +127,7 @@ export interface TransactionRequestPayload {
   intent: "quote" | "submit";
   kind: TransactionKind;
   values: TransactionFormValues;
+  strategyLabel?: string;
   simulation?: "auto" | "success" | "failure";
 }
 
@@ -159,8 +161,6 @@ const MINIMUM_AMOUNT = {
   deposit: 10,
   withdrawal: 10,
 } as const;
-
-const STRATEGY_LABEL = "Balanced";
 
 const STELLAR_ADDRESS_PATTERN = /^G[A-Z2-7]{55}$/;
 
@@ -279,7 +279,12 @@ export function parsePreviewState(value: string | null): TransactionPreviewState
   return "interactive";
 }
 
-export function getTransactionContext(kind: TransactionKind, t: TransactionDomainMessages["context"]): TransactionContext {
+export function getTransactionContext(
+  kind: TransactionKind,
+  t: TransactionDomainMessages["context"],
+  strategyLabel?: string,
+): TransactionContext {
+  const activeStrategyLabel = resolveStrategyLabel(strategyLabel);
   if (kind === "withdrawal") {
     return {
       kind,
@@ -296,7 +301,7 @@ export function getTransactionContext(kind: TransactionKind, t: TransactionDomai
       minAmount: MINIMUM_AMOUNT.withdrawal,
       fee: NETWORK_FEE.withdrawal,
       availableAmount: AVAILABLE_AMOUNT.withdrawal,
-      strategyLabel: STRATEGY_LABEL,
+      strategyLabel: activeStrategyLabel,
       settlementLabel: t.sameDay,
       reviewLabel: t.treasuryReview,
     };
@@ -317,7 +322,7 @@ export function getTransactionContext(kind: TransactionKind, t: TransactionDomai
     minAmount: MINIMUM_AMOUNT.deposit,
     fee: NETWORK_FEE.deposit,
     availableAmount: AVAILABLE_AMOUNT.deposit,
-    strategyLabel: STRATEGY_LABEL,
+    strategyLabel: activeStrategyLabel,
     settlementLabel: t.usuallyCompletes,
     reviewLabel: t.networkFee,
   };
@@ -388,8 +393,14 @@ export function validateTransactionValues(kind: TransactionKind, values: Transac
   return errors;
 }
 
-export function buildTransactionQuote(kind: TransactionKind, values: TransactionFormValues, tContext: TransactionDomainMessages["context"], reference = generateReference(kind)): TransactionQuote {
-  const context = getTransactionContext(kind, tContext);
+export function buildTransactionQuote(
+  kind: TransactionKind,
+  values: TransactionFormValues,
+  tContext: TransactionDomainMessages["context"],
+  reference = generateReference(kind),
+  strategyLabel?: string,
+): TransactionQuote {
+  const context = getTransactionContext(kind, tContext, strategyLabel);
   const amount = roundCurrency(parseAmount(values.amount));
   const fee = NETWORK_FEE[kind];
   const totalDebit = roundCurrency(kind === "deposit" ? amount + fee : amount);
@@ -409,8 +420,21 @@ export function buildTransactionQuote(kind: TransactionKind, values: Transaction
   };
 }
 
-export function buildPendingTransaction(kind: TransactionKind, values: TransactionFormValues, tPending: TransactionDomainMessages["pending"], tContext: TransactionDomainMessages["context"], nextStatus: "success" | "failure" = "success"): PendingTransaction {
-  const quote = buildTransactionQuote(kind, values, tContext);
+export function buildPendingTransaction(
+  kind: TransactionKind,
+  values: TransactionFormValues,
+  tPending: TransactionDomainMessages["pending"],
+  tContext: TransactionDomainMessages["context"],
+  nextStatus: "success" | "failure" = "success",
+  strategyLabel?: string,
+): PendingTransaction {
+  const quote = buildTransactionQuote(
+    kind,
+    values,
+    tContext,
+    undefined,
+    strategyLabel,
+  );
 
   return {
     kind,
@@ -437,7 +461,12 @@ export function buildTransactionReceipt(pending: PendingTransaction, status: "su
   };
 }
 
-export function buildPreviewSnapshot(kind: TransactionKind, preview: TransactionPreviewState, t: TransactionDomainMessages): TransactionPreviewSnapshot {
+export function buildPreviewSnapshot(
+  kind: TransactionKind,
+  preview: TransactionPreviewState,
+  t: TransactionDomainMessages,
+  strategyLabel?: string,
+): TransactionPreviewSnapshot {
   const baseValues = getDefaultTransactionValues(kind);
 
   if (preview === "validation") {
@@ -473,7 +502,13 @@ export function buildPreviewSnapshot(kind: TransactionKind, preview: Transaction
       stage: "confirm",
       form,
       fieldErrors: {},
-      quote: buildTransactionQuote(kind, form, t.context, `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-CNFRM`),
+      quote: buildTransactionQuote(
+        kind,
+        form,
+        t.context,
+        `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-CNFRM`,
+        strategyLabel,
+      ),
       pending: null,
       receipt: null,
     };
@@ -484,7 +519,14 @@ export function buildPreviewSnapshot(kind: TransactionKind, preview: Transaction
       kind === "withdrawal"
         ? { ...baseValues, amount: "4200" }
         : { ...baseValues, amount: "2500" };
-    const pending = buildPendingTransaction(kind, form, t.pending, t.context);
+    const pending = buildPendingTransaction(
+      kind,
+      form,
+      t.pending,
+      t.context,
+      "success",
+      strategyLabel,
+    );
 
     pending.reference = `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-PEND`;
     pending.quote.reference = pending.reference;
@@ -504,7 +546,14 @@ export function buildPreviewSnapshot(kind: TransactionKind, preview: Transaction
       kind === "withdrawal"
         ? { ...baseValues, amount: "4200" }
         : { ...baseValues, amount: "2500" };
-    const pending = buildPendingTransaction(kind, form, t.pending, t.context, preview === "success" ? "success" : "failure");
+    const pending = buildPendingTransaction(
+      kind,
+      form,
+      t.pending,
+      t.context,
+      preview === "success" ? "success" : "failure",
+      strategyLabel,
+    );
 
     pending.reference = `${kind === "deposit" ? "NW-DEP" : "NW-WDR"}-PREVIEW-${preview.toUpperCase()}`;
     pending.quote.reference = pending.reference;
