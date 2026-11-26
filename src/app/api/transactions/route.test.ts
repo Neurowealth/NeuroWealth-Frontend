@@ -62,6 +62,38 @@ test("POST /api/transactions returns 401 when unauthenticated", async () => {
   assert.equal(body.error.code, "UNAUTHORIZED");
 });
 
+test("POST /api/transactions rejects an unknown scenario in development", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  t.after(() => {
+    Reflect.deleteProperty(process.env, "NODE_ENV");
+    if (originalEnv !== undefined) Object.assign(process.env, { NODE_ENV: originalEnv });
+  });
+  Object.assign(process.env, { NODE_ENV: "development" });
+
+  const res = await POST(makePostRequest(validDeposit, "bogus"));
+  const body = await res.json();
+
+  assert.equal(res.status, 400);
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, "VALIDATION_ERROR");
+  assert.equal(body.error.message, "Query validation failed.");
+  assert.ok(body.error.details.scenario);
+});
+
+test("POST /api/transactions ignores an unknown scenario in production", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  t.after(() => {
+    Reflect.deleteProperty(process.env, "NODE_ENV");
+    if (originalEnv !== undefined) Object.assign(process.env, { NODE_ENV: originalEnv });
+  });
+  Object.assign(process.env, { NODE_ENV: "production" });
+
+  const res = await POST(makePostRequest(validDeposit, "bogus"));
+
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).success, true);
+});
+
 test("POST /api/transactions returns 200 for valid deposit quote", async () => {
   const req = makePostRequest(validDeposit);
   const res = await POST(req);
