@@ -18,7 +18,10 @@ import {
   zodErrorToDetails,
 } from "@/lib/validation/api";
 import { NextRequest, NextResponse } from "next/server";
-import { isSandboxScenario, parseSandboxScenario } from "@/lib/sandbox-scenario";
+import {
+  isSandboxScenario,
+  parseSandboxScenarioQuery,
+} from "@/lib/sandbox-scenario";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
 
 import {
@@ -73,14 +76,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const parsedQuery = parseSandboxScenarioQuery(
+    request.nextUrl.searchParams.get("scenario"),
+  );
+
+  if (!parsedQuery.success) {
+    return NextResponse.json(
+      errorResponse(
+        ERROR_CODE.VALIDATION_ERROR,
+        "Query validation failed.",
+        zodErrorToDetails(parsedQuery.error),
+      ),
+      { status: HTTP_STATUS.BAD_REQUEST },
+    );
+  }
+
+  const { scenario } = parsedQuery;
   const payload = parsedPayload.data;
   const kind = parseTransactionKind(payload.kind);
   const values = payload.values;
   const transactionPath =
     process.env.NEUROWEALTH_TRANSACTIONS_PATH ?? "/transactions";
-  const scenario = parseSandboxScenario(
-    request.nextUrl.searchParams.get("scenario"),
-  );
   const fetchBackend = createServerFetcher();
 
   // Validate transaction values BEFORE forwarding to backend

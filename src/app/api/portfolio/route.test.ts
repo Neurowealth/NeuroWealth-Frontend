@@ -48,14 +48,36 @@ test("GET /api/portfolio returns 200 with no scenario", async () => {
   assert.equal(body.success, true);
 });
 
-test("GET /api/portfolio returns 400 for invalid scenario", async () => {
-  const req = makeRequest("invalid-scenario");
-  const res = await GET(req);
+test("GET /api/portfolio rejects an unknown scenario in development", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  t.after(() => {
+    Reflect.deleteProperty(process.env, "NODE_ENV");
+    if (originalEnv !== undefined) Object.assign(process.env, { NODE_ENV: originalEnv });
+  });
+  Object.assign(process.env, { NODE_ENV: "development" });
+
+  const res = await GET(makeRequest("bogus"));
   const body = await res.json();
 
   assert.equal(res.status, 400);
   assert.equal(body.success, false);
   assert.equal(body.error.code, "VALIDATION_ERROR");
+  assert.equal(body.error.message, "Query validation failed.");
+  assert.ok(body.error.details.scenario);
+});
+
+test("GET /api/portfolio ignores an unknown scenario in production", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  t.after(() => {
+    Reflect.deleteProperty(process.env, "NODE_ENV");
+    if (originalEnv !== undefined) Object.assign(process.env, { NODE_ENV: originalEnv });
+  });
+  Object.assign(process.env, { NODE_ENV: "production" });
+
+  const res = await GET(makeRequest("bogus"));
+
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).success, true);
 });
 
 test("GET /api/portfolio sandbox scenarios return demo data", async () => {
