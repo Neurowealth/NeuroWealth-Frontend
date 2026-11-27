@@ -1,10 +1,11 @@
 import SkeletonBlock from "./SkeletonBlock";
+import styles from "./styles";
 
 /** Skeleton for a summary stat card (balance, APY, yield, strategy) */
 export default function SkeletonStatCard() {
   return (
     <div
-      className="card"
+      className={styles.card}
       aria-hidden="true"
       role="status"
       aria-label="Loading..."

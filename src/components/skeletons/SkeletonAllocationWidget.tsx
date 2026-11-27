@@ -1,9 +1,10 @@
 import SkeletonBlock from "./SkeletonBlock";
+import styles from "./styles";
 
 /** Skeleton for the asset allocation widget */
 export default function SkeletonAllocationWidget() {
   return (
-    <div className="card" aria-hidden="true" role="status" aria-label="Loading...">
+    <div className={styles.card} aria-hidden="true" role="status" aria-label="Loading...">
       {/* Title */}
       <SkeletonBlock className="h-3.5 w-40 mb-5" />
 

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import styles from "./styles";
 
 interface SkeletonBlockProps {
   className?: string;
@@ -8,7 +9,7 @@ interface SkeletonBlockProps {
 export default function SkeletonBlock({ className }: SkeletonBlockProps) {
   return (
     <div
-      className={cn("skeleton", className)}
+      className={cn(styles.skeleton, className)}
       aria-hidden="true"
       role="presentation"
     />

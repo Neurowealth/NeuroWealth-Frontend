@@ -2,6 +2,7 @@ import SkeletonStatCard from "./SkeletonStatCard";
 import SkeletonAllocationWidget from "./SkeletonAllocationWidget";
 import SkeletonActivityRow from "./SkeletonActivityRow";
 import SkeletonBlock from "./SkeletonBlock";
+import styles from "./styles";
 
 /**
  * Full-page skeleton for the dashboard home.
@@ -32,7 +33,7 @@ export default function DashboardSkeleton() {
         <SkeletonAllocationWidget />
 
         {/* Recent activity */}
-        <div className="card" aria-hidden="true">
+        <div className={styles.card} aria-hidden="true">
           <SkeletonBlock className="h-3.5 w-32 mb-5" />
           {[1, 2, 3, 4, 5].map((i) => (
             <SkeletonActivityRow key={i} />
