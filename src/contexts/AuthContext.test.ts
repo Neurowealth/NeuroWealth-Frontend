@@ -141,6 +141,89 @@ test("AuthContext — authenticated: getSession is idempotent across multiple ca
   assert.equal(first.token, second.token);
 });
 
+// ── Session expiry timer (open tab) ───────────────────────────────────────────
+// AuthContext schedules a timer for the remaining session lifetime and calls
+// syncFromStorage()/signOut() when it fires. These tests reproduce that
+// scheduling logic against the adapter using node:test's mock timers so an
+// open tab transitions to unauthenticated at expiry without a reload.
+
+function scheduleExpiry(
+  session: AuthSession,
+  onExpire: () => void,
+): ReturnType<typeof setTimeout> | null {
+  const remaining = session.expiresAt - Date.now();
+  if (remaining <= 0) {
+    onExpire();
+    return null;
+  }
+  return setTimeout(onExpire, remaining);
+}
+
+test("AuthContext — expiry timer: fires at session expiry in an open tab", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  try {
+    const expiresAt = Date.now() + 60_000;
+    const session = makeSession({ expiresAt });
+    seedStorage(session);
+
+    let expired = false;
+    const timer = scheduleExpiry(session, () => {
+      expired = true;
+      mockAuth.signOut();
+    });
+
+    assert.equal(mockAuth.isAuthenticated(), true);
+
+    t.mock.timers.tick(59_999);
+    assert.equal(expired, false);
+    assert.equal(mockAuth.isAuthenticated(), true);
+
+    t.mock.timers.tick(1);
+    assert.equal(expired, true);
+    assert.equal(mockAuth.isAuthenticated(), false);
+    assert.equal(store.has(SESSION_STORAGE_KEY), false);
+
+    if (timer) clearTimeout(timer);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("AuthContext — expiry timer: rescheduling on sign-in replaces the previous timer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  try {
+    let fired = 0;
+    let timer = scheduleExpiry(makeSession({ expiresAt: Date.now() + 10_000 }), () => { fired++; });
+
+    // Re-sign-in before the first timer fires: cancel and reschedule.
+    t.mock.timers.tick(5_000);
+    if (timer) clearTimeout(timer);
+    timer = scheduleExpiry(makeSession({ expiresAt: Date.now() + 60_000 }), () => { fired++; });
+
+    t.mock.timers.tick(10_000);
+    assert.equal(fired, 0, "original timer must have been cancelled");
+
+    t.mock.timers.tick(50_000);
+    assert.equal(fired, 1);
+
+    if (timer) clearTimeout(timer);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("AuthContext — expiry timer: already-expired session fires immediately", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  try {
+    let fired = false;
+    const timer = scheduleExpiry(makeSession({ expiresAt: Date.now() - 1 }), () => { fired = true; });
+    assert.equal(fired, true);
+    assert.equal(timer, null);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
 // ── signIn ────────────────────────────────────────────────────────────────────
 // Mirrors AuthContext.signIn: setLoading(true) → adapter.signIn → setUser →
 // setLoading(false). Tests here cover the adapter contract that drives each branch.

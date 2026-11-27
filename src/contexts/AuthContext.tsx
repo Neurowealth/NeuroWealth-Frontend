@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import type { AuthSession } from "@/lib/auth-adapter";
 import { getAuthAdapter } from "@/lib/auth-provider-factory";
@@ -57,6 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true); // true until we've checked storage
   const router = useRouter();
   const authAdapter = getAuthAdapter();
+  const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearExpiryTimer = useCallback(() => {
+    if (expiryTimerRef.current !== null) {
+      clearTimeout(expiryTimerRef.current);
+      expiryTimerRef.current = null;
+    }
+  }, []);
 
   /** Derive user state from the persisted session. */
   const syncFromStorage = useCallback(() => {
@@ -69,9 +78,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authAdapter]);
 
+  /**
+   * Schedules a timer for the remaining lifetime of the current session.
+   * When it fires, local state is re-derived from storage; if the session is
+   * now expired (or gone), the user is signed out so UI matches the server.
+   */
+  const scheduleExpiryCheck = useCallback(() => {
+    clearExpiryTimer();
+    const session: AuthSession | null = authAdapter.getSession();
+    if (!session) return;
+    const remaining = session.expiresAt - Date.now();
+    const delay = Math.max(0, Math.min(remaining, 2_147_483_647));
+    expiryTimerRef.current = setTimeout(() => {
+      expiryTimerRef.current = null;
+      const current: AuthSession | null = authAdapter.getSession();
+      if (!current || Date.now() >= current.expiresAt) {
+        authAdapter.signOut();
+        clearSessionCookie();
+        setUser(null);
+        router.push(SIGN_IN_PATH);
+      } else {
+        // Session was extended elsewhere; re-arm for the new expiry.
+        syncFromStorage();
+        scheduleExpiryCheck();
+      }
+    }, delay);
+  }, [authAdapter, clearExpiryTimer, router, syncFromStorage]);
+
   useEffect(() => {
     // Hydrate on mount
     syncFromStorage();
+    scheduleExpiryCheck();
     setLoading(false);
 
     /**
@@ -82,12 +119,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === null || e.key === SESSION_STORAGE_KEY) {
         syncFromStorage();
+        scheduleExpiryCheck();
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [syncFromStorage]);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearExpiryTimer();
+    };
+  }, [syncFromStorage, scheduleExpiryCheck, clearExpiryTimer]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
@@ -96,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const session = await authAdapter.signIn(email, password);
         setUser(session.user);
         setSessionCookie(session);
+        scheduleExpiryCheck();
         analytics.track("auth_sign_in", { userId: session.user.id });
       } catch (err) {
         analytics.track("auth_sign_in_failed");
@@ -104,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [authAdapter],
+    [authAdapter, scheduleExpiryCheck],
   );
 
   const signUp = useCallback(
@@ -114,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const session = await authAdapter.signUp(email, name, password);
         setUser(session.user);
         setSessionCookie(session);
+        scheduleExpiryCheck();
         analytics.track("auth_sign_up", { userId: session.user.id });
       } catch (err) {
         analytics.track("auth_sign_up_failed");
@@ -122,16 +165,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [authAdapter],
+    [authAdapter, scheduleExpiryCheck],
   );
 
   const signOut = useCallback(() => {
     analytics.track("auth_sign_out", { userId: user?.id });
+    clearExpiryTimer();
     authAdapter.signOut();
     clearSessionCookie();
     setUser(null);
     router.push(SIGN_IN_PATH);
-  }, [user, authAdapter, router]);
+  }, [user, authAdapter, router, clearExpiryTimer]);
 
   const value = useMemo(
     () => ({ user, loading, signIn, signUp, signOut }),
