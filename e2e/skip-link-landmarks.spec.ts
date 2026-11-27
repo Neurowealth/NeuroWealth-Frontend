@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * QA for dashboard shell + marketing: one document landmark main, skip hash resolves.
+ * QA for dashboard shell, marketing, and demo routes: one document landmark main, skip hash resolves.
  * Run: `yarn dev` then `yarn playwright test e2e/skip-link-landmarks.spec.ts`
  */
 test.describe("Skip link and main landmark", () => {
@@ -20,6 +20,19 @@ test.describe("Skip link and main landmark", () => {
   test("docs tokens page exposes the same landmark id", async ({ page }) => {
     await page.goto("/docs/tokens");
     await expect(page.locator("main#main-content")).toHaveCount(1);
+  });
+
+  test("the table demo skip link focuses its only main landmark", async ({ page }) => {
+    await page.goto("/demo/table");
+    const main = page.getByRole("main");
+    await expect(main).toHaveCount(1);
+    await expect(main).toHaveAttribute("id", "main-content");
+
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: /skip to main content/i })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/demo\/table#main-content$/);
+    await expect(main).toBeFocused();
   });
 
   test("dashboard history has exactly one main", async ({ page }) => {

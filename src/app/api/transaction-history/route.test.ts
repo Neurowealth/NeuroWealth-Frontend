@@ -168,6 +168,31 @@ test("GET /api/transaction-history returns 400 for pageSize > 50", async () => {
   assert.equal(body.success, false);
 });
 
+test("GET /api/transaction-history rejects non-decimal pagination values", async () => {
+  const cases: Record<string, string>[] = [
+    { page: "0x10" },
+    { page: "1e3" },
+    { page: " 2 " },
+    { pageSize: "0x10" },
+    { pageSize: "1e3" },
+    { pageSize: " 10 " },
+  ];
+
+  for (const params of cases) {
+    const req = makeRequest(params);
+    const res = await GET(req);
+    const body = await res.json();
+
+    assert.equal(
+      res.status,
+      400,
+      `${JSON.stringify(params)} should be rejected`,
+    );
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, "VALIDATION_ERROR");
+  }
+});
+
 test("GET /api/transaction-history returns 200 with date range", async () => {
   const req = makeRequest({
     dateFrom: "2026-01-01",

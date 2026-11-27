@@ -1,3 +1,5 @@
+import { portfolioQuerySchema, portfolioScenarioSchema } from "./validation/api";
+
 /**
  * Shared sandbox scenario parsing utilities.
  *
@@ -10,20 +12,12 @@
  */
 
 /** Recognised mock scenarios that alter API route behaviour. */
-export type SandboxScenario =
-  | "live"
-  | "empty"
-  | "loading"
-  | "partial-failure"
-  | "timeout";
+export type SandboxScenario = (typeof portfolioScenarioSchema.options)[number];
 
-/** The set of non-live sandbox scenarios (convenience for type narrowing). */
-const SANDBOX_SCENARIOS = new Set<SandboxScenario>([
-  "empty",
-  "loading",
-  "partial-failure",
-  "timeout",
-]);
+/** The set of non-live sandbox scenarios. */
+const SANDBOX_SCENARIOS = new Set<SandboxScenario>(
+  portfolioScenarioSchema.options.filter((scenario) => scenario !== "live"),
+);
 
 /**
  * Parse a raw query-parameter or localStorage value into a typed SandboxScenario.
@@ -40,16 +34,22 @@ const SANDBOX_SCENARIOS = new Set<SandboxScenario>([
 export function parseSandboxScenario(
   value: string | null | undefined,
 ): SandboxScenario {
-  // In production, ignore all scenario overrides and return "live"
+  const result = parseSandboxScenarioQuery(value ?? null);
+  return result.success ? result.scenario : "live";
+}
+
+/** Strict URL query validation for API routes that support sandbox overrides. */
+export function parseSandboxScenarioQuery(value: string | null) {
   if (process.env.NODE_ENV === "production") {
-    return "live";
+    return { success: true, scenario: "live" } as const;
   }
 
-  if (value === "empty") return "empty";
-  if (value === "loading") return "loading";
-  if (value === "partial-failure") return "partial-failure";
-  if (value === "timeout") return "timeout";
-  return "live";
+  const result = portfolioQuerySchema.safeParse({
+    scenario: value ?? undefined,
+  });
+  if (!result.success) return result;
+
+  return { success: true, scenario: result.data.scenario ?? "live" } as const;
 }
 
 /**

@@ -142,11 +142,14 @@ test("apiRequest rejects timed-out requests with REQUEST_TIMEOUT", async () => {
       const signal = init?.signal;
       if (!signal) return;
 
-      signal.addEventListener(
-        "abort",
-        () => reject(new DOMException("The operation was aborted.", "AbortError")),
-        { once: true },
-      );
+      const rejectWithAbortReason = () => reject(signal.reason);
+
+      if (signal.aborted) {
+        rejectWithAbortReason();
+        return;
+      }
+
+      signal.addEventListener("abort", rejectWithAbortReason, { once: true });
     });
   };
 

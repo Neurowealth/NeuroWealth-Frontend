@@ -11,8 +11,20 @@ import {
   readJsonBody,
   successResponse,
 } from "@/lib/api-response";
-import { strategyUpdateSchema, zodErrorToDetails } from "@/lib/validation/api";
+<<<<<<< HEAD
+import {
+  strategyPreferencePayloadSchema,
+  strategyKindSchema,
+  strategyUpdateSchema,
+  zodErrorToDetails,
+} from "@/lib/validation/api";
 import { createServerFetcher, ServerFetchTimeoutError } from "@/lib/api-client";
+import {
+  isBackendErrorEnvelope,
+  readBackendJson,
+  toBackendErrorResponse,
+  unwrapBackendPayload,
+} from "@/lib/backend-response";
 import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { getSessionFromRequest, requireAuth } from "@/lib/api-auth";
 
@@ -36,9 +48,27 @@ export async function GET(request: NextRequest) {
       if (!res.ok) {
         return NextResponse.json(
           errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
-          { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+          { status: HTTP_STATUS.BAD_GATEWAY, headers: { "Cache-Control": "no-store" } },
         );
       }
+
+      const backendData = await res.json();
+      const validated = strategyKindSchema.safeParse(backendData?.strategy);
+
+      if (!validated.success) {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.VALIDATION_ERROR,
+            "Backend response has invalid shape.",
+            zodErrorToDetails(validated.error),
+          ),
+          { status: HTTP_STATUS.BAD_REQUEST, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
+      return NextResponse.json(successResponse<StrategyPreference>({ strategy: validated.data }), {
+        headers: { "Cache-Control": "no-store" },
+      });
     } catch (error) {
       if (error instanceof ServerFetchTimeoutError) {
         return NextResponse.json(
@@ -46,7 +76,17 @@ export async function GET(request: NextRequest) {
           { status: 408, headers: { "Cache-Control": "no-store" } },
         );
       }
-      // fall through to local fallback
+
+      return NextResponse.json(
+        errorResponse(
+          ERROR_CODE.BACKEND_ERROR,
+          "Strategy service temporarily unavailable.",
+        ),
+        {
+          status: HTTP_STATUS.SERVICE_UNAVAILABLE,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
     }
   }
 
@@ -116,26 +156,71 @@ export async function PUT(request: NextRequest) {
         cache: "no-store",
       });
 
-      if (!res.ok) {
+      const raw = await readBackendJson(res);
+      const rawValue = raw.kind === "json" ? raw.value : null;
+
+      if (!res.ok || isBackendErrorEnvelope(rawValue)) {
+        const failure = toBackendErrorResponse(
+          res.status,
+          rawValue,
+          "Strategy service returned an unexpected response.",
+        );
+
+        return NextResponse.json(failure.body, {
+          status: failure.status,
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+
+      if (raw.kind !== "json") {
         return NextResponse.json(
-          errorResponse(ERROR_CODE.BACKEND_ERROR, "Strategy service temporarily unavailable."),
-          { status: HTTP_STATUS.SERVICE_UNAVAILABLE, headers: { "Cache-Control": "no-store" } },
+          errorResponse(
+            ERROR_CODE.BACKEND_ERROR,
+            "Strategy service returned an unexpected response.",
+          ),
+          {
+            status: HTTP_STATUS.BAD_GATEWAY,
+            headers: { "Cache-Control": "no-store" },
+          },
         );
       }
-      const text = await res.text();
-      const response = new NextResponse(text, {
-        status: res.status,
-        headers: {
-          "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-          "Cache-Control": "no-store",
-        },
-      });
+
+      const backendPayload = unwrapBackendPayload(raw.value);
+      const parsedResponse =
+        strategyPreferencePayloadSchema.safeParse(backendPayload);
+
+      if (!parsedResponse.success) {
+        return NextResponse.json(
+          errorResponse(
+            ERROR_CODE.BACKEND_ERROR,
+            "Strategy service returned an unexpected response.",
+          ),
+          {
+            status: HTTP_STATUS.BAD_GATEWAY,
+            headers: { "Cache-Control": "no-store" },
+          },
+        );
+      }
+
       // Sync local cookie with the backend's successful response
-      response.cookies.set(STRATEGY_COOKIE_KEY, strategy, {
-        path: "/",
-        sameSite: "lax",
-        httpOnly: false,
-      });
+      const response = NextResponse.json(
+        successResponse<StrategyPreference>({
+          strategy: parsedResponse.data.strategy,
+        }),
+        {
+          status: HTTP_STATUS.OK,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+      response.cookies.set(
+        STRATEGY_COOKIE_KEY,
+        parsedResponse.data.strategy,
+        {
+          path: "/",
+          sameSite: "lax",
+          httpOnly: false,
+        },
+      );
       return response;
     } catch (error) {
       if (error instanceof ServerFetchTimeoutError) {
@@ -144,7 +229,17 @@ export async function PUT(request: NextRequest) {
           { status: 408, headers: { "Cache-Control": "no-store" } },
         );
       }
-      // fall through to local fallback
+
+      return NextResponse.json(
+        errorResponse(
+          ERROR_CODE.BACKEND_ERROR,
+          "Strategy service temporarily unavailable.",
+        ),
+        {
+          status: HTTP_STATUS.SERVICE_UNAVAILABLE,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
     }
   }
 
