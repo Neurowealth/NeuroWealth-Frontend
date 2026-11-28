@@ -50,6 +50,11 @@ export interface PaymentOptions {
 
 export interface WalletContextState {
   connected: boolean;
+  /**
+   * false only in the useWallet() fallback used outside <WalletProvider>
+   * (every route except /dashboard and /profile); undefined inside the provider.
+   */
+  available?: boolean;
   isRestoring: boolean;
   publicKey?: string;
   walletName?: string;
@@ -360,6 +365,7 @@ export function useWallet(): WalletContextState {
   const context = useContext(WalletContext);
   if (context === undefined) {
     return {
+      available: false,
       connected: false,
       isRestoring: false,
       publicKey: undefined,

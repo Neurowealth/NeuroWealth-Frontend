@@ -23,3 +23,17 @@ test.describe("Wallet connect", () => {
     await expect(walletButton).toContainText(/connect/i);
   });
 });
+
+test.describe("Wallet connect outside the wallet provider (#1308)", () => {
+  test("connect button on the landing page is disabled with an explicit reason, not a silent no-op", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const walletButton = page.locator('[data-qa="wallet-connect-button"]');
+    await expect(walletButton).toBeVisible();
+    await expect(walletButton).toBeDisabled();
+    await expect(walletButton).toHaveAttribute("data-wallet-unavailable", "true");
+    await expect(walletButton).toHaveAttribute("title", /dashboard/i);
+  });
+});
