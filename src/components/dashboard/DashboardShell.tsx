@@ -61,15 +61,9 @@ export default function DashboardShell({ children }: DashboardShellProps) {
       {/* Top header — spans full width minus sidebar */}
       <TopHeader />
 
-      {/* Main content area */}
+      {/* Offset the main content from the fixed header and sidebar. */}
       <main
-        className="
-          pt-16          /* clear fixed header (64px) */
-          sm:pl-14       /* clear collapsed tablet sidebar (56px) */
-          lg:pl-64       /* clear full desktop sidebar (256px) */
-          min-h-screen
-          bg-app-bg
-        "
+        className="pt-16 sm:pl-14 lg:pl-64 min-h-screen bg-app-bg"
         style={{
           // On mobile (<640px): clear fixed bottom nav (80px) plus home indicator.
           // On sm+: bottom nav is hidden so no extra clearance needed.

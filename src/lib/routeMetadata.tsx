@@ -195,9 +195,9 @@ const appRouteDefinitions: AppRouteDefinition[] = [
 ];
 
 export const siteNavigationLinks: SiteNavigationLink[] = [
-  { href: "#features", labelKey: "features" },
-  { href: "#how-it-works", labelKey: "howItWorks" },
-  { href: "#strategies", labelKey: "strategies" },
+  { href: "/#features", labelKey: "features" },
+  { href: "/#how-it-works", labelKey: "howItWorks" },
+  { href: "/#strategies", labelKey: "strategies" },
   { href: "/help", labelKey: "help", mobile: true },
 ];
 
